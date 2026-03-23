@@ -9,6 +9,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
 import { Toaster } from 'sonner';
 import AppRouter from './router/AppRouter';
+import { theme } from './styles/theme';
 
 // Configuración del cliente de React Query
 const queryClient = new QueryClient({
@@ -23,20 +24,32 @@ const queryClient = new QueryClient({
 
 // Estilos globales de la aplicación
 const GlobalStyle = createGlobalStyle`
-  * {
+  *, *::before, *::after {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    min-height: 100%;
   }
 
   body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    background: #F8FAFC;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
+    font-family: ${theme.typography.fontFamily};
+    background: ${theme.colors.background};
+    color: ${theme.colors.textPrimary};
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+  }
+
+  button, input, textarea, select {
+    font: inherit;
   }
 
   #root {

@@ -341,6 +341,17 @@ punishments, weekly_stats, settings
 - Colores de ámbitos: `theme.HABIT_COLORS.sleep`, etc.
 - No usar `!important`
 
+### Arquitectura de estilos globales
+- `index.css` NO existe en este proyecto — eliminarlo si Vite lo genera
+- `main.jsx` NO debe tener `import './index.css'`
+- La fuente Nunito se carga en `index.html` via Google Fonts en el `<head>`
+- `GlobalStyle` en `App.jsx` es el único lugar para estilos globales:
+  - Reset: `box-sizing`, `margin`, `padding` en `*`
+  - `-webkit-tap-highlight-color: transparent`
+  - `font-family`, `background`, `color` usando `theme.js`
+  - `font: inherit` en `button`, `input`, `textarea`, `select`
+  - `min-height: 100vh` en `#root`
+
 ### Supabase
 - Todas las queries en `src/services/supabase.js`
 - Los hooks usan TanStack Query para wrappear cada query

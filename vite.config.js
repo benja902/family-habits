@@ -8,8 +8,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true,
+      },
       manifest: {
-        name: 'Hábitos Familiar',
+        name: 'Hábitos Familiares',
         short_name: 'Hábitos',
         description: 'Sistema familiar de hábitos y recompensas',
         theme_color: '#6366F1',
@@ -33,6 +36,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallback: '/index.html'
       },
     }),
   ],

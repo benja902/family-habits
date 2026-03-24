@@ -8,17 +8,17 @@ import { useEffect } from 'react';
 import useSleepModule from '../../hooks/useSleepModule';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BsMoonStarsFill,
-  BsPhoneFlip,
   BsCheckCircleFill,
-  BsXCircleFill,
   BsClockFill,
   BsExclamationTriangleFill,
+  BsMoonStarsFill,
 } from 'react-icons/bs';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 import { DEVICE_CURFEW, WAKE_TARGET } from '../../constants/habits.constants';
 import { applyPunctuality } from '../../utils/points.utils';
+import { PointsSummaryCard } from '../ui/PointsSummaryCard';
+import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 
 const MODULE_COLOR = theme.HABIT_COLORS.sleep;
 
@@ -222,98 +222,6 @@ const Textarea = styled.textarea`
   }
 `;
 
-const PointsSummary = styled.div`
-  position: sticky;
-  bottom: 72px;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 2px solid ${MODULE_COLOR};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  padding: ${({ theme }) => theme.spacing.lg};
-  box-shadow: ${({ theme }) => theme.shadows.hover};
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.sm};
-  margin: ${({ theme }) => theme.spacing.lg} 0;
-`;
-
-const PointsRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: ${({ theme }) => theme.typography.sizes.sm};
-`;
-
-const PointsLabel = styled.span`
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const PointsValue = styled.span`
-  font-weight: ${({ theme }) => theme.typography.weights.bold};
-  color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
-`;
-
-const TotalRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: ${({ theme }) => theme.spacing.sm};
-  border-top: 2px solid ${({ theme }) => theme.colors.border};
-  margin-top: ${({ theme }) => theme.spacing.xs};
-`;
-
-const TotalLabel = styled.span`
-  font-size: ${({ theme }) => theme.typography.sizes.lg};
-  font-weight: ${({ theme }) => theme.typography.weights.bold};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const TotalValue = styled.span`
-  font-size: ${({ theme }) => theme.typography.sizes.xl};
-  font-weight: ${({ theme }) => theme.typography.weights.black};
-  color: ${MODULE_COLOR};
-`;
-
-const SaveButton = styled(motion.button)`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  background: ${MODULE_COLOR};
-  color: white;
-  border: none;
-  font-size: ${({ theme }) => theme.typography.sizes.lg};
-  font-weight: ${({ theme }) => theme.typography.weights.bold};
-  font-family: ${({ theme }) => theme.typography.fontFamily};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const Spinner = styled.div`
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
 // ==================== COMPONENTE ====================
 
 export default function SleepModule() {
@@ -353,37 +261,36 @@ export default function SleepModule() {
 
   // Calcular puntos en tiempo real
   const calculatePoints = () => {
-    let positive = 0;
-    let negative = 0;
+    let devicePoints = 0;
+    let sleepPoints = 0;
 
-    // 1. Dispositivo entregado a tiempo
+    // 1. Dispositivo entregado a tiempo (puntos de dispositivos)
     if (formValues.device_delivered && formValues.device_delivered_at) {
-      const points = applyPunctuality(100, formValues.device_delivered_at, DEVICE_CURFEW);
-      positive += points;
+      devicePoints += applyPunctuality(100, formValues.device_delivered_at, DEVICE_CURFEW);
     }
 
-    // 2. Penalizaciones
+    // 2. Penalizaciones de dispositivos
     if (formValues.device_in_bathroom) {
-      negative += 20;
+      devicePoints -= 20;
     }
     if (formValues.device_in_bed) {
-      negative += 20;
+      devicePoints -= 20;
     }
 
-    // 3. Dormido antes de las 11pm
+    // 3. Dormido antes de las 11pm (puntos de sueño)
     if (formValues.slept_by_11) {
-      positive += 50;
+      sleepPoints += 50;
     }
 
-    // 4. Levantado a tiempo
+    // 4. Levantado a tiempo (puntos de sueño)
     if (formValues.wake_time) {
       const [hours] = formValues.wake_time.split(':').map(Number);
       if (hours < 7) {
-        positive += 50;
+        sleepPoints += 50;
       }
     }
 
-    return { positive, negative, total: positive - negative };
+    return { devicePoints, sleepPoints, total: devicePoints + sleepPoints };
   };
 
   const points = calculatePoints();
@@ -618,44 +525,25 @@ export default function SleepModule() {
           />
         </FieldWrapper>
 
-        {/* ==================== RESUMEN DE PUNTOS ==================== */}
-        <PointsSummary>
-          <PointsRow>
-            <PointsLabel>Puntos positivos</PointsLabel>
-            <PointsValue $color={theme.colors.success}>+{points.positive}</PointsValue>
-          </PointsRow>
-          {points.negative > 0 && (
-            <PointsRow>
-              <PointsLabel>Penalizaciones</PointsLabel>
-              <PointsValue $color={theme.colors.danger}>-{points.negative}</PointsValue>
-            </PointsRow>
-          )}
-          <TotalRow>
-            <TotalLabel>Total</TotalLabel>
-            <TotalValue>{points.total} pts</TotalValue>
-          </TotalRow>
-        </PointsSummary>
+        {/* ==================== RESUMEN DE PUNTOS (sticky) ==================== */}
+        <PointsSummaryCard
+          pointsSummary={[
+            { label: 'Dispositivos', points: points.devicePoints, color: '#6366F1' },
+            { label: 'Sueño', points: points.sleepPoints, color: '#6366F1' },
+          ]}
+          totalPoints={points.total}
+          accentColor="#6366F1"
+        />
       </FormContent>
 
-      {/* ==================== BOTÓN GUARDAR ==================== */}
-      <SaveButton
-        type="submit"
-        onClick={handleSubmit(onSubmit)}
-        disabled={isSaving}
-        whileTap={{ scale: isSaving ? 1 : 0.97 }}
-      >
-        {isSaving ? (
-          <>
-            <Spinner />
-            Guardando...
-          </>
-        ) : (
-          <>
-            <BsMoonStarsFill />
-            Guardar descanso
-          </>
-        )}
-      </SaveButton>
+      {/* ==================== BOTÓN GUARDAR (fixed) ==================== */}
+      <ModuleSaveButton
+        onSave={handleSubmit(onSubmit)}
+        isSaving={isSaving}
+        label="Guardar descanso"
+        color="#6366F1"
+        icon={<BsMoonStarsFill />}
+      />
     </Container>
   );
 }

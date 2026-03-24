@@ -44,8 +44,10 @@ La referencia de experiencia es **Duolingo** — no en colores ni temática, sin
 | Base de datos | PostgreSQL (via Supabase) | Todas las tablas del sistema |
 | Auth | Custom PIN | Login por PIN de 4 dígitos |
 | Lógica automática | Supabase Functions + Triggers | Cálculo de puntos automático |
-| PWA | vite-plugin-pwa | Instalable en celular sin Play Store |
+<!-- | PWA | vite-plugin-pwa | Instalable en celular sin Play Store | -->
 | Tablas admin | @tanstack/react-table | Solo Fase 4 — panel admin |
+| Dark mode | useThemeStore + ThemeProvider | Zustand + styled-components |
+
 
 ### Librerías que NO usar
 - ~~antd / @ant-design~~ → pelea con Styled Components, bundle enorme
@@ -104,7 +106,9 @@ src/
 │   │   ├── DayStatusBadge.jsx
 │   │   ├── EmptyState.jsx
 │   │   ├── LoadingSpinner.jsx
-│   │   └── ScoreBar.jsx
+│   │   ├── ScoreBar.jsx
+│   │   ├── PointsSummaryCard.jsx  # Resumen de puntos sticky (card flotante)
+│   │   └── ModuleSaveButton.jsx   # Botón guardar fixed (estándar global todos los módulos)
 │   ├── layout/
 │   │   ├── BottomNav.jsx          # Navegación fija abajo (reemplaza Sidebar)
 │   │   ├── AppHeader.jsx          # Header simple: título + back button
@@ -232,7 +236,7 @@ src/
 
 - `AppHeader` con **color del ámbito como fondo**
 - Formulario en scroll vertical (react-hook-form)
-- Botón "Guardar" **full-width fijo al fondo, 48px de alto**
+- Botón "Guardar" **full-width fijo al fondo, 64px de alto**
 - Las rutas `/habits/:habitId` NO usan `UserLayout` (sin BottomNav)
 - La navegación de vuelta es solo el botón ← del `AppHeader`
 
@@ -336,10 +340,15 @@ punishments, weekly_stats, settings
 - Utils: `camelCase` + `.utils.js` → `dates.utils.js`
 
 ### Estilos
-- Siempre Styled Components, nunca CSS inline ni clases hardcodeadas
-- El tema global está en `src/styles/theme.js`
-- Colores de ámbitos: `theme.HABIT_COLORS.sleep`, etc.
-- No usar `!important`
+- Siempre Styled Components con ThemeProvider
+- Acceder al theme SIEMPRE con ${({ theme }) => theme.X}
+- NUNCA importar theme directamente en componentes
+- ThemeProvider está en App.jsx wrapeando toda la app
+- theme.js exporta lightTheme y darkTheme
+- El tema activo lo maneja useThemeStore (Zustand + persist)
+- Toggle dark/light mode en AppHeader con BsSunFill / BsMoonFill
+- Todas las props custom con prefijo $ (Regla 8)
+- No usar !important
 
 ### Arquitectura de estilos globales
 - `index.css` NO existe en este proyecto — eliminarlo si Vite lo genera
@@ -532,6 +541,26 @@ const Card = styled.div`
 La prop original del componente padre NO cambia —
 solo cambia cómo se pasa internamente a los Styled Components.
 Aplica en todos los componentes de la Fase 2 en adelante.
+
+
+### REGLA 9 — Theme: siempre ThemeProvider, nunca import directo
+
+NUNCA hacer esto en un componente:
+import { theme } from '../../styles/theme'
+const Card = styled.div`color: ${theme.colors.primary}`
+
+SIEMPRE así:
+const Card = styled.div`color: ${({ theme }) => theme.colors.primary}`
+
+El ThemeProvider en App.jsx inyecta el theme automáticamente.
+
+### Excepción — theme en lógica JS o props directas
+Si necesitas el theme FUERA de un Styled Component:
+  import { lightTheme as theme } from '../../styles/theme'
+  const color = theme.HABIT_COLORS[habitKey]  ✅
+
+Válido SOLO fuera de Styled Components.
+Dentro de Styled Components SIEMPRE usar ({ theme }) =>
 
 ## 15. Tema visual (`src/styles/theme.js`)
 
@@ -775,7 +804,7 @@ npm install -D vite-plugin-pwa
 9.  ✅ `useDailyRecord.js` + sincronización Dashboard
 10. ✅ `useCompletedHabits.js` + `HabitCategoryCard` con completado
 11. ✅ `SleepModule` — Descanso y dispositivos
-12. ⬜ `MovementModule` — Movimiento y salud física
+12. ✅ `MovementModule` — Movimiento y salud física
 13. ⬜ `FoodModule` — Alimentación
 14. ⬜ `StudyModule` — Estudio y crecimiento
 15. ⬜ `CleaningModule` — Orden y limpieza
@@ -836,14 +865,22 @@ Crear `src/hooks/use[Modulo]Module.js`:
   ```
 
 ### PROMPT X-3 — Componente formulario
-Crear `src/components/habits/[Modulo]Module.jsx`:
-- `react-hook-form` para todos los campos
-- En `onSubmit`: **limpiar campos `time`/`date` vacíos a `null`**
-- Banner '✓ Ya registraste hoy' si `hasRecord = true` (visible arriba, siempre)
-- Resumen de puntos en tiempo real con `watch()`
-- `AppHeader` con color del ámbito como fondo
-- Botón guardar: **full-width, fijo al fondo, 48px de alto**
-- `motion.button` con `whileTap={{ scale: 0.97 }}`
+- react-hook-form para todos los campos
+- En onSubmit: limpiar campos time/date vacíos a null (Regla 5)
+- Banner '✓ Ya registraste hoy' si hasRecord = true (visible arriba)
+- AppHeader con color del ámbito como fondo (se renderiza en HabitDetail)
+- Calcular puntos en tiempo real con watch() para pasarlos al ModuleFooter
+- Área inferior estándar — DOS componentes separados, en este orden:
+  1. PointsSummaryCard (sticky, bottom: 80px):
+     - Card flotante con resumen de puntos
+     - border-radius: 16px, sombra suave, fondo surface
+     - Props: pointsSummary, totalPoints, accentColor
+     - Import: import { PointsSummaryCard } from '../ui/PointsSummaryCard'
+  2. ModuleSaveButton (fixed, bottom: 0):
+     - Full-width, height: 64px, border-radius: 0
+     - Props: onSave, isSaving, label, color, icon
+     - Import: import { ModuleSaveButton } from '../ui/ModuleSaveButton'
+- NUNCA implementar botón guardar ni resumen custom. Estos dos componentes son el estándar.
 
 ### PROMPT X-4 — Agregar a HabitDetail
 En `src/pages/HabitDetail.jsx`:

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { BsCupFill } from 'react-icons/bs'
 import useMovementModule from '../../hooks/useMovementModule'
 import { MIN_EXERCISE_MINUTES } from '../../constants/habits.constants'
+import { PointsSummaryCard } from '../ui/PointsSummaryCard';
+import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 
 
 
@@ -275,50 +277,28 @@ export default function MovementModule() {
           </AnimatePresence>
         </Section>
 
-        {/* RESUMEN EN TIEMPO REAL */}
-        <Summary>
-          <SummaryTitle>Resumen de puntos</SummaryTitle>
-          <SummaryRow>
-            <SummaryLabel>Ejercicio:</SummaryLabel>
-            <SummaryValue $hasPoints={exercisePoints > 0}>
-              {exercisePoints} pts
-            </SummaryValue>
-          </SummaryRow>
-          <SummaryRow>
-            <SummaryLabel>Agua:</SummaryLabel>
-            <SummaryValue $hasPoints={waterPoints > 0} $isWater>
-              {waterPoints} pts
-            </SummaryValue>
-          </SummaryRow>
-          <SummaryRow>
-            <SummaryLabel>Caminata:</SummaryLabel>
-            <SummaryValue $hasPoints={walkPoints > 0}>
-              {walkPoints} pts
-            </SummaryValue>
-          </SummaryRow>
-          <SummaryDivider />
-          <SummaryRow>
-            <SummaryLabel $isTotal>Total:</SummaryLabel>
-            <SummaryValue $isTotal>{totalPoints} pts</SummaryValue>
-          </SummaryRow>
-        </Summary>
+        {/* RESUMEN DE PUNTOS (sticky) */}
+        <PointsSummaryCard
+          pointsSummary={[
+            { label: 'Ejercicio', points: exercisePoints, color: '#22C55E' },
+            { label: 'Agua', points: waterPoints, color: '#3B82F6' },
+            { label: 'Caminata', points: walkPoints, color: '#22C55E' },
+          ]}
+          totalPoints={totalPoints}
+          accentColor="#22C55E"
+        />
 
-        {/* BOTÓN GUARDAR */}
-        <SaveButton
-          type="submit"
-          disabled={isSaving}
-          whileTap={{ scale: 0.97 }}
-        >
-          {isSaving ? (
-            <>
-              <ButtonSpinner />
-              Guardando...
-            </>
-          ) : (
-            'Guardar movimiento'
-          )}
-        </SaveButton>
+        {/* Espaciado para el footer fijo */}
+        <FooterSpacer />
       </Form>
+
+      {/* BOTÓN GUARDAR (fixed) */}
+      <ModuleSaveButton
+        onSave={handleSubmit(onSubmit)}
+        isSaving={isSaving}
+        label="Guardar movimiento"
+        color="#22C55E"
+      />
     </Container>
   )
 }
@@ -375,10 +355,9 @@ const SectionTitle = styled.h2`
   color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: 16px;
 `
-
 const ToggleCard = styled.div`
-  background: ${({ $isActive }) => ($isActive ? 'rgba(34, 197, 94, 0.1)' : '#fff')};
-  border: 2px solid ${({ $isActive }) => ($isActive ? '#22C55E' : '#E2E8F0')};
+  background: ${({ $isActive, theme }) => ($isActive ? 'rgba(34, 197, 94, 0.15)' : theme.colors.surface)};
+  border: 2px solid ${({ $isActive, theme }) => ($isActive ? '#22C55E' : theme.colors.border)};
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -409,18 +388,17 @@ const Badge = styled.span`
 const ToggleSwitch = styled(motion.button)`
   width: 56px;
   height: 32px;
-  background: ${({ $isActive }) => ($isActive ? '#22C55E' : '#E2E8F0')};
+  background: ${({ $isActive, theme }) => ($isActive ? '#22C55E' : theme.colors.border)};
   border-radius: 16px;
   border: none;
   cursor: pointer;
   position: relative;
   transition: background 0.25s ease;
 `
-
 const ToggleThumb = styled.div`
   width: 24px;
   height: 24px;
-  background: white;
+  background: ${({ theme }) => theme.colors.surface};
   border-radius: 50%;
   position: absolute;
   top: 4px;
@@ -467,9 +445,9 @@ const ChipsContainer = styled.div`
 `
 
 const Chip = styled(motion.button)`
-  background: ${({ $isActive }) => ($isActive ? '#22C55E' : '#F8FAFC')};
-  color: ${({ $isActive }) => ($isActive ? 'white' : '#64748B')};
-  border: 2px solid ${({ $isActive }) => ($isActive ? '#22C55E' : '#E2E8F0')};
+  background: ${({ $isActive, theme }) => ($isActive ? '#22C55E' : theme.colors.surface)};
+  color: ${({ $isActive, theme }) => ($isActive ? 'white' : theme.colors.textSecondary)};
+  border: 2px solid ${({ $isActive, theme }) => ($isActive ? '#22C55E' : theme.colors.border)};
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
@@ -483,11 +461,12 @@ const Input = styled.input`
   width: 100%;
   padding: 12px;
   font-size: 16px;
-  border: 2px solid #E2E8F0;
+  border: 2px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   text-align: center;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface}; /* <-- Fondo corregido */
 
   &:focus {
     outline: none;
@@ -530,11 +509,12 @@ const Textarea = styled.textarea`
   width: 100%;
   padding: 12px;
   font-size: 14px;
-  border: 2px solid #E2E8F0;
+  border: 2px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   resize: none;
   font-family: inherit;
   color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface}; /* <-- Fondo corregido */
 
   &:focus {
     outline: none;
@@ -568,86 +548,6 @@ const WaterText = styled.p`
   color: ${({ $isComplete }) => ($isComplete ? '#22C55E' : '#64748B')};
 `
 
-const Summary = styled.div`
-  background: rgba(34, 197, 94, 0.05);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 80px;
-`
-
-const SummaryTitle = styled.h3`
-  font-size: 14px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`
-
-const SummaryRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-`
-
-const SummaryLabel = styled.span`
-  font-size: ${({ $isTotal }) => ($isTotal ? '16px' : '14px')};
-  font-weight: ${({ $isTotal }) => ($isTotal ? '700' : '500')};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
-
-const SummaryValue = styled.span`
-  font-size: ${({ $isTotal }) => ($isTotal ? '20px' : '14px')};
-  font-weight: ${({ $isTotal }) => ($isTotal ? '900' : '600')};
-  color: ${({ $hasPoints, $isWater, $isTotal }) => {
-    if ($isTotal) return '#22C55E'
-    if (!$hasPoints) return '#94A3B8'
-    if ($isWater) return '#3B82F6'
-    return '#22C55E'
-  }};
-`
-
-const SummaryDivider = styled.div`
-  height: 1px;
-  background: rgba(34, 197, 94, 0.2);
-  margin: 12px 0;
-`
-
-const SaveButton = styled(motion.button)`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 48px;
-  background: #22C55E;
-  color: white;
-  font-size: 16px;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  z-index: 50;
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`
-
-const ButtonSpinner = styled.div`
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+const FooterSpacer = styled.div`
+  height: 140px;
 `

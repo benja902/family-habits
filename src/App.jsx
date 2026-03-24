@@ -6,10 +6,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter } from 'react-router-dom';
-import { createGlobalStyle } from 'styled-components';
+import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import { Toaster } from 'sonner';
 import AppRouter from './router/AppRouter';
-import { theme } from './styles/theme';
+import { lightTheme, darkTheme } from './styles/theme';
+import useThemeStore from './stores/useThemeStore';
 
 // Configuración del cliente de React Query
 const queryClient = new QueryClient({
@@ -36,9 +37,9 @@ const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    font-family: ${theme.typography.fontFamily};
-    background: ${theme.colors.background};
-    color: ${theme.colors.textPrimary};
+    font-family: ${({ theme }) => theme.typography.fontFamily};
+    background: ${({ theme }) => theme.colors.background};
+    color: ${({ theme }) => theme.colors.textPrimary};
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -58,24 +59,28 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 function App() {
+  const { isDark } = useThemeStore();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <GlobalStyle />
-        <Toaster
-          position="top-center"
-          richColors
-          duration={2500}
-          toastOptions={{
-            style: {
-              zIndex: 99999,
-            }
-          }}
-        />
-        <AppRouter />
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <GlobalStyle />
+          <Toaster
+            position="top-center"
+            richColors
+            duration={2500}
+            toastOptions={{
+              style: {
+                zIndex: 99999,
+              }
+            }}
+          />
+          <AppRouter />
+          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

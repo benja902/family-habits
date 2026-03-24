@@ -90,11 +90,11 @@ const Welcome = () => {
 
 const Container = styled.div`
   min-height: 100vh;
-  background: ${theme.colors.background};
+  background: ${({ theme }) => theme.colors.background};
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: ${theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
 `;
 
 const Content = styled.div`
@@ -104,22 +104,22 @@ const Content = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: ${theme.typography.sizes.display};
+  font-size: ${({ theme }) => theme.typography.sizes.display};
   font-weight: 700;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 12px;
 `;
 
 const Subtitle = styled.p`
-  font-size: ${theme.typography.sizes.lg};
-  color: ${theme.colors.textSecondary};
-  margin: 0 0 ${theme.spacing.xxl};
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin: 0 0 ${({ theme }) => theme.spacing.xxl};
 `;
 
 const UsersGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: ${theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.lg};
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
@@ -131,19 +131,19 @@ const UsersGrid = styled.div`
 `;
 
 const UserCard = styled.div`
-  background: ${theme.colors.surface};
-  border-radius: ${theme.borderRadius.lg};
-  box-shadow: ${theme.shadows.card};
-  padding: ${theme.spacing.xl} ${theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: ${({ theme }) => `${theme.spacing.xl} ${theme.spacing.lg}`};
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: ${theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.md};
 
   &:hover {
-    box-shadow: ${theme.shadows.hover};
+    box-shadow: ${({ theme }) => theme.shadows.hover};
     transform: translateY(-4px);
   }
 
@@ -167,26 +167,26 @@ const AvatarPlaceholder = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: ${theme.typography.sizes.xl};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
   font-weight: 700;
-  color: ${theme.colors.surface};
+  color: ${({ theme }) => theme.colors.surface};
 `;
 
 const UserName = styled.h3`
-  font-size: ${theme.typography.sizes.lg};
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
   font-weight: 600;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0;
 `;
 
 const LoadingText = styled.p`
-  font-size: ${theme.typography.sizes.lg};
-  color: ${theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const ErrorText = styled.p`
-  font-size: ${theme.typography.sizes.lg};
-  color: ${theme.colors.danger};
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  color: ${({ theme }) => theme.colors.danger};
   text-align: center;
   max-width: 500px;
 `;

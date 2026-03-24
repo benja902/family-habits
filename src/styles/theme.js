@@ -1,21 +1,10 @@
 /**
  * Sistema de diseño del Panel Familiar de Hábitos y Recompensas.
- * Importar siempre con { theme } en los Styled Components.
+ * Usa ThemeProvider de styled-components para acceder al tema.
  */
 
-export const theme = {
-  colors: {
-    primary: '#6366F1',
-    success: '#22C55E',
-    warning: '#F59E0B',
-    danger: '#EF4444',
-    info: '#3B82F6',
-    background: '#F8FAFC',
-    surface: '#FFFFFF',
-    textPrimary: '#1E293B',
-    textSecondary: '#64748B',
-    border: '#E2E8F0',
-  },
+// Propiedades compartidas entre temas
+const sharedTheme = {
   HABIT_COLORS: {
     sleep:        '#6366F1',
     movement:     '#22C55E',
@@ -54,7 +43,6 @@ export const theme = {
     silver: '#94A3B8',
     bronze: '#B45309',
   },
-  // Agrega esto al final del theme, antes del cierre };
   sizes: {
     bottomNavHeight: '80px',
     appHeaderHeight: '56px',
@@ -63,7 +51,43 @@ export const theme = {
     progressRingSmall: '72px',
     containerMax: '480px',
   },
-
 };
+
+// Tema claro (default)
+export const lightTheme = {
+  ...sharedTheme,
+  colors: {
+    primary: '#6366F1',
+    success: '#22C55E',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    info: '#3B82F6',
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    textPrimary: '#1E293B',
+    textSecondary: '#64748B',
+    border: '#E2E8F0',
+  },
+};
+
+// Tema oscuro
+export const darkTheme = {
+  ...sharedTheme,
+  colors: {
+    primary: '#6366F1',
+    success: '#22C55E',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    info: '#3B82F6',
+    background: '#0F172A',
+    surface: '#1E293B',
+    textPrimary: '#F1F5F9',
+    textSecondary: '#94A3B8',
+    border: '#334155',
+  },
+};
+
+// Mantener export de theme para compatibilidad durante migración
+export const theme = lightTheme;
 
 export default theme;

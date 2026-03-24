@@ -121,27 +121,27 @@ const Hero = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: ${theme.spacing.xl};
-  gap: ${theme.spacing.md};
+  padding-top: ${({ theme }) => theme.spacing.xl};
+  gap: ${({ theme }) => theme.spacing.md};
   text-align: center;
 `;
 
 const PointsText = styled.h2`
-  font-size: ${theme.typography.sizes.xl};
-  font-weight: ${theme.typography.weights.bold};
-  color: ${theme.colors.textPrimary};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0;
 `;
 
 const MotivationalText = styled.p`
-  font-size: ${theme.typography.sizes.md};
-  color: ${theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0;
 `;
 
 const ProgressText = styled.p`
   font-size: 14px;
-  color: ${theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0;
 `;
 
@@ -151,9 +151,9 @@ const HabitsSection = styled.section`
 
 const SectionTitle = styled.h3`
   font-size: 18px;
-  font-weight: ${theme.typography.weights.bold};
-  color: ${theme.colors.textPrimary};
-  margin: 0 0 ${theme.spacing.md};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0 0 ${({ theme }) => theme.spacing.md};
 `;
 
 const HabitsGrid = styled.div`

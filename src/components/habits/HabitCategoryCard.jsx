@@ -51,20 +51,20 @@ const HabitCategoryCard = ({ habitKey, isCompleted, onClick }) => {
 // Styled Components
 
 const Card = styled(motion.div)`
-  background: ${({ color, $isCompleted }) =>
+  background: ${({ color, $isCompleted, theme }) =>
     $isCompleted ? `${color}14` : theme.colors.surface}; /* 8% opacidad = 14 en hex */
-  border: ${({ color, $isCompleted }) =>
+  border: ${({ color, $isCompleted, theme }) =>
     $isCompleted
       ? `1.5px solid ${color}66` /* 40% opacidad = 66 en hex */
       : `1px solid ${theme.colors.border}`};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
   cursor: pointer;
   overflow: hidden;
   position: relative;
   transition: box-shadow 0.2s ease;
 
   &:hover {
-    box-shadow: ${theme.shadows.hover};
+    box-shadow: ${({ theme }) => theme.shadows.hover};
   }
 `;
 
@@ -74,11 +74,11 @@ const ColorBar = styled.div`
 `;
 
 const CardContent = styled.div`
-  padding: ${theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: ${theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 const IconWrapper = styled.div`
@@ -90,9 +90,9 @@ const IconWrapper = styled.div`
 `;
 
 const HabitName = styled.h4`
-  font-size: ${theme.typography.sizes.sm};
-  font-weight: ${theme.typography.weights.medium};
-  color: ${({ color, $isCompleted }) =>
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ color, $isCompleted, theme }) =>
     $isCompleted ? color : theme.colors.textPrimary};
   margin: 0;
   text-align: center;
@@ -100,9 +100,9 @@ const HabitName = styled.h4`
 
 const StatusText = styled.p`
   font-size: 12px;
-  font-weight: ${({ $isCompleted }) =>
+  font-weight: ${({ $isCompleted, theme }) =>
     $isCompleted ? theme.typography.weights.bold : theme.typography.weights.normal};
-  color: ${({ color, $isCompleted }) =>
+  color: ${({ color, $isCompleted, theme }) =>
     $isCompleted ? color : theme.colors.textSecondary};
   margin: 0;
 `;
@@ -111,7 +111,7 @@ const CheckIcon = styled.div`
   position: absolute;
   top: 8px;
   right: 8px;
-  color: ${theme.colors.success};
+  color: ${({ theme }) => theme.colors.success};
 `;
 
 export default HabitCategoryCard;

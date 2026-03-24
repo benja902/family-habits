@@ -11,13 +11,12 @@ import PageContainer from '../components/layout/PageContainer';
 import SleepModule from '../components/habits/SleepModule';
 import MovementModule from '../components/habits/MovementModule';
 import { HABIT_LABELS_FULL, HABIT_COLORS } from '../constants/habits.constants';
-import { theme } from '../styles/theme';
 
 // ==================== STYLED COMPONENTS ====================
 
 const Container = styled(motion.div)`
   min-height: 100vh;
-  background: ${theme.colors.background};
+  background: ${({ theme }) => theme.colors.background};
 `;
 
 const EmptyStateContainer = styled.div`
@@ -25,42 +24,42 @@ const EmptyStateContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: ${theme.spacing.xxl};
+  padding: ${({ theme }) => theme.spacing.xxl};
   text-align: center;
   min-height: 60vh;
-  gap: ${theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.lg};
 `;
 
 const EmptyStateIcon = styled.div`
   font-size: 64px;
-  margin-bottom: ${theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
 `;
 
 const EmptyStateTitle = styled.h2`
-  font-size: ${theme.typography.sizes.xl};
-  font-weight: ${theme.typography.weights.bold};
-  color: ${theme.colors.textPrimary};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0;
 `;
 
 const EmptyStateMessage = styled.p`
-  font-size: ${theme.typography.sizes.md};
-  color: ${theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0;
-  margin-bottom: ${theme.spacing.lg};
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
 `;
 
 const BackButton = styled(motion.button)`
-  background: ${theme.colors.primary};
+  background: ${({ theme }) => theme.colors.primary};
   color: white;
   border: none;
-  padding: ${theme.spacing.md} ${theme.spacing.xl};
-  border-radius: ${theme.borderRadius.md};
-  font-size: ${theme.typography.sizes.md};
-  font-weight: ${theme.typography.weights.medium};
-  font-family: ${theme.typography.fontFamily};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.xl};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  font-family: ${({ theme }) => theme.typography.fontFamily};
   cursor: pointer;
-  box-shadow: ${theme.shadows.card};
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 // ==================== COMPONENTE ====================

@@ -28,61 +28,61 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: ${theme.colors.background};
+  background: ${({ theme }) => theme.colors.background};
   padding-bottom: 120px;
 `;
 
 const Banner = styled(motion.div)`
-  background: ${theme.colors.success};
+  background: ${({ theme }) => theme.colors.success};
   color: white;
-  padding: ${theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
   text-align: center;
-  font-weight: ${theme.typography.weights.medium};
-  font-size: ${theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 const FormContent = styled.form`
-  padding: ${theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.lg};
 `;
 
 const SectionTitle = styled.h2`
-  font-size: ${theme.typography.sizes.lg};
-  font-weight: ${theme.typography.weights.bold};
-  color: ${theme.colors.textPrimary};
-  margin: ${theme.spacing.md} 0;
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: ${({ theme }) => theme.spacing.md} 0;
   display: flex;
   align-items: center;
-  gap: ${theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 const ToggleCard = styled.div`
-  background: ${(props) => props.$bgColor || theme.colors.surface};
-  border-radius: ${theme.borderRadius.md};
-  padding: ${theme.spacing.lg};
-  box-shadow: ${theme.shadows.card};
+  background: ${({ $bgColor, theme }) => $bgColor || theme.colors.surface};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  padding: ${({ theme }) => theme.spacing.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
 const ToggleRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
 const ToggleLabel = styled.label`
-  font-size: ${theme.typography.sizes.md};
-  font-weight: ${theme.typography.weights.medium};
-  color: ${theme.colors.textPrimary};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.textPrimary};
   flex: 1;
 `;
 
@@ -106,7 +106,7 @@ const Switch = styled.label`
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: ${theme.colors.border};
+    background-color: ${({ theme }) => theme.colors.border};
     transition: 0.3s;
     border-radius: 32px;
 
@@ -133,37 +133,37 @@ const Switch = styled.label`
 `;
 
 const Badge = styled.span`
-  background: ${(props) => props.$color || theme.colors.success};
+  background: ${({ $color, theme }) => $color || theme.colors.success};
   color: white;
-  padding: ${theme.spacing.xs} ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.sm};
-  font-size: ${theme.typography.sizes.sm};
-  font-weight: ${theme.typography.weights.bold};
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
   white-space: nowrap;
 `;
 
 const TimeInputWrapper = styled(motion.div)`
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.sm};
-  margin-top: ${theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin-top: ${({ theme }) => theme.spacing.sm};
 `;
 
 const TimeInputRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
 const TimeInput = styled.input`
   flex: 1;
-  padding: ${theme.spacing.md};
-  border: 2px solid ${theme.colors.border};
-  border-radius: ${theme.borderRadius.sm};
-  font-size: ${theme.typography.sizes.md};
-  font-family: ${theme.typography.fontFamily};
-  color: ${theme.colors.textPrimary};
-  background: ${theme.colors.surface};
+  padding: ${({ theme }) => theme.spacing.md};
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-family: ${({ theme }) => theme.typography.fontFamily};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface};
 
   &:focus {
     outline: none;
@@ -172,43 +172,43 @@ const TimeInput = styled.input`
 `;
 
 const Hint = styled.p`
-  font-size: ${theme.typography.sizes.sm};
-  color: ${theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.textSecondary};
   margin: 0;
   display: flex;
   align-items: center;
-  gap: ${theme.spacing.xs};
+  gap: ${({ theme }) => theme.spacing.xs};
 `;
 
 const Indicator = styled.span`
   display: flex;
   align-items: center;
-  gap: ${theme.spacing.xs};
-  font-size: ${theme.typography.sizes.sm};
-  font-weight: ${theme.typography.weights.medium};
-  color: ${(props) => props.$color || theme.colors.success};
+  gap: ${({ theme }) => theme.spacing.xs};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ $color, theme }) => $color || theme.colors.success};
 `;
 
 const FieldWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 const Label = styled.label`
-  font-size: ${theme.typography.sizes.md};
-  font-weight: ${theme.typography.weights.medium};
-  color: ${theme.colors.textPrimary};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const Textarea = styled.textarea`
-  padding: ${theme.spacing.md};
-  border: 2px solid ${theme.colors.border};
-  border-radius: ${theme.borderRadius.sm};
-  font-size: ${theme.typography.sizes.md};
-  font-family: ${theme.typography.fontFamily};
-  color: ${theme.colors.textPrimary};
-  background: ${theme.colors.surface};
+  padding: ${({ theme }) => theme.spacing.md};
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-family: ${({ theme }) => theme.typography.fontFamily};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface};
   resize: none;
   min-height: 80px;
 
@@ -218,58 +218,58 @@ const Textarea = styled.textarea`
   }
 
   &::placeholder {
-    color: ${theme.colors.textSecondary};
+    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
 const PointsSummary = styled.div`
   position: sticky;
   bottom: 72px;
-  background: ${theme.colors.surface};
+  background: ${({ theme }) => theme.colors.surface};
   border: 2px solid ${MODULE_COLOR};
-  border-radius: ${theme.borderRadius.md};
-  padding: ${theme.spacing.lg};
-  box-shadow: ${theme.shadows.hover};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  padding: ${({ theme }) => theme.spacing.lg};
+  box-shadow: ${({ theme }) => theme.shadows.hover};
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.sm};
-  margin: ${theme.spacing.lg} 0;
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin: ${({ theme }) => theme.spacing.lg} 0;
 `;
 
 const PointsRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: ${theme.typography.sizes.sm};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
 `;
 
 const PointsLabel = styled.span`
-  color: ${theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const PointsValue = styled.span`
-  font-weight: ${theme.typography.weights.bold};
-  color: ${(props) => props.$color || theme.colors.textPrimary};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
 `;
 
 const TotalRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: ${theme.spacing.sm};
-  border-top: 2px solid ${theme.colors.border};
-  margin-top: ${theme.spacing.xs};
+  padding-top: ${({ theme }) => theme.spacing.sm};
+  border-top: 2px solid ${({ theme }) => theme.colors.border};
+  margin-top: ${({ theme }) => theme.spacing.xs};
 `;
 
 const TotalLabel = styled.span`
-  font-size: ${theme.typography.sizes.lg};
-  font-weight: ${theme.typography.weights.bold};
-  color: ${theme.colors.textPrimary};
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const TotalValue = styled.span`
-  font-size: ${theme.typography.sizes.xl};
-  font-weight: ${theme.typography.weights.black};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
+  font-weight: ${({ theme }) => theme.typography.weights.black};
   color: ${MODULE_COLOR};
 `;
 
@@ -282,14 +282,14 @@ const SaveButton = styled(motion.button)`
   background: ${MODULE_COLOR};
   color: white;
   border: none;
-  font-size: ${theme.typography.sizes.lg};
-  font-weight: ${theme.typography.weights.bold};
-  font-family: ${theme.typography.fontFamily};
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  font-family: ${({ theme }) => theme.typography.fontFamily};
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
   z-index: 100;
 

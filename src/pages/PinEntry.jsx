@@ -10,7 +10,6 @@ import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
 import { validatePin } from '../services/supabase';
 import { useAuthStore } from '../stores/useAuthStore';
-import { theme } from '../styles/theme';
 
 // Función auxiliar para obtener las iniciales del nombre
 const getInitials = (name) => {
@@ -160,38 +159,38 @@ const shakeAnimation = keyframes`
 
 const Container = styled.div`
   min-height: 100vh;
-  background: ${theme.colors.background};
+  background: ${({ theme }) => theme.colors.background};
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: ${theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
   position: relative;
 `;
 
 const BackButton = styled.button`
   position: absolute;
-  top: ${theme.spacing.lg};
-  left: ${theme.spacing.lg};
+  top: ${({ theme }) => theme.spacing.lg};
+  left: ${({ theme }) => theme.spacing.lg};
   background: transparent;
   border: none;
-  font-size: ${theme.typography.sizes.md};
-  color: ${theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  padding: ${theme.spacing.sm} 12px;
-  border-radius: ${theme.borderRadius.sm};
+  padding: ${({ theme }) => theme.spacing.sm} 12px;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
   transition: all 0.2s ease;
 
   &:hover {
-    background: ${theme.colors.surface};
-    color: ${theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.surface};
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
 const Card = styled.div`
-  background: ${theme.colors.surface};
-  border-radius: ${theme.borderRadius.xl};
-  box-shadow: ${theme.shadows.card};
-  padding: ${theme.spacing.xxl} ${theme.spacing.xl};
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: ${({ theme }) => theme.spacing.xxl} ${({ theme }) => theme.spacing.xl};
   max-width: 360px;
   width: 100%;
   display: flex;
@@ -203,8 +202,8 @@ const AvatarContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: ${theme.spacing.sm};
-  margin-bottom: ${theme.spacing.lg};
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
 `;
 
 const Avatar = styled.img`
@@ -218,32 +217,32 @@ const AvatarPlaceholder = styled.div`
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: ${theme.colors.primary};
+  background: ${({ theme }) => theme.colors.primary};
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: ${theme.typography.sizes.xl};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
   font-weight: 700;
-  color: ${theme.colors.surface};
+  color: ${({ theme }) => theme.colors.surface};
 `;
 
 const UserName = styled.h2`
-  font-size: ${theme.typography.sizes.xl};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
   font-weight: 600;
-  color: ${theme.colors.textPrimary};
-  margin: 0 0 ${theme.spacing.sm};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0 0 ${({ theme }) => theme.spacing.sm};
 `;
 
 const Title = styled.p`
-  font-size: ${theme.typography.sizes.md};
-  color: ${theme.colors.textSecondary};
-  margin: 0 0 ${theme.spacing.xl};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin: 0 0 ${({ theme }) => theme.spacing.xl};
 `;
 
 const PinDisplay = styled.div`
   display: flex;
-  gap: ${theme.spacing.md};
-  margin-bottom: ${theme.spacing.xl};
+  gap: ${({ theme }) => theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
   animation: ${({ $shake }) => ($shake ? shakeAnimation : 'none')} 0.5s ease;
 `;
 
@@ -251,17 +250,17 @@ const PinDot = styled.div`
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid ${({ $filled }) =>
+  border: 2px solid ${({ $filled, theme }) =>
     $filled ? theme.colors.primary : theme.colors.border};
-  background: ${({ $filled }) =>
+  background: ${({ $filled, theme }) =>
     $filled ? theme.colors.primary : 'transparent'};
   transition: all 0.2s ease;
 `;
 
 const ErrorMessage = styled.p`
-  font-size: ${theme.typography.sizes.sm};
-  color: ${theme.colors.danger};
-  margin: 0 0 ${theme.spacing.lg};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.danger};
+  margin: 0 0 ${({ theme }) => theme.spacing.lg};
   text-align: center;
 `;
 
@@ -282,11 +281,11 @@ const KeyButton = styled(motion.button)`
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: ${theme.colors.surface};
-  border: 2px solid ${theme.colors.border};
-  font-size: ${theme.typography.sizes.xl};
+  background: ${({ theme }) => theme.colors.surface};
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
   font-weight: 600;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -294,9 +293,9 @@ const KeyButton = styled(motion.button)`
   align-items: center;
 
   &:hover:not(:disabled) {
-    background: ${theme.colors.primary}15;
-    border-color: ${theme.colors.primary};
-    color: ${theme.colors.primary};
+    background: ${({ theme }) => theme.colors.primary}15;
+    border-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.primary};
   }
 
   &:disabled {

@@ -12,7 +12,6 @@ import {
   BsTrophyFill,
   BsGiftFill,
 } from 'react-icons/bs';
-import { theme } from '../../styles/theme';
 
 const TABS = [
   { id: 'dashboard', label: 'Hoy', path: '/dashboard', Icon: BsHouseFill },
@@ -60,8 +59,8 @@ const Nav = styled.nav`
   right: 0;
   height: 80px;
   z-index: 200;
-  background: ${theme.colors.surface};
-  border-top: 1px solid ${theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   flex-direction: row;
@@ -78,7 +77,7 @@ const TabButton = styled(motion.button)`
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  color: ${({ $active }) =>
+  color: ${({ $active, theme }) =>
     $active ? theme.colors.primary : theme.colors.textSecondary};
   transition: color 0.2s ease;
 `;

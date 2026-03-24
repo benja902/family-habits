@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { BsCupFill } from 'react-icons/bs'
 import useMovementModule from '../../hooks/useMovementModule'
 import { MIN_EXERCISE_MINUTES } from '../../constants/habits.constants'
-import { theme } from '../../styles/theme';
 
 
 
@@ -337,13 +336,13 @@ const LoadingContainer = styled.div`
   justify-content: center;
   padding: 48px 16px;
   gap: 16px;
-  color: ${theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textSecondary};
 `
 
 const LoadingSpinner = styled.div`
   width: 40px;
   height: 40px;
-  border: 3px solid ${theme.colors.border};
+  border: 3px solid ${({ theme }) => theme.colors.border};
   border-top-color: #22C55E;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -373,7 +372,7 @@ const Section = styled.div`
 const SectionTitle = styled.h2`
   font-size: 20px;
   font-weight: 700;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: 16px;
 `
 
@@ -392,7 +391,7 @@ const ToggleCard = styled.div`
 const ToggleLabel = styled.div`
   font-size: 16px;
   font-weight: 600;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -446,7 +445,7 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: 8px;
 `
 
@@ -488,7 +487,7 @@ const Input = styled.input`
   border-radius: 8px;
   text-align: center;
   font-weight: 600;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
 
   &:focus {
     outline: none;
@@ -498,7 +497,7 @@ const Input = styled.input`
 
 const Hint = styled.p`
   font-size: 12px;
-  color: ${theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 4px;
   text-align: center;
 `
@@ -535,7 +534,7 @@ const Textarea = styled.textarea`
   border-radius: 8px;
   resize: none;
   font-family: inherit;
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
 
   &:focus {
     outline: none;
@@ -543,7 +542,7 @@ const Textarea = styled.textarea`
   }
 
   &::placeholder {
-    color: ${theme.colors.textSecondary};
+    color: ${({ theme }) => theme.colors.textSecondary};
   }
 `
 
@@ -580,7 +579,7 @@ const Summary = styled.div`
 const SummaryTitle = styled.h3`
   font-size: 14px;
   font-weight: 700;
-  color: ${theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textSecondary};
   margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -596,7 +595,7 @@ const SummaryRow = styled.div`
 const SummaryLabel = styled.span`
   font-size: ${({ $isTotal }) => ($isTotal ? '16px' : '14px')};
   font-weight: ${({ $isTotal }) => ($isTotal ? '700' : '500')};
-  color: ${theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.textPrimary};
 `
 
 const SummaryValue = styled.span`

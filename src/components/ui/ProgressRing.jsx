@@ -19,7 +19,6 @@ const ProgressRing = ({ size = 130, progress = 0, color = '#6366F1', strokeWidth
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E2E8F0"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -75,6 +74,7 @@ const Svg = styled.svg`
 `;
 
 const Circle = styled.circle`
+  stroke: ${({ theme }) => theme.colors.border};
   transition: stroke 0.3s ease;
 `;
 
@@ -86,7 +86,7 @@ const ProgressText = styled.div`
   position: absolute;
   font-size: 24px;
   font-weight: 700;
-  color: #1E293B;
+  color: ${({ theme }) => theme.colors.textPrimary};
   text-align: center;
   line-height: 1;
 `;

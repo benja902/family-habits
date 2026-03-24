@@ -5,7 +5,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
-import { applyPunctuality } from '../utils/points.utils';
+import { applyPunctuality, calculateProportional } from '../utils/points.utils';
 
 // ==================== USUARIOS ====================
 
@@ -563,3 +563,131 @@ export async function updateCompletionPct(userId, date, completedCount) {
     throw error;
   }
 }
+
+// ==================== MOVIMIENTO Y SALUD FÍSICA ====================
+
+/**
+ * Retorna el registro de movimiento del usuario para una fecha específica
+ */
+export async function getMovementRecord(userId, date) {
+  try {
+    const { data, error } = await supabase
+      .from('movement_records')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', date)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener registro de movimiento:', error);
+    throw error;
+  }
+}
+
+/**
+ * Inserta o actualiza el registro de movimiento del usuario
+ */
+export async function upsertMovementRecord(userId, date, data) {
+  try {
+    const { data: result, error } = await supabase
+      .from('movement_records')
+      .upsert(
+        {
+          user_id: userId,
+          date: date,
+          ...data,
+        },
+        { onConflict: 'user_id,date' }
+      )
+      .select()
+      .single();
+
+    if (error) throw error;
+    return result;
+  } catch (error) {
+    console.error('Error al actualizar registro de movimiento:', error);
+    throw error;
+  }
+}
+
+/**
+ * Calcula los puntos del módulo de movimiento y guarda el registro
+ * Retorna { pointsEarned: number }
+ */
+export async function calculateAndSaveMovementPoints(userId, date, formData) {
+  try {
+    // REGLA 4: Borrar transacciones anteriores de 'movement' para evitar duplicados
+    await deletePointTransactionsByCategory(userId, date, 'movement');
+
+    let totalPoints = 0;
+
+    // 1. Ejercicio
+    if (formData.did_exercise && formData.exercise_minutes >= 20) {
+      // Ejercicio completo (>= 20 minutos)
+      totalPoints += 100;
+      await addPointTransaction(
+        userId,
+        date,
+        100,
+        'Ejercicio completado',
+        'movement',
+        'exercise_completed'
+      );
+    } else if (formData.did_exercise && formData.exercise_minutes > 0 && formData.exercise_minutes < 20) {
+      // Ejercicio parcial (< 20 minutos)
+      const points = calculateProportional(formData.exercise_minutes, 20, 100);
+      totalPoints += points;
+      await addPointTransaction(
+        userId,
+        date,
+        points,
+        'Ejercicio parcial',
+        'movement',
+        'exercise_completed'
+      );
+    }
+
+    // 2. Agua
+    if (formData.water_glasses > 0) {
+      const points = calculateProportional(formData.water_glasses, 8, 100);
+      totalPoints += points;
+      await addPointTransaction(
+        userId,
+        date,
+        points,
+        'Hidratación del día',
+        'movement',
+        'water_glasses'
+      );
+    }
+
+    // 3. Caminata después del almuerzo
+    if (formData.walk_after_lunch) {
+      totalPoints += 50;
+      await addPointTransaction(
+        userId,
+        date,
+        50,
+        'Caminata después del almuerzo',
+        'movement',
+        'walk_after_lunch'
+      );
+    }
+
+    // Guardar el registro con los puntos calculados
+    await upsertMovementRecord(userId, date, {
+      ...formData,
+      points_earned: totalPoints,
+    });
+
+    return {
+      pointsEarned: totalPoints,
+    };
+  } catch (error) {
+    console.error('Error al calcular y guardar puntos de movimiento:', error);
+    throw error;
+  }
+}
+

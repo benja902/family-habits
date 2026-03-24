@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import AppHeader from '../components/layout/AppHeader';
 import PageContainer from '../components/layout/PageContainer';
 import SleepModule from '../components/habits/SleepModule';
+import MovementModule from '../components/habits/MovementModule';
 import { HABIT_LABELS_FULL, HABIT_COLORS } from '../constants/habits.constants';
 import { theme } from '../styles/theme';
 
@@ -71,6 +72,7 @@ export default function HabitDetail() {
   // Mapa de módulos disponibles
   const HABIT_MODULES = {
     sleep: <SleepModule />,
+    movement: <MovementModule />,
     // Los demás se agregan en los siguientes prompts:
     // movement: <MovementModule />,
     // food: <FoodModule />,

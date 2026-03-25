@@ -8,6 +8,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../stores/useAuthStore';
 import UserLayout from '../components/layout/UserLayout';
+import Punishments from '../pages/Punishments'; // O la ruta correcta hacia tu carpeta pages
 
 // Lazy loading de páginas para mejor performance
 const Welcome = React.lazy(() => import('../pages/Welcome'));
@@ -170,7 +171,8 @@ export const AppRouter = () => {
               </PrivateRoute>
             }
           />
-
+          {/* 👇 AGREGA ESTA LÍNEA 👇 */}
+          <Route path="/punishments" element={<Punishments />} />
           {/* Rutas protegidas por rol admin */}
           <Route
             path="/admin/*"

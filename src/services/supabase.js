@@ -1098,36 +1098,42 @@ export const calculateAndSaveHouseholdPoints = async (userId, date, taskCompleti
 
 // ==================== POINTS SYSTEM (SISTEMA DE PUNTOS GLOBALES) ====================
 
+// ==================== POINTS SYSTEM ====================
+
 export const getUserPointsBalance = async (userId) => {
-  // 1. Sumar todos los puntos históricos ganados (desde daily_records)
+  // 1. Puntos ganados (daily_records)
   const { data: earnedData, error: earnedError } = await supabase
     .from('daily_records')
     .select('total_points')
     .eq('user_id', userId)
 
   if (earnedError) throw earnedError
-
   const totalEarned = earnedData.reduce((sum, record) => sum + (record.total_points || 0), 0)
 
-  // 2. Sumar todos los puntos gastados en premios (desde reward_redemptions)
-  // Nota: Asumimos que la tabla existe según el CLAUDE.md. Si aún no hay canjes, devolverá 0.
+  // 2. Puntos gastados en premios (reward_redemptions)
   const { data: spentData, error: spentError } = await supabase
     .from('reward_redemptions')
-    .select('rewards(points_required)')    
+    .select('rewards(points_required)')
     .eq('user_id', userId)
-    .in('status', ['pendiente', 'aprobado', 'entregado']) // Solo restamos si fue aprobado o entregado
+    .in('status', ['pendiente', 'aprobado', 'entregado'])
 
-  // Si la tabla no existe aún o hay un error, asumimos 0 gastados para no romper la app
   const totalSpent = spentError ? 0 : spentData.reduce((sum, record) => sum + (record.rewards?.points_required || 0), 0)
-  const currentBalance = totalEarned - totalSpent
 
-  return {
-    totalEarned,
-    totalSpent,
-    currentBalance
-  }
+  // 3. 👇 NUEVO: Puntos descontados por multas (punishments) 👇
+  const { data: punishmentData, error: punishmentError } = await supabase
+    .from('punishments')
+    .select('points_deducted')
+    .eq('user_id', userId)
+    .in('status', ['pendiente', 'cumplido']) // Ignoramos los cancelados por el admin
+
+  // Sumamos todas las multas
+  const totalPenalized = punishmentError ? 0 : punishmentData.reduce((sum, record) => sum + (record.points_deducted || 0), 0)
+
+  // 4. Calculamos el saldo final real
+  const currentBalance = totalEarned - totalSpent - totalPenalized
+
+  return { totalEarned, totalSpent, totalPenalized, currentBalance }
 }
-
 // ==================== RANKING GLOBAL (HISTÓRICO) ====================
 
 export const getHistoricalRanking = async () => {
@@ -1270,6 +1276,49 @@ export async function redeemReward(userId, rewardId, pointsCost, type) {
     return data;
   } catch (error) {
     console.error('Error al registrar el canje del premio:', error);
+    throw error;
+  }
+}
+
+
+// ==================== CASTIGOS (PUNISHMENTS) ====================
+
+export async function getUserPunishments(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('punishments')
+      .select(`
+        *,
+        assigned_by_user:users!punishments_assigned_by_fkey(name)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener los castigos:', error);
+    throw error;
+  }
+}
+
+export async function markPunishmentCompleted(punishmentId) {
+  try {
+    const { data, error } = await supabase
+      .from('punishments')
+      .update({ 
+        status: 'cumplido',
+        completed_at: new Date().toISOString(), // Usamos tu campo
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', punishmentId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al actualizar el castigo:', error);
     throw error;
   }
 }

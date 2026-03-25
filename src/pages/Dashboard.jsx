@@ -21,6 +21,8 @@ import useDailyRecord from '../hooks/useDailyRecord';
 import useCompletedHabits from '../hooks/useCompletedHabits';
 import QuickChecklist from '../components/dashboard/QuickChecklist';
 import DayTimeline from '../components/dashboard/DayTimeline';
+import { BsExclamationTriangleFill } from 'react-icons/bs';
+import usePunishments from '../hooks/usePunishments';
 // Mensajes motivacionales por estado del día
 const MOTIVATIONAL_MESSAGES = {
   'sin iniciar': '¡Empieza tu día!',
@@ -37,6 +39,9 @@ const Dashboard = () => {
   const dayPoints = useDayStore((state) => state.dayPoints);
   const completionPct = useDayStore((state) => state.completionPct);
   const dayStatus = useDayStore((state) => state.dayStatus);
+  // Cargar datos de castigos para la alerta
+  const { punishments } = usePunishments();
+  const pendingPunishments = punishments?.filter(p => p.status === 'pendiente') || [];
 
   // Cargar datos del registro diario desde Supabase
   // Los puntos se sincronizan automáticamente con useDayStore
@@ -97,6 +102,19 @@ const Dashboard = () => {
           {completedCount} de 7 hábitos completados
         </ProgressText>
       </Hero>
+      {/* 👇 ALERTA DINÁMICA DE CASTIGOS 👇 */}
+      {pendingPunishments.length > 0 && (
+        <PunishmentAlert 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/punishments')}
+        >
+          <BsExclamationTriangleFill size={24} />
+          <div>
+            <AlertTitle>¡Atención, {currentUser?.name}!</AlertTitle>
+            <AlertText>Tienes {pendingPunishments.length} castigo(s) pendiente(s). Toca aquí para resolverlo.</AlertText>
+          </div>
+        </PunishmentAlert>
+      )}
 
       {/* Grid de hábitos */}
       <HabitsSection>
@@ -167,5 +185,33 @@ const HabitsGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 `;
+const PunishmentAlert = styled(motion.div)`
+  background: ${({ theme }) => `${theme.colors.danger}15`};
+  border: 1px solid ${({ theme }) => theme.colors.danger};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  padding: 16px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+`;
+
+const AlertTitle = styled.h4`
+  margin: 0 0 4px 0;
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: 15px;
+  font-weight: 800;
+`;
+
+const AlertText = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
+`;
 
 export default Dashboard;
+

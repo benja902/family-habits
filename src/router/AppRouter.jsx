@@ -195,11 +195,11 @@ export const AppRouter = () => {
             path="/admin"
             element={
               <AdminRoute>
-                <AdminLayout>
+                <UserLayout>
                   <PageTransition>
                     <AdminDashboard />
                   </PageTransition>
-                </AdminLayout>
+                </UserLayout>
               </AdminRoute>
             }
           />

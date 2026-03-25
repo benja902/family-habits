@@ -1,128 +1,144 @@
-import React from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
-import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { 
+  BsShieldFillExclamation, 
+  BsGiftFill, 
+  BsPeopleFill, 
+  BsStarFill,
+  BsBarChartFill 
+} from 'react-icons/bs'
+import { PageContainer } from '../../components/layout/PageContainer'
 import { AppHeader } from '../../components/layout/AppHeader'
-import useAdmin from '../../hooks/useAdmin'
-import { BsGiftFill, BsPeopleFill } from 'react-icons/bs'
+
+// Importamos tus componentes refactorizados
+import AdminRewards from './AdminRewards'
+import AdminPunishments from './AdminPunishments'
+
+// Placeholders temporales para las opciones que aún no programamos
+const AdminUsers = () => <PlaceholderText>Módulo de Usuarios en construcción...</PlaceholderText>
+const AdminPoints = () => <PlaceholderText>Editor de Puntos en construcción...</PlaceholderText>
+const AdminStats = () => <PlaceholderText>Módulo de Estadísticas en construcción...</PlaceholderText>
 
 export default function AdminDashboard() {
-  // Traemos los datos para mostrar un pequeño resumen
-  const { pendingRedemptions, familyMembers } = useAdmin()
+  const [activeTab, setActiveTab] = useState('rewards')
+  const navigate = useNavigate()
+
+  // Renderiza el contenido según lo que toques en la barra horizontal
+  const renderContent = () => {
+    switch(activeTab) {
+      case 'rewards': return <AdminRewards />
+      case 'punishments': return <AdminPunishments />
+      case 'users': return <AdminUsers />
+      case 'points': return <AdminPoints />
+      case 'stats': return <AdminStats />
+      default: return <AdminRewards />
+    }
+  }
 
   return (
-    <Container>
-      <AppHeader title="Resumen General" />
-      
+    <PageContainer>
+      {/* 1. Tu Header original vuelve con el modo oscuro 
+        2. Le activamos la flecha para volver al Dashboard principal
+      */}
+      <AppHeader 
+        title="Panel de Control" 
+        showBack={true} 
+        onBack={() => navigate('/dashboard')} 
+      />
+
+      {/* Tu menú horizontal deslizable (Reemplaza a la hamburguesa) */}
+      <ScrollableNav>
+        <ToggleContainer>
+          <ToggleButton 
+            $isActive={activeTab === 'users'} 
+            onClick={() => setActiveTab('users')}
+          >
+            <BsPeopleFill style={{ marginRight: 6 }} /> Usuarios
+          </ToggleButton>
+          <ToggleButton 
+            $isActive={activeTab === 'points'} 
+            onClick={() => setActiveTab('points')}
+          >
+            <BsStarFill style={{ marginRight: 6 }} /> Reglas
+          </ToggleButton>
+          <ToggleButton 
+            $isActive={activeTab === 'rewards'} 
+            onClick={() => setActiveTab('rewards')}
+          >
+            <BsGiftFill style={{ marginRight: 6 }} /> Premios
+          </ToggleButton>
+          <ToggleButton 
+            $isActive={activeTab === 'punishments'} 
+            onClick={() => setActiveTab('punishments')}
+          >
+            <BsShieldFillExclamation style={{ marginRight: 6 }} /> Castigos
+          </ToggleButton>
+          <ToggleButton 
+            $isActive={activeTab === 'stats'} 
+            onClick={() => setActiveTab('stats')}
+          >
+            <BsBarChartFill style={{ marginRight: 6 }} /> Estadísticas
+          </ToggleButton>
+        </ToggleContainer>
+      </ScrollableNav>
+
       <ContentSection>
-        <WelcomeCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Title>¡Hola, Admin!</Title>
-          <Text>Bienvenido a tu centro de mando. Desde el menú lateral puedes gestionar los premios, aplicar castigos y administrar las reglas del sistema.</Text>
-        </WelcomeCard>
-
-        <StatsGrid>
-          <StatBox
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-          >
-            <IconWrapper $color="#F59E0B">
-              <BsGiftFill size={24} />
-            </IconWrapper>
-            <StatInfo>
-              <StatNumber>{pendingRedemptions.length}</StatNumber>
-              <StatLabel>Premios Pendientes</StatLabel>
-            </StatInfo>
-          </StatBox>
-
-          <StatBox
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <IconWrapper $color="#3B82F6">
-              <BsPeopleFill size={24} />
-            </IconWrapper>
-            <StatInfo>
-              <StatNumber>{familyMembers.length}</StatNumber>
-              <StatLabel>Usuarios Activos</StatLabel>
-            </StatInfo>
-          </StatBox>
-        </StatsGrid>
+        {renderContent()}
       </ContentSection>
-    </Container>
+    </PageContainer>
   )
 }
 
-// ==================== STYLED COMPONENTS ====================
-const Container = styled.div`
-  max-width: 800px;
-  margin: 0 auto;
+// ==================== STYLED COMPONENTS DEL CASCARÓN ====================
+
+const ScrollableNav = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  /* Ocultar barra de scroll para que se vea limpio */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `
-const ContentSection = styled.div`
-  padding: 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+
+const ToggleContainer = styled.div`
+  display: inline-flex;
+  background: ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  padding: 4px;
+  margin: 16px;
+  min-width: max-content; /* Permite que crezca hacia la derecha */
 `
-const WelcomeCard = styled(motion.div)`
-  background: ${({ theme }) => theme.colors.primary};
-  border-radius: 24px;
-  padding: 32px 24px;
-  color: white;
-  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
-`
-const Title = styled.h2`
-  margin: 0 0 12px 0;
-  font-size: 24px;
-  font-weight: 900;
-`
-const Text = styled.p`
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
-  opacity: 0.9;
-`
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-`
-const StatBox = styled(motion.div)`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-`
-const IconWrapper = styled.div`
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: ${({ $color }) => `${$color}15`};
-  color: ${({ $color }) => $color};
+
+const ToggleButton = styled.button`
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  white-space: nowrap; /* Evita que el texto se rompa */
+  background: ${({ $isActive, theme }) => ($isActive ? theme.colors.surface : 'transparent')};
+  color: ${({ $isActive, theme }) => ($isActive ? theme.colors.textPrimary : theme.colors.textSecondary)};
+  box-shadow: ${({ $isActive, theme }) => ($isActive ? theme.shadows.card : 'none')};
+  transition: all 0.2s ease;
 `
-const StatInfo = styled.div`
-  display: flex;
-  flex-direction: column;
+
+const ContentSection = styled.div`
+  padding: 0 16px 100px 16px;
 `
-const StatNumber = styled.span`
-  font-size: 24px;
-  font-weight: 900;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  line-height: 1;
-  margin-bottom: 4px;
-`
-const StatLabel = styled.span`
-  font-size: 13px;
-  font-weight: 700;
+
+const PlaceholderText = styled.div`
+  padding: 40px 20px;
+  text-align: center;
   color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 16px;
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  margin-top: 16px;
 `

@@ -2,81 +2,75 @@ import React from 'react'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
 import { BsCheckLg, BsXLg, BsPersonFill } from 'react-icons/bs'
-import { AppHeader } from '../../components/layout/AppHeader'
 import useAdmin from '../../hooks/useAdmin'
 import { formatDateES } from '../../utils/dates.utils'
 
 export default function AdminRewards() {
-  const { 
-    pendingRedemptions, 
-    isLoadingRedemptions, 
-    resolveRedemption, 
-    isResolvingRedemption 
-  } = useAdmin()
+  const { pendingRedemptions, isLoadingRedemptions, resolveRedemption, isResolvingRedemption } = useAdmin()
 
   return (
-    <Container>
-      <AppHeader title="Aprobar Premios" />
-      <ContentSection>
-        {isLoadingRedemptions ? (
-          <EmptyText>Buscando solicitudes...</EmptyText>
-        ) : pendingRedemptions.length === 0 ? (
-          <EmptyText>No hay premios pendientes de aprobación. ¡Todo al día!</EmptyText>
-        ) : (
-          pendingRedemptions.map((redemption) => (
-            <RequestCard
-              key={redemption.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <RequestInfo>
-                <UserRow>
-                  <Avatar>
-                    {redemption.users?.avatar_url ? (
-                      <img src={redemption.users.avatar_url} alt="avatar" />
-                    ) : (
-                      <BsPersonFill />
-                    )}
-                  </Avatar>
-                  <UserName>{redemption.users?.name}</UserName>
-                  <DateText>{formatDateES(redemption.created_at.split('T')[0])}</DateText>
-                </UserRow>
-                <RewardName>{redemption.rewards?.name}</RewardName>
-                <RewardCost>-{redemption.rewards?.points_required || redemption.points_cost} pts</RewardCost>
-              </RequestInfo>
-              
-              <ActionButtons>
-                <RejectButton
-                  onClick={() => resolveRedemption({ id: redemption.id, newStatus: 'rechazado' })}
-                  disabled={isResolvingRedemption}
-                >
-                  <BsXLg /> Rechazar
-                </RejectButton>
-                <ApproveButton
-                  onClick={() => resolveRedemption({ id: redemption.id, newStatus: 'aprobado' })}
-                  disabled={isResolvingRedemption}
-                >
-                  <BsCheckLg /> Aprobar
-                </ApproveButton>
-              </ActionButtons>
-            </RequestCard>
-          ))
-        )}
-      </ContentSection>
-    </Container>
+    <Section>
+      <SectionTitle>Solicitudes de Dinero</SectionTitle>
+      
+      {isLoadingRedemptions ? (
+        <EmptyText>Buscando solicitudes...</EmptyText>
+      ) : pendingRedemptions.length === 0 ? (
+        <EmptyText>No hay premios pendientes de aprobación. ¡Todo al día!</EmptyText>
+      ) : (
+        pendingRedemptions.map((redemption) => (
+          <RequestCard 
+            key={redemption.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <RequestInfo>
+              <UserRow>
+                <Avatar>
+                  {redemption.users?.avatar_url ? (
+                    <img src={redemption.users.avatar_url} alt="avatar" />
+                  ) : (
+                    <BsPersonFill />
+                  )}
+                </Avatar>
+                <UserName>{redemption.users?.name}</UserName>
+                <DateText>{formatDateES(redemption.created_at.split('T')[0])}</DateText>
+              </UserRow>
+              <RewardName>{redemption.rewards?.name}</RewardName>
+              <RewardCost>-{redemption.points_cost} pts</RewardCost>
+            </RequestInfo>
+
+            <ActionButtons>
+              <RejectButton 
+                onClick={() => resolveRedemption({ id: redemption.id, newStatus: 'rechazado' })}
+                disabled={isResolvingRedemption}
+              >
+                <BsXLg /> Rechazar
+              </RejectButton>
+              <ApproveButton 
+                onClick={() => resolveRedemption({ id: redemption.id, newStatus: 'aprobado' })}
+                disabled={isResolvingRedemption}
+              >
+                <BsCheckLg /> Aprobar
+              </ApproveButton>
+            </ActionButtons>
+          </RequestCard>
+        ))
+      )}
+    </Section>
   )
 }
 
-// ==================== STYLED COMPONENTS ====================
-const Container = styled.div`
-  max-width: 600px;
-  margin: 0 auto;
-`
-const ContentSection = styled.div`
-  padding: 16px 0;
+// ==================== STYLED COMPONENTS DE PREMIOS ====================
+const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+`
+const SectionTitle = styled.h3`
+  font-size: 18px;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 8px 0;
 `
 const EmptyText = styled.p`
   text-align: center;
@@ -158,7 +152,7 @@ const BaseButton = styled.button`
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  opacity: ${({ disabled }) => (disabled ? 0.6 : 1)};
+  opacity: ${({ disabled }) => disabled ? 0.6 : 1};
 `
 const RejectButton = styled(BaseButton)`
   background: ${({ theme }) => `${theme.colors.danger}15`};

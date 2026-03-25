@@ -75,9 +75,7 @@ export default function HabitDetail() {
   const HABIT_MODULES = {
     sleep: <SleepModule />,
     movement: <MovementModule />,
-    // Los demás se agregan en los siguientes prompts:
-    // movement: <MovementModule />,
-    food: <FoodModule />,
+    food: <FoodModule />, // <-- ¡Le quitamos los // del principio!
     // study: <StudyModule />,
     // cleaning: <CleaningModule />,
     // coexistence: <CoexistenceModule />,

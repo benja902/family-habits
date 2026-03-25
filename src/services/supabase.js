@@ -1038,3 +1038,79 @@ export const calculateAndSaveCoexistencePoints = async (userId, date, formData) 
 
   return { pointsEarned: total, savedRecord }
 }
+// ==================== HOUSEHOLD MODULE (TAREAS DEL HOGAR) ====================
+
+export const getHouseholdData = async (userId, date) => {
+  // 1. Obtener el día de la semana (0 = Domingo, ..., 6 = Sábado)
+  // Usamos T12:00:00 para evitar saltos de día por la zona horaria
+  const dateObj = new Date(date + 'T12:00:00')
+  const dayOfWeek = dateObj.getDay()
+
+  // 2. Buscar tareas asignadas a este usuario para este día
+  const { data: assignments, error: asgError } = await supabase
+    .from('household_task_assignments')
+    .select(`
+      task_id,
+      household_tasks ( name, description, estimated_minutes )
+    `)
+    .eq('user_id', userId)
+    .eq('day_of_week', dayOfWeek)
+    .eq('is_active', true)
+
+  if (asgError) throw asgError
+
+  // 3. Buscar si ya completó alguna hoy
+  const { data: completions, error: compError } = await supabase
+    .from('household_task_completions')
+    .select('task_id, completed, points_earned')
+    .eq('user_id', userId)
+    .eq('date', date)
+
+  if (compError) throw compError
+
+  return { assignments: assignments || [], completions: completions || [] }
+}
+
+export const calculateAndSaveHouseholdPoints = async (userId, date, taskCompletionsData) => {
+  // taskCompletionsData es un objeto: { [task_id]: boolean }
+  await deletePointTransactionsByCategory(userId, date, 'household')
+
+  let totalPts = 0
+  const completionsToUpsert = []
+
+  for (const [taskId, isCompleted] of Object.entries(taskCompletionsData)) {
+    let pts = 0
+    if (isCompleted) {
+      pts = 80 // La regla dice 80 fijos por tarea completada
+      totalPts += 80
+      await addPointTransaction(
+        userId, 
+        date, 
+        80, 
+        'Completó tarea asignada del hogar', 
+        'household', 
+        'task_completed'
+      )
+    }
+
+    completionsToUpsert.push({
+      user_id: userId,
+      task_id: taskId,
+      date: date,
+      completed: isCompleted,
+      completed_at: isCompleted ? new Date().toISOString() : null,
+      points_earned: pts
+    })
+  }
+
+  // Guardar todas las tareas en la base de datos (si tiene asignaciones)
+  if (completionsToUpsert.length > 0) {
+    const { error } = await supabase
+      .from('household_task_completions')
+      .upsert(completionsToUpsert, { onConflict: 'user_id, task_id, date' })
+      
+    if (error) throw error
+  }
+
+  return { pointsEarned: totalPts }
+}

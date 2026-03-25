@@ -238,24 +238,26 @@ export default function FoodModule() {
                     </>
                   )}
 
-                  {/* Resumen de Puntos */}
-                  <PointsSummaryCard
-                    pointsSummary={[
-                      { label: 'A tiempo', points: points.ptsOnTime, color: MODULE_COLOR },
-                      { label: 'Variedad', points: points.ptsVariety, color: MODULE_COLOR },
-                      ...(isAlmuerzo ? [{ label: 'Ensalada', points: points.ptsSalad, color: '#22C55E' }] : []),
-                      ...(isAlmuerzo ? [{ label: 'Sin TV', points: points.ptsTv, color: '#22C55E' }] : []),
-                      { label: 'Calidad', points: points.ptsQuality, color: MODULE_COLOR },
-                      { label: 'Carbohidratos', points: points.ptsCarbs, color: '#EF4444' },
-                    ]}
-                    totalPoints={points.total}
-                    accentColor={MODULE_COLOR}
-                  />
-
                   <FooterSpacer />
                 </DetailsContainer>
               )}
             </AnimatePresence>
+
+            {/* Resumen de Puntos - FUERA del DetailsContainer para que sticky funcione */}
+            {formValues.did_eat && (
+              <PointsSummaryCard
+                pointsSummary={[
+                  { label: 'A tiempo', points: points.ptsOnTime, color: MODULE_COLOR },
+                  { label: 'Variedad', points: points.ptsVariety, color: MODULE_COLOR },
+                  ...(isAlmuerzo ? [{ label: 'Ensalada', points: points.ptsSalad, color: '#22C55E' }] : []),
+                  ...(isAlmuerzo ? [{ label: 'Sin TV', points: points.ptsTv, color: '#22C55E' }] : []),
+                  { label: 'Calidad', points: points.ptsQuality, color: MODULE_COLOR },
+                  { label: 'Carbohidratos', points: points.ptsCarbs, color: '#EF4444' },
+                ]}
+                totalPoints={points.total}
+                accentColor={MODULE_COLOR}
+              />
+            )}
           </Form>
         </motion.div>
       </AnimatePresence>

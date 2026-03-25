@@ -68,8 +68,8 @@ export default function useSleepModule() {
       // Invalidar las demás sin esperar
       queryClient.invalidateQueries({ queryKey: ['sleepRecord'] });
       queryClient.invalidateQueries({ queryKey: ['pointTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['ranking'] });
-      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'] });
+      queryClient.invalidateQueries({ queryKey: ['ranking'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' });
       navigate('/dashboard')        // ← al final
 
     },

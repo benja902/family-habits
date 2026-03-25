@@ -31,8 +31,8 @@ export default function useFoodModule() {
     queryClient.invalidateQueries({ queryKey: ['mealRecords'] })
     queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
     queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
-    queryClient.invalidateQueries({ queryKey: ['ranking'] })
-    queryClient.invalidateQueries({ queryKey: ['userPointsBalance'] })
+    queryClient.invalidateQueries({ queryKey: ['ranking'], refetchType: 'all' })
+    queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' })
     toast.success(`¡+${result.pointsEarned} pts! ${MEAL_LABELS[mealType]} registrado 🍽️`)
   }
 

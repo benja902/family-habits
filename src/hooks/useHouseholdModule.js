@@ -25,8 +25,8 @@ export default function useHouseholdModule() {
       queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
       queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
       queryClient.invalidateQueries({ queryKey: ['householdRecord'] })
-      queryClient.invalidateQueries({ queryKey: ['ranking'] })
-      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'] })
+      queryClient.invalidateQueries({ queryKey: ['ranking'], refetchType: 'all' })
+      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' })
 
       const pts = result?.pointsEarned ?? 0
       toast.success(`¡+${pts} pts! Tareas guardadas 🏠`)

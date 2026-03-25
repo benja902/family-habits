@@ -805,7 +805,7 @@ npm install -D vite-plugin-pwa
 10. ✅ `useCompletedHabits.js` + `HabitCategoryCard` con completado
 11. ✅ `SleepModule` — Descanso y dispositivos
 12. ✅ `MovementModule` — Movimiento y salud física
-13. ⬜ `FoodModule` — Alimentación
+13. ✅ `FoodModule` — Alimentación
 14. ⬜ `StudyModule` — Estudio y crecimiento
 15. ⬜ `CleaningModule` — Orden y limpieza
 16. ⬜ `CoexistenceModule` — Respeto y convivencia

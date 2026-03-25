@@ -691,3 +691,329 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
   }
 }
 
+// ==================== FOOD MODULE (ALIMENTACIÓN) ====================
+
+export const getFoodRecord = async (userId, date, mealType) => {
+  const { data, error } = await supabase
+    .from('meal_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .eq('meal_type', mealType)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export const upsertFoodRecord = async (userId, date, mealType, data) => {
+  const { data: result, error } = await supabase
+    .from('meal_records')
+    .upsert({
+      user_id: userId,
+      date: date,
+      meal_type: mealType,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id, date, meal_type'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export const calculateAndSaveFoodPoints = async (userId, date, mealType, formData) => {
+  // 1. Patrón borrar -> recalcular -> insertar (Regla 4)
+  // Usamos una categoría única por comida para no borrar los puntos de las otras comidas
+  const categoryKey = `food_${mealType}`
+  await deletePointTransactionsByCategory(userId, date, categoryKey)
+
+  let totalPoints = 0
+
+  // 2. Calcular e insertar puntos por acción
+  if (formData.is_healthy) {
+    const pts = 40
+    await addPointTransaction(userId, date, pts, `Comida saludable (${mealType})`, categoryKey)
+    totalPoints += pts
+  }
+
+  if (formData.fruit_portions > 0) {
+    const pts = formData.fruit_portions * 10
+    await addPointTransaction(userId, date, pts, `Frutas/Verduras (${formData.fruit_portions} porciones en ${mealType})`, categoryKey)
+    totalPoints += pts
+  }
+
+  if (formData.junk_food) {
+    const pts = -20
+    await addPointTransaction(userId, date, pts, `Comida chatarra/dulces (${mealType})`, categoryKey)
+    totalPoints += pts
+  }
+
+  if (formData.soda) {
+    const pts = -20
+    await addPointTransaction(userId, date, pts, `Bebidas azucaradas/Gaseosa (${mealType})`, categoryKey)
+    totalPoints += pts
+  }
+
+  // 3. Guardar el registro en meal_records con los puntos totales
+  await upsertFoodRecord(userId, date, mealType, {
+    is_healthy: formData.is_healthy,
+    fruit_portions: formData.fruit_portions,
+    junk_food: formData.junk_food,
+    soda: formData.soda,
+    notes: formData.notes,
+    points_earned: totalPoints
+  })
+
+  return totalPoints
+}
+// ==================== FOOD MODULE (ALIMENTACIÓN DETALLADA) ====================
+
+export const getMealRecords = async (userId, date) => {
+  const { data, error } = await supabase
+    .from('meal_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+
+  if (error) throw error
+
+  // Transformar el array en un objeto con la key siendo el meal_type
+  const recordsObj = {
+    desayuno: null,
+    merienda_manana: null,
+    almuerzo: null,
+    merienda_tarde: null,
+    cena: null,
+  }
+
+  if (data) {
+    data.forEach(record => {
+      recordsObj[record.meal_type] = record
+    })
+  }
+
+  return recordsObj
+}
+
+export const getMealRecord = async (userId, date, mealType) => {
+  const { data, error } = await supabase
+    .from('meal_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .eq('meal_type', mealType)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export const upsertMealRecord = async (userId, date, mealType, data) => {
+  const { data: result, error } = await supabase
+    .from('meal_records')
+    .upsert({
+      user_id: userId,
+      date: date,
+      meal_type: mealType,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id, date, meal_type'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export const calculateAndSaveMealPoints = async (userId, date, mealType, formData) => {
+  // PRIMERA LÍNEA OBLIGATORIA (Regla 4)
+  const categoryKey = `food_${mealType}`
+  await deletePointTransactionsByCategory(userId, date, categoryKey)
+
+  let totalPoints = 0
+
+  // 1. Comió a tiempo
+  if (formData.ate_on_time) {
+    await addPointTransaction(userId, date, 30, 'Comió a tiempo', categoryKey, 'meal_on_time')
+    totalPoints += 30
+  }
+
+  // 2. Ensalada (solo almuerzo)
+  if (mealType === 'almuerzo' && formData.had_salad) {
+    await addPointTransaction(userId, date, 30, 'Incluyó ensalada', categoryKey, 'had_salad')
+    totalPoints += 30
+  }
+
+  // 3. Variedad
+  if (formData.variety) {
+    await addPointTransaction(userId, date, 20, 'Buena variedad', categoryKey, 'good_variety')
+    totalPoints += 20
+  }
+
+  // 4. Sin TV (solo almuerzo)
+  if (mealType === 'almuerzo' && formData.watched_tv === false) {
+    await addPointTransaction(userId, date, 30, 'Sin TV en el almuerzo', categoryKey, 'no_tv_lunch')
+    totalPoints += 30
+  }
+
+  // 5. Carbohidratos (Penalización)
+  if (formData.carb_count >= 2) {
+    await addPointTransaction(userId, date, -25, 'Doble carbohidrato', categoryKey, 'extra_carbs')
+    totalPoints -= 25
+  }
+
+  // 6. Calidad
+  if (formData.quality) {
+    let qualityPts = 0
+    if (formData.quality === 'excelente') qualityPts = 20
+    if (formData.quality === 'buena') qualityPts = 0
+    if (formData.quality === 'regular') qualityPts = -10
+    if (formData.quality === 'mala') qualityPts = -20
+
+    if (qualityPts !== 0) {
+      await addPointTransaction(userId, date, qualityPts, `Calidad de comida: ${formData.quality}`, categoryKey)
+      totalPoints += qualityPts
+    }
+  }
+
+  // Asegurar que el total no sea negativo para la tabla general
+  totalPoints = Math.max(0, totalPoints)
+
+  // Guardar en base de datos
+  const savedRecord = await upsertMealRecord(userId, date, mealType, {
+    meal_time: formData.meal_time,
+    food_description: formData.food_description,
+    quality: formData.quality,
+    had_salad: formData.had_salad || false,
+    variety: formData.variety || false,
+    carb_count: formData.carb_count || 0,
+    watched_tv: formData.watched_tv || false,
+    ate_on_time: formData.ate_on_time || false,
+    points_earned: totalPoints
+  })
+
+  return { pointsEarned: totalPoints, savedRecord }
+}
+
+// ==================== STUDY MODULE (ESTUDIO Y CRECIMIENTO) ====================
+
+export const getStudyRecord = async (userId, date) => {
+  const { data, error } = await supabase
+    .from('study_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export const upsertStudyRecord = async (userId, date, data) => {
+  const { data: result, error } = await supabase
+    .from('study_records')
+    .upsert({
+      user_id: userId,
+      date: date,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id, date'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export const calculateAndSaveStudyPoints = async (userId, date, formData) => {
+  // 1. Patrón borrar -> recalcular -> insertar (Regla 4)
+  const categoryKey = 'study'
+  await deletePointTransactionsByCategory(userId, date, categoryKey)
+
+  let totalPoints = 0
+
+  // 2. Tiempo base (meta: 30 min = 100 pts proporcionales)
+  if (formData.study_minutes > 0) {
+    const basePts = Math.min(100, Math.round((formData.study_minutes / 30) * 100))
+    await addPointTransaction(userId, date, basePts, `Tiempo de estudio (${formData.study_minutes} min)`, categoryKey, 'study_time')
+    totalPoints += basePts
+  }
+
+  // 3. Estudio Activo (Simulacros, código, resúmenes)
+  if (formData.active_practice) {
+    const practicePts = 40
+    await addPointTransaction(userId, date, practicePts, 'Estudio activo (práctica/código)', categoryKey, 'active_practice')
+    totalPoints += practicePts
+  }
+
+  // 4. Enfoque total (Sin distracciones)
+  if (formData.distraction_free) {
+    const focusPts = 30
+    await addPointTransaction(userId, date, focusPts, 'Ambiente sin distracciones', categoryKey, 'distraction_free')
+    totalPoints += focusPts
+  }
+
+  // Guardar en la tabla study_records
+  const savedRecord = await upsertStudyRecord(userId, date, {
+    study_minutes: formData.study_minutes,
+    topic: formData.topic,
+    notes: formData.notes,
+    active_practice: formData.active_practice || false,
+    distraction_free: formData.distraction_free || false,
+    points_earned: totalPoints
+  })
+
+  return { pointsEarned: totalPoints, savedRecord }
+}
+
+/**
+ * Obtiene el ranking de usuarios basado en daily_records
+ * Siguiendo la Regla 3 de strings exactos para estados
+ */
+export const getRankingData = async (period = 'week') => {
+  // 1. Traemos los registros (sin limitarlos aquí para no perder datos de usuarios)
+  const { data, error } = await supabase
+    .from('daily_records')
+    .select(`
+      user_id,
+      total_points,
+      users (
+        name,
+        avatar_url 
+      )
+    `);
+
+  if (error) throw error;
+
+  // 2. Agrupamos y sumamos los puntos por usuario en JavaScript
+  const userStats = data.reduce((acc, record) => {
+    const id = record.user_id;
+    if (!acc[id]) {
+      acc[id] = {
+        id,
+        name: record.users?.name || 'Usuario',
+        photoUrl: record.users?.avatar_url || '',
+        points: 0
+      };
+    }
+    acc[id].points += record.total_points || 0;
+    return acc;
+  }, {});
+
+  // 3. Convertimos a array, ordenamos por total de puntos y asignamos posición
+  return Object.values(userStats)
+    .sort((a, b) => b.points - a.points)
+    .map((user, index) => ({
+      ...user,
+      position: index + 1
+    }))
+    .slice(0, 10); // Ahora sí limitamos al Top 10 real
+};

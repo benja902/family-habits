@@ -691,3 +691,133 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
   }
 }
 
+// ==================== FOOD MODULE (ALIMENTACIÓN DETALLADA) ====================
+
+export const getMealRecords = async (userId, date) => {
+  const { data, error } = await supabase
+    .from('meal_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+
+  if (error) throw error
+
+  // Transformar el array en un objeto con la key siendo el meal_type
+  const recordsObj = {
+    desayuno: null,
+    merienda_manana: null,
+    almuerzo: null,
+    merienda_tarde: null,
+    cena: null,
+  }
+
+  if (data) {
+    data.forEach(record => {
+      recordsObj[record.meal_type] = record
+    })
+  }
+
+  return recordsObj
+}
+
+export const getMealRecord = async (userId, date, mealType) => {
+  const { data, error } = await supabase
+    .from('meal_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .eq('meal_type', mealType)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export const upsertMealRecord = async (userId, date, mealType, data) => {
+  const { data: result, error } = await supabase
+    .from('meal_records')
+    .upsert({
+      user_id: userId,
+      date: date,
+      meal_type: mealType,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id, date, meal_type'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export const calculateAndSaveMealPoints = async (userId, date, mealType, formData) => {
+  // PRIMERA LÍNEA OBLIGATORIA (Regla 4)
+  const categoryKey = `food_${mealType}`
+  await deletePointTransactionsByCategory(userId, date, categoryKey)
+
+  let totalPoints = 0
+
+  // 1. Comió a tiempo
+  if (formData.ate_on_time) {
+    await addPointTransaction(userId, date, 30, 'Comió a tiempo', categoryKey, 'meal_on_time')
+    totalPoints += 30
+  }
+
+  // 2. Ensalada (solo almuerzo)
+  if (mealType === 'almuerzo' && formData.had_salad) {
+    await addPointTransaction(userId, date, 30, 'Incluyó ensalada', categoryKey, 'had_salad')
+    totalPoints += 30
+  }
+
+  // 3. Variedad
+  if (formData.variety) {
+    await addPointTransaction(userId, date, 20, 'Buena variedad', categoryKey, 'good_variety')
+    totalPoints += 20
+  }
+
+  // 4. Sin TV (solo almuerzo)
+  if (mealType === 'almuerzo' && formData.watched_tv === false) {
+    await addPointTransaction(userId, date, 30, 'Sin TV en el almuerzo', categoryKey, 'no_tv_lunch')
+    totalPoints += 30
+  }
+
+  // 5. Carbohidratos (Penalización)
+  if (formData.carb_count >= 2) {
+    await addPointTransaction(userId, date, -25, 'Doble carbohidrato', categoryKey, 'extra_carbs')
+    totalPoints -= 25
+  }
+
+  // 6. Calidad
+  if (formData.quality) {
+    let qualityPts = 0
+    if (formData.quality === 'excelente') qualityPts = 20
+    if (formData.quality === 'buena') qualityPts = 0
+    if (formData.quality === 'regular') qualityPts = -10
+    if (formData.quality === 'mala') qualityPts = -20
+
+    if (qualityPts !== 0) {
+      await addPointTransaction(userId, date, qualityPts, `Calidad de comida: ${formData.quality}`, categoryKey)
+      totalPoints += qualityPts
+    }
+  }
+
+  // Asegurar que el total no sea negativo para la tabla general
+  totalPoints = Math.max(0, totalPoints)
+
+  // Guardar en base de datos
+  const savedRecord = await upsertMealRecord(userId, date, mealType, {
+    meal_time: formData.meal_time,
+    food_description: formData.food_description,
+    quality: formData.quality,
+    had_salad: formData.had_salad || false,
+    variety: formData.variety || false,
+    carb_count: formData.carb_count || 0,
+    watched_tv: formData.watched_tv || false,
+    ate_on_time: formData.ate_on_time || false,
+    points_earned: totalPoints
+  })
+
+  return { pointsEarned: totalPoints, savedRecord }
+}

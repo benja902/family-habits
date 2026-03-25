@@ -10,7 +10,10 @@ import AppHeader from '../components/layout/AppHeader';
 import PageContainer from '../components/layout/PageContainer';
 import SleepModule from '../components/habits/SleepModule';
 import MovementModule from '../components/habits/MovementModule';
+// Agrega esta línea junto a los otros imports de módulos
+import FoodModule from '../components/habits/FoodModule'
 import { HABIT_LABELS_FULL, HABIT_COLORS } from '../constants/habits.constants';
+
 
 // ==================== STYLED COMPONENTS ====================
 
@@ -74,7 +77,7 @@ export default function HabitDetail() {
     movement: <MovementModule />,
     // Los demás se agregan en los siguientes prompts:
     // movement: <MovementModule />,
-    // food: <FoodModule />,
+    food: <FoodModule />,
     // study: <StudyModule />,
     // cleaning: <CleaningModule />,
     // coexistence: <CoexistenceModule />,

@@ -122,7 +122,9 @@ src/
 │   │   ├── HabitGrid.jsx
 │   │   ├── QuickChecklist.jsx
 │   │   ├── DayTimeline.jsx
-│   │   └── RankingPodium.jsx
+│   ├── ranking/                   <-- NUEVA CARPETA
+│   │   ├── RankingPodium.jsx      <-- NUEVO ARCHIVO
+│   │   └── RankingList.jsx        <-- NUEVO ARCHIVO  
 │   ├── habits/
 │   │   ├── HabitCategoryCard.jsx
 │   │   ├── SleepModule.jsx

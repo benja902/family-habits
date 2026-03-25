@@ -1173,3 +1173,57 @@ export const getHistoricalRanking = async () => {
 
   return ranking.sort((a, b) => b.totalEarned - a.totalEarned)
 }
+
+export const getDailyRanking = async (date) => {
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, name, avatar_url, role')
+
+  if (usersError) throw usersError
+
+  const { data: records, error: recordsError } = await supabase
+    .from('daily_records')
+    .select('user_id, total_points')
+    .eq('date', date)
+
+  if (recordsError) throw recordsError
+
+  const ranking = users.map(user => {
+    // Solo buscamos el registro de este usuario para hoy
+    const record = records.find(r => r.user_id === user.id)
+    return { ...user, totalEarned: record?.total_points || 0 }
+  })
+
+  return ranking.sort((a, b) => b.totalEarned - a.totalEarned)
+}
+
+export const getWeeklyRanking = async (startDate, endDate) => {
+  // 1. Obtenemos a todos los usuarios
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, name, avatar_url, role')
+
+  if (usersError) throw usersError
+
+  // 2. Obtenemos los registros de la semana (entre startDate y endDate)
+  const { data: records, error: recordsError } = await supabase
+    .from('daily_records')
+    .select('user_id, total_points')
+    .gte('date', startDate) // Greater than or equal (Desde el lunes)
+    .lte('date', endDate)   // Less than or equal (Hasta el domingo)
+
+  if (recordsError) throw recordsError
+
+  // 3. Sumamos los puntos de toda la semana por cada usuario
+  const ranking = users.map(user => {
+    // Filtramos todos los días de la semana para este usuario
+    const userRecords = records.filter(r => r.user_id === user.id)
+    // Sumamos el total
+    const totalEarned = userRecords.reduce((sum, r) => sum + (r.total_points || 0), 0)
+    
+    return { ...user, totalEarned }
+  })
+
+  // 4. Ordenamos de mayor a menor puntaje
+  return ranking.sort((a, b) => b.totalEarned - a.totalEarned)
+}

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
 import { BsTrophyFill } from 'react-icons/bs'
@@ -9,17 +9,9 @@ import useRanking from '../hooks/useRanking'
 import { useAuthStore } from '../stores/useAuthStore'
 
 export default function Ranking() {
-  const { ranking, isLoading } = useRanking()
+  const [mode, setMode] = useState('general') // Estado para el toggle Hoy/General
+  const { ranking, isLoading } = useRanking(mode)
   const { currentUser } = useAuthStore()
-
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <AppHeader title="Ranking Familiar" />
-        <LoadingText>Calculando posiciones...</LoadingText>
-      </PageContainer>
-    )
-  }
 
   // Separar Top 3 del resto
   const top3 = ranking.slice(0, 3)
@@ -39,94 +31,120 @@ export default function Ranking() {
     <PageContainer>
       <AppHeader title="Ranking Familiar" />
 
-      <PodiumSection>
-        <PodiumContainer>
-          {visualOrder.map((rankIndex) => {
-            const user = top3[rankIndex]
-            if (!user) return <PodiumSlot key={`empty-${rankIndex}`} />
+      {/* Interruptor para cambiar de ranking */}
+      <ToggleContainer>
+        <ToggleButton 
+          $isActive={mode === 'daily'} 
+          onClick={() => setMode('daily')}
+        >
+          Hoy
+        </ToggleButton>
+        {/* NUEVO BOTÓN: Semanal */}
+        <ToggleButton 
+          $isActive={mode === 'weekly'} 
+          onClick={() => setMode('weekly')}
+        >
+          Semanal
+        </ToggleButton>
+        <ToggleButton 
+          $isActive={mode === 'general'} 
+          onClick={() => setMode('general')}
+        >
+          General
+        </ToggleButton>
+      </ToggleContainer>
 
-            const isFirst = rankIndex === 0
-            const isMe = user.id === currentUser?.id
-            const config = PODIUM_CONFIG[rankIndex]
+      {isLoading ? (
+        <LoadingText>Calculando posiciones...</LoadingText>
+      ) : (
+        <>
+          <PodiumSection>
+            <PodiumContainer>
+              {visualOrder.map((rankIndex) => {
+                const user = top3[rankIndex]
+                if (!user) return <PodiumSlot key={`empty-${rankIndex}`} />
 
-            return (
-              <PodiumSlot key={user.id}>
-                <AvatarWrapper
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: config.delay }}
+                const isFirst = rankIndex === 0
+                const isMe = user.id === currentUser?.id
+                const config = PODIUM_CONFIG[rankIndex]
+
+                return (
+                  <PodiumSlot key={user.id}>
+                    <AvatarWrapper
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: config.delay }}
+                    >
+                      <CrownWrapper
+                        initial={{ scale: 0, y: 10 }}
+                        animate={{ scale: 1, y: 0 }}
+                        transition={{ delay: config.delay + 0.3, type: 'spring', bounce: 0.6 }}
+                        $color={config.crownColor}
+                        $isFirst={isFirst}
+                      >
+                        <FaCrown />
+                      </CrownWrapper>
+
+                      <AvatarContainer $isFirst={isFirst} $isMe={isMe} $borderColor={config.color}>
+                        {user.avatar_url ? (
+                          <AvatarImage src={user.avatar_url} alt={user.name} />
+                        ) : (
+                          <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                        )}
+                      </AvatarContainer>
+
+                      <Name>{user.name}</Name>
+                      <Points>{user.totalEarned.toLocaleString()} pts</Points>
+                    </AvatarWrapper>
+
+                    <PodiumBar
+                      $height={config.height}
+                      $color={config.color}
+                      initial={{ height: 0 }}
+                      animate={{ height: config.height }}
+                      transition={{ type: 'spring', stiffness: 60, damping: 12, delay: 0.1 }}
+                    >
+                      <PositionLabel $isFirst={isFirst}>
+                        {rankIndex + 1}
+                      </PositionLabel>
+                    </PodiumBar>
+                  </PodiumSlot>
+                )
+              })}
+            </PodiumContainer>
+          </PodiumSection>
+
+          <ListSection>
+            {restOfFamily.map((user, index) => {
+              const position = index + 4
+              const isMe = user.id === currentUser?.id
+
+              return (
+                <ListItem 
+                  key={user.id} 
+                  $isMe={isMe}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
                 >
-                  <CrownWrapper
-                    initial={{ scale: 0, y: 10 }}
-                    animate={{ scale: 1, y: 0 }}
-                    transition={{ delay: config.delay + 0.3, type: 'spring', bounce: 0.6 }}
-                    $color={config.crownColor}
-                    $isFirst={isFirst}
-                  >
-                    <FaCrown />
-                  </CrownWrapper>
-
-                  {/* 👇 ACTUALIZADO: AHORA MUESTRA FOTO 👇 */}
-                  <AvatarContainer $isFirst={isFirst} $isMe={isMe} $borderColor={config.color}>
+                  <PositionCircle>{position}</PositionCircle>
+                  
+                  <ListAvatarContainer $isMe={isMe}>
                     {user.avatar_url ? (
                       <AvatarImage src={user.avatar_url} alt={user.name} />
                     ) : (
-                      // Fallback si no hay foto
-                      <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                      user.name.charAt(0).toUpperCase()
                     )}
-                  </AvatarContainer>
+                  </ListAvatarContainer>
 
-                  <Name>{user.name}</Name>
-                  <Points>{user.totalEarned.toLocaleString()} pts</Points>
-                </AvatarWrapper>
-
-                <PodiumBar
-                  $height={config.height}
-                  $color={config.color}
-                  initial={{ height: 0 }}
-                  animate={{ height: config.height }}
-                  transition={{ type: 'spring', stiffness: 60, damping: 12, delay: 0.1 }}
-                >
-                  <PositionLabel $isFirst={isFirst}>
-                    {rankIndex + 1}
-                  </PositionLabel>
-                </PodiumBar>
-              </PodiumSlot>
-            )
-          })}
-        </PodiumContainer>
-      </PodiumSection>
-
-      <ListSection>
-        {restOfFamily.map((user, index) => {
-          const position = index + 4
-          const isMe = user.id === currentUser?.id
-
-          return (
-            <ListItem 
-              key={user.id} 
-              $isMe={isMe}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 + index * 0.1 }}
-            >
-              <PositionCircle>{position}</PositionCircle>
-              
-              {/* 👇 ACTUALIZADO: AHORA MUESTRA FOTO EN LA LISTA 👇 */}
-              <ListAvatarContainer $isMe={isMe}>
-                {user.avatar_url ? (
-                  <AvatarImage src={user.avatar_url} alt={user.name} />
-                ) : (
-                  user.name.charAt(0).toUpperCase()
-                )}
-              </ListAvatarContainer>
-
-              <ListName $isMe={isMe}>{user.name}</ListName>
-              <ListPoints>{user.totalEarned.toLocaleString()} pts</ListPoints>
-            </ListItem>
-          )
-        })}
-      </ListSection>
+                  <ListName $isMe={isMe}>{user.name}</ListName>
+                  <ListPoints>{user.totalEarned.toLocaleString()} pts</ListPoints>
+                </ListItem>
+              )
+            })}
+          </ListSection>
+        </>
+      )}
     </PageContainer>
   )
 }
@@ -134,6 +152,28 @@ export default function Ranking() {
 // ==================== STYLED COMPONENTS ====================
 
 const LoadingText = styled.p` text-align: center; padding: 40px; color: ${({ theme }) => theme.colors.textSecondary}; `
+
+const ToggleContainer = styled.div`
+  display: flex;
+  background: ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  padding: 4px;
+  margin: 16px 16px 8px 16px;
+`
+
+const ToggleButton = styled.button`
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: ${({ $isActive, theme }) => ($isActive ? theme.colors.surface : 'transparent')};
+  color: ${({ $isActive, theme }) => ($isActive ? theme.colors.textPrimary : theme.colors.textSecondary)};
+  box-shadow: ${({ $isActive, theme }) => ($isActive ? theme.shadows.card : 'none')};
+  transition: all 0.2s ease;
+`
 
 const PodiumSection = styled.div`
   display: flex;
@@ -179,7 +219,6 @@ const CrownWrapper = styled(motion.div)`
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 `
 
-// Contenedor principal del avatar (ahora es solo el marco con borde)
 const AvatarContainer = styled.div`
   width: ${({ $isFirst }) => ($isFirst ? '68px' : '52px')};
   height: ${({ $isFirst }) => ($isFirst ? '68px' : '52px')};
@@ -192,26 +231,24 @@ const AvatarContainer = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.card};
   margin-bottom: 8px;
   z-index: 5;
-  overflow: hidden; /* Importante para que la foto no se salga */
+  overflow: hidden;
 `
 
-// Componente para la foto real
 const AvatarImage = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Ajusta la foto sin deformarla */
+  object-fit: cover;
 `
 
-// Estilo para cuando no hay foto y mostramos la inicial
 const AvatarFallback = styled.div`
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white; /* Asumimos fondo de color */
+  color: white;
   font-weight: 800;
-  font-size: inherit; /* Hereda del padre (68px/52px) */
+  font-size: inherit;
 `
 
 const Name = styled.span`
@@ -252,6 +289,7 @@ const ListSection = styled.div`
   flex-direction: column;
   gap: 12px;
   padding: 0 16px;
+  padding-bottom: 100px; /* Para que el BottomNav no lo tape */
 `
 
 const ListItem = styled(motion.div)`
@@ -278,7 +316,6 @@ const PositionCircle = styled.div`
   margin-right: 12px;
 `
 
-// Contenedor del avatar en la lista
 const ListAvatarContainer = styled.div`
   width: 36px;
   height: 36px;

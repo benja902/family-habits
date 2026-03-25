@@ -93,3 +93,13 @@ export const formatTime = (timeString) => {
 
   return `${hour12}:${minuteFormatted} ${period}`;
 };
+
+/**
+ * Obtiene el domingo (fin de la semana) de una fecha dada
+ * @param {string} dateString - Fecha en formato 'YYYY-MM-DD'
+ * @returns {string} - Domingo de esa semana en formato 'YYYY-MM-DD'
+ */
+export const getWeekEnd = (dateString) => {
+  const startOfWeek = getWeekStart(dateString);
+  return dayjs(startOfWeek).add(6, 'day').format('YYYY-MM-DD');
+};

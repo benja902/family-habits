@@ -1,76 +1,83 @@
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
 import { BsCheckCircleFill, BsCircle } from 'react-icons/bs'
-import useCompletedHabits from '../../hooks/useCompletedHabits'
-import { HABIT_LABELS, HABIT_COLORS } from '../../constants/habits.constants'
+
+// Importamos los hooks centralizados para leer datos precisos del día
+import useSleepModule from '../../hooks/useSleepModule'
+import useFoodModule from '../../hooks/useFoodModule'
+import useMovementModule from '../../hooks/useMovementModule'
+import useStudyModule from '../../hooks/useStudyModule'
+import useHouseholdModule from '../../hooks/useHouseholdModule'
+import useCleaningModule from '../../hooks/useCleaningModule'
 
 export default function QuickChecklist() {
-  const { completedHabits, completedCount, isLoading } = useCompletedHabits()
+  // Consultamos los registros específicos del día
+  const { sleepRecord } = useSleepModule()
+  const { mealRecords } = useFoodModule()
+  const { movementRecord } = useMovementModule()
+  const { studyRecord } = useStudyModule()
+  const { hasRecord: hasHouseholdRecord } = useHouseholdModule()
+  const { cleaningRecord } = useCleaningModule()
 
-  // Mapeo de los 7 hábitos principales
+  // Rediseñamos el checklist para que sea único y no redundante
   const checklist = [
     {
-      id: 'sleep',
-      label: HABIT_LABELS.sleep,
-      isCompleted: completedHabits.sleep,
-      color: HABIT_COLORS.sleep
+      id: 'bed',
+      label: 'Cama matutina (Tendida)',
+      // Vigilamos si limpieza está completado (points > 0), pero mostramos etiqueta de Cama
+      isCompleted: (cleaningRecord?.points_earned || 0) > 0,
+      color: '#EAB308' // cleaning
     },
     {
-      id: 'movement',
-      label: HABIT_LABELS.movement,
-      isCompleted: completedHabits.movement,
-      color: HABIT_COLORS.movement
+      id: 'breakfast',
+      label: 'Nutrición (Desayuno)',
+      isCompleted: mealRecords?.desayuno?.did_eat || false,
+      color: '#F97316' // food
     },
     {
-      id: 'food',
-      label: HABIT_LABELS.food,
-      isCompleted: completedHabits.food,
-      color: HABIT_COLORS.food
+      id: 'water',
+      label: 'Hidratación (8 vasos)',
+      isCompleted: (movementRecord?.water_glasses || 0) >= 8,
+      color: '#22C55E' // movement
     },
     {
-      id: 'study',
-      label: HABIT_LABELS.study,
-      isCompleted: completedHabits.study,
-      color: HABIT_COLORS.study
+      id: 'studyNote',
+      label: 'Crecimiento (Nota Estudio)',
+      // ÚNICO: Vigilamos si escribió una nota de aprendizaje, no si solo estudió
+      isCompleted: (studyRecord?.learning_note?.length || 0) > 10,
+      color: '#3B82F6' // study
     },
     {
-      id: 'cleaning',
-      label: HABIT_LABELS.cleaning,
-      isCompleted: completedHabits.cleaning,
-      color: HABIT_COLORS.cleaning
-    },
-    {
-      id: 'coexistence',
-      label: HABIT_LABELS.coexistence,
-      isCompleted: completedHabits.coexistence,
-      color: HABIT_COLORS.coexistence
+      id: 'exercise',
+      label: 'Actividad Física (Ejercicio)',
+      // ÚNICO: Vigilamos el ejercicio intenso, no la caminata
+      isCompleted: movementRecord?.did_exercise || false,
+      color: '#22C55E' // movement
     },
     {
       id: 'household',
-      label: HABIT_LABELS.household,
-      isCompleted: completedHabits.household,
-      color: HABIT_COLORS.household
+      label: 'Tareas del Hogar Completas',
+      // Vigilamos que el módulo Hogar esté listo, pero con un nombre más claro
+      isCompleted: hasHouseholdRecord,
+      color: '#D97706' // household
+    },
+    {
+      id: 'devices',
+      label: 'Descanso Digital (Celular)',
+      // Vigilamos específicamente que entregó el dispositivo (device_delivered_at en Supabase)
+      isCompleted: sleepRecord?.device_delivered_at != null,
+      color: '#6366F1' // sleep
     }
   ]
 
-  const totalCount = 7
+  const completedCount = checklist.filter(item => item.isCompleted).length
+  const totalCount = checklist.length
   const allCompleted = completedCount === totalCount
-
-  if (isLoading) {
-    return (
-      <Card>
-        <Header>
-          <Title>Checklist rápido</Title>
-          <Counter>Cargando...</Counter>
-        </Header>
-      </Card>
-    )
-  }
 
   return (
     <Card>
       <Header>
-        <Title>Checklist rápido</Title>
+        <Title>Checklist de Acciones Clave</Title>
         <Counter $isComplete={allCompleted}>
           {completedCount}/{totalCount}
         </Counter>
@@ -97,7 +104,7 @@ export default function QuickChecklist() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          ¡Excelente! Completaste las tareas clave de hoy. 🌟
+          ¡Perfecto, David! Superaste tus micro-metas de hoy. 🌟
         </MotivationalText>
       )}
     </Card>

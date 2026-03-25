@@ -19,7 +19,8 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useDayStore } from '../stores/useDayStore';
 import useDailyRecord from '../hooks/useDailyRecord';
 import useCompletedHabits from '../hooks/useCompletedHabits';
-
+import QuickChecklist from '../components/dashboard/QuickChecklist';
+import DayTimeline from '../components/dashboard/DayTimeline';
 // Mensajes motivacionales por estado del día
 const MOTIVATIONAL_MESSAGES = {
   'sin iniciar': '¡Empieza tu día!',
@@ -111,6 +112,11 @@ const Dashboard = () => {
           ))}
         </HabitsGrid>
       </HabitsSection>
+      {/* 👇 AGREGA ESTE BLOQUE AQUÍ 👇 */}
+      <div style={{ marginTop: '32px' }}>
+        <QuickChecklist />
+        <DayTimeline />
+      </div>
     </PageContainer>
   );
 };

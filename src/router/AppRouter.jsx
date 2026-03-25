@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../stores/useAuthStore';
 import UserLayout from '../components/layout/UserLayout';
 import Punishments from '../pages/Punishments'; // O la ruta correcta hacia tu carpeta pages
-import AdminDashboard from '../pages/AdminDashboard';
+import AdminLayout from '../components/admin/AdminLayout';
 // Lazy loading de páginas para mejor performance
 const Welcome = React.lazy(() => import('../pages/Welcome'));
 const PinEntry = React.lazy(() => import('../pages/PinEntry'));
@@ -18,7 +18,10 @@ const HabitDetail = React.lazy(() => import('../pages/HabitDetail'));
 const Stats = React.lazy(() => import('../pages/Stats'));
 const Ranking = React.lazy(() => import('../pages/Ranking'));
 const Rewards = React.lazy(() => import('../pages/Rewards'));
-
+// Asegúrate de tener estas tres líneas para el admin:
+const AdminDashboard = React.lazy(() => import('../pages/admin/AdminDashboard'));
+const AdminRewards = React.lazy(() => import('../pages/admin/AdminRewards'));
+const AdminPunishments = React.lazy(() => import('../pages/admin/AdminPunishments'));
 // Componente de carga mientras se cargan las páginas
 const LoadingFallback = () => (
   <div style={{
@@ -185,16 +188,42 @@ export const AppRouter = () => {
             }
           />
 
-          {/* Rutas protegidas por rol admin: Panel de Benjamín */}
+          {/* =========================================================
+              RUTAS PROTEGIDAS POR ROL ADMIN: Panel de Benjamín 
+              ========================================================= */}
           <Route
             path="/admin"
             element={
               <AdminRoute>
-                <UserLayout>
+                <AdminLayout>
                   <PageTransition>
                     <AdminDashboard />
                   </PageTransition>
-                </UserLayout>
+                </AdminLayout>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/rewards"
+            element={
+              <AdminRoute>
+                <AdminLayout>
+                  <PageTransition>
+                    <AdminRewards />
+                  </PageTransition>
+                </AdminLayout>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/punishments"
+            element={
+              <AdminRoute>
+                <AdminLayout>
+                  <PageTransition>
+                    <AdminPunishments />
+                  </PageTransition>
+                </AdminLayout>
               </AdminRoute>
             }
           />

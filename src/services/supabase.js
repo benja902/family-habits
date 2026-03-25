@@ -1390,7 +1390,8 @@ export async function assignPunishment(punishmentData) {
         points_deducted: punishmentData.pointsDeducted || 0,
         extra_task: punishmentData.extraTask || null,
         due_date: punishmentData.dueDate || null,
-        status: 'pendiente'
+        // Si hay tarea, queda pendiente. Si no hay tarea, se da por cumplido al instante.
+        status: 'pendiente' // TODO castigo nace pendiente para que el usuario lo vea
       }])
       .select()
       .single();

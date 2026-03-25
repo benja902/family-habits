@@ -103,7 +103,7 @@ export default function Punishments() {
                 )}
               </PenaltiesContainer>
 
-              {punishment.status === 'pendiente' && punishment.extra_task && (
+              {punishment.status === 'pendiente' && (
                 <ActionArea>
                   <CompleteButton 
                     onClick={() => markCompleted(punishment.id)}

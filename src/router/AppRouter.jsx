@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../stores/useAuthStore';
 import UserLayout from '../components/layout/UserLayout';
 import Punishments from '../pages/Punishments'; // O la ruta correcta hacia tu carpeta pages
-
+import AdminDashboard from '../pages/AdminDashboard';
 // Lazy loading de páginas para mejor performance
 const Welcome = React.lazy(() => import('../pages/Welcome'));
 const PinEntry = React.lazy(() => import('../pages/PinEntry'));
@@ -171,14 +171,30 @@ export const AppRouter = () => {
               </PrivateRoute>
             }
           />
-          {/* 👇 AGREGA ESTA LÍNEA 👇 */}
-          <Route path="/punishments" element={<Punishments />} />
-          {/* Rutas protegidas por rol admin */}
+        {/* Ruta protegida: Castigos de los usuarios */}
           <Route
-            path="/admin/*"
+            path="/punishments"
+            element={
+              <PrivateRoute>
+                <UserLayout>
+                  <PageTransition>
+                    <Punishments />
+                  </PageTransition>
+                </UserLayout>
+              </PrivateRoute>
+            }
+          />
+
+          {/* Rutas protegidas por rol admin: Panel de Benjamín */}
+          <Route
+            path="/admin"
             element={
               <AdminRoute>
-                <AdminComingSoon />
+                <UserLayout>
+                  <PageTransition>
+                    <AdminDashboard />
+                  </PageTransition>
+                </UserLayout>
               </AdminRoute>
             }
           />

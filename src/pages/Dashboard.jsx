@@ -6,8 +6,7 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { BsBoxArrowRight } from 'react-icons/bs';
-import { PageContainer } from '../components/layout/PageContainer';
+import { BsBoxArrowRight, BsShieldLockFill } from 'react-icons/bs';import { PageContainer } from '../components/layout/PageContainer';
 import { AppHeader } from '../components/layout/AppHeader';
 import { ProgressRing } from '../components/ui/ProgressRing';
 import { DayStatusBadge } from '../components/ui/DayStatusBadge';
@@ -23,6 +22,7 @@ import QuickChecklist from '../components/dashboard/QuickChecklist';
 import DayTimeline from '../components/dashboard/DayTimeline';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 import usePunishments from '../hooks/usePunishments';
+
 // Mensajes motivacionales por estado del día
 const MOTIVATIONAL_MESSAGES = {
   'sin iniciar': '¡Empieza tu día!',
@@ -78,12 +78,38 @@ const Dashboard = () => {
       <BsBoxArrowRight size={20} />
     </motion.button>
   );
+  // Botón exclusivo para Benjamín (Admin)
+  const AdminButton = () => (
+    <motion.button
+      onClick={() => navigate('/admin')}
+      whileTap={{ scale: 0.9 }}
+      style={{
+        background: 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        padding: 8,
+        borderRadius: 8,
+        color: theme.colors.primary, // Le damos color primario para que resalte
+        marginRight: 4,
+      }}
+    >
+      <BsShieldLockFill size={20} />
+    </motion.button>
+  );
 
+  // Agrupamos los botones de la cabecera
+  const HeaderActions = () => (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Solo se muestra si el rol es exactamente 'admin' */}
+      {currentUser?.role === 'admin' && <AdminButton />}
+      <LogoutButton />
+    </div>
+  );
   return (
     <PageContainer>
       <AppHeader
         title={headerTitle}
-        rightAction={<LogoutButton />}
+        rightAction={<HeaderActions />}
       />
 
       {/* Hero Section */}

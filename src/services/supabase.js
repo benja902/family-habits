@@ -1256,7 +1256,7 @@ export async function getUserRedemptions(userId) {
 /**
  * Registra el canje de un premio por parte del usuario
  */
-export async function redeemReward(userId, rewardId, pointsCost, type) {
+export async function redeemReward(userId, rewardId, type) {
   try {
     // REGLA CLAUDE.md: Los canjes de tipo 'dinero' requieren aprobación del admin
     // Los demás tipos se aprueban automáticamente
@@ -1319,6 +1319,129 @@ export async function markPunishmentCompleted(punishmentId) {
     return data;
   } catch (error) {
     console.error('Error al actualizar el castigo:', error);
+    throw error;
+  }
+}
+// ============================================================================
+// ==================== FASE 4: PANEL DE ADMINISTRADOR ========================
+// ============================================================================
+
+// -------------------- 1. GESTIÓN DE PREMIOS (ADMIN) --------------------
+
+/**
+ * Retorna todas las solicitudes de premios que están pendientes de aprobación
+ */
+export async function getPendingRedemptions() {
+  try {
+    const { data, error } = await supabase
+      .from('reward_redemptions')
+      .select(`
+        *,
+        users!reward_redemptions_user_id_fkey (name, avatar_url),
+        rewards (name, type, points_required)
+      `)
+      .eq('status', 'pendiente')
+      .order('created_at', { ascending: true }); // Los más antiguos primero
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener solicitudes pendientes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cambia el estado de una solicitud (ej. de 'pendiente' a 'aprobado' o 'rechazado')
+ */
+export async function updateRedemptionStatus(redemptionId, newStatus) {
+  try {
+    const { data, error } = await supabase
+      .from('reward_redemptions')
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', redemptionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`Error al cambiar estado a ${newStatus}:`, error);
+    throw error;
+  }
+}
+
+// -------------------- 2. GESTIÓN DE CASTIGOS (ADMIN) --------------------
+
+/**
+ * Inserta un nuevo castigo asignado a un usuario
+ */
+export async function assignPunishment(punishmentData) {
+  try {
+    const { data, error } = await supabase
+      .from('punishments')
+      .insert([{
+        user_id: punishmentData.userId,
+        assigned_by: punishmentData.assignedBy,
+        reason: punishmentData.reason,
+        points_deducted: punishmentData.pointsDeducted || 0,
+        extra_task: punishmentData.extraTask || null,
+        due_date: punishmentData.dueDate || null,
+        status: 'pendiente'
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al asignar el castigo:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cancela un castigo injusto o erróneo (Devuelve los puntos al usuario)
+ */
+export async function cancelPunishment(punishmentId) {
+  try {
+    const { data, error } = await supabase
+      .from('punishments')
+      .update({ 
+        status: 'cancelado',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', punishmentId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al cancelar el castigo:', error);
+    throw error;
+  }
+}
+
+// -------------------- 3. UTILIDADES DEL ADMIN --------------------
+
+/**
+ * Obtiene la lista de todos los miembros de la familia para el selector de castigos
+ */
+export async function getFamilyMembers() {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, avatar_url, role')
+      .order('name');
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener la familia:', error);
     throw error;
   }
 }

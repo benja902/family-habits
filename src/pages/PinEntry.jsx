@@ -42,10 +42,10 @@ const PinEntry = () => {
     mutationFn: ({ userId, pin }) => validatePin(userId, pin),
     onSuccess: (isValid) => {
       if (isValid) {
-        const userRole = selectedUser.role;
+        // const userRole = selectedUser.role; // (Puedes borrar esta línea, ya no se usa)
         isLoggingIn.current = true;
         login(selectedUser);
-        navigate(userRole === 'admin' ? '/admin' : '/dashboard', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         setError('PIN incorrecto, intenta de nuevo');
         setShake(true);

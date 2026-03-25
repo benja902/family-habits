@@ -808,8 +808,8 @@ npm install -D vite-plugin-pwa
 13. ✅ `FoodModule` — Alimentación
 14. ✅ `StudyModule` — Estudio y crecimiento
 15. ✅ `CleaningModule` — Orden y limpieza
-16. ⬜ `CoexistenceModule` — Respeto y convivencia
-17. ⬜ `HouseholdModule` — Tareas del hogar
+16. ✅ `CoexistenceModule` — Respeto y convivencia
+17. ✅ `HouseholdModule` — Tareas del hogar
 
 ### ⬜ Fase 3 — Gamificación
 18. `usePoints.js` completo

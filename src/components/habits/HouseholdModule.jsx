@@ -6,8 +6,7 @@ import { BsCheck2Square, BsHouseDoorFill, BsClockHistory } from 'react-icons/bs'
 import useHouseholdModule from '../../hooks/useHouseholdModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
-
-const MODULE_COLOR = '#8B5CF6' // Púrpura para hogar
+const MODULE_COLOR = '#14B8A6' // Amarillo oscuro / Marrón (theme.HABIT_COLORS.household)
 
 export default function HouseholdModule() {
   const { householdData, isLoading, hasRecord, saveHousehold, isSaving } = useHouseholdModule()

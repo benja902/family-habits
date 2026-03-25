@@ -1114,3 +1114,38 @@ export const calculateAndSaveHouseholdPoints = async (userId, date, taskCompleti
 
   return { pointsEarned: totalPts }
 }
+
+
+
+// ==================== POINTS SYSTEM (SISTEMA DE PUNTOS GLOBALES) ====================
+
+export const getUserPointsBalance = async (userId) => {
+  // 1. Sumar todos los puntos históricos ganados (desde daily_records)
+  const { data: earnedData, error: earnedError } = await supabase
+    .from('daily_records')
+    .select('total_points')
+    .eq('user_id', userId)
+
+  if (earnedError) throw earnedError
+
+  const totalEarned = earnedData.reduce((sum, record) => sum + (record.total_points || 0), 0)
+
+  // 2. Sumar todos los puntos gastados en premios (desde reward_redemptions)
+  // Nota: Asumimos que la tabla existe según el CLAUDE.md. Si aún no hay canjes, devolverá 0.
+  const { data: spentData, error: spentError } = await supabase
+    .from('reward_redemptions')
+    .select('points_cost')
+    .eq('user_id', userId)
+    .in('status', ['aprobado', 'entregado']) // Solo restamos si fue aprobado o entregado
+
+  // Si la tabla no existe aún o hay un error, asumimos 0 gastados para no romper la app
+  const totalSpent = spentError ? 0 : spentData.reduce((sum, record) => sum + (record.points_cost || 0), 0)
+
+  const currentBalance = totalEarned - totalSpent
+
+  return {
+    totalEarned,
+    totalSpent,
+    currentBalance
+  }
+}

@@ -164,7 +164,7 @@ const Sidebar = styled(motion.aside)`
     top: 0;
     left: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 150;
     box-shadow: 4px 0 24px rgba(0,0,0,0.1);
   }
 `

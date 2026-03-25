@@ -14,6 +14,7 @@ import MovementModule from '../components/habits/MovementModule';
 import FoodModule from '../components/habits/FoodModule'
 import StudyModule from '../components/habits/StudyModule'; // <--- ¡ESTA ES LA LÍNEA QUE TE FALTA!
 import CleaningModule from '../components/habits/CleaningModule';
+import CoexistenceModule from '../components/habits/CoexistenceModule';
 import { HABIT_LABELS_FULL, HABIT_COLORS } from '../constants/habits.constants';
 
 
@@ -80,7 +81,7 @@ export default function HabitDetail() {
     food: <FoodModule />, // <-- ¡Le quitamos los // del principio!
     study: <StudyModule />,
     cleaning: <CleaningModule />,
-    // coexistence: <CoexistenceModule />,
+    coexistence: <CoexistenceModule />,
     // household: <HouseholdModule />,
   };
 

@@ -968,3 +968,73 @@ export const calculateAndSaveCleaningPoints = async (userId, date, formData) => 
 
   return { pointsEarned: total, savedRecord }
 }
+
+// ==================== COEXISTENCE MODULE (RESPETO Y CONVIVENCIA) ====================
+
+export const getCoexistenceRecord = async (userId, date) => {
+  const { data, error } = await supabase
+    .from('coexistence_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export const upsertCoexistenceRecord = async (userId, date, data) => {
+  const { data: result, error } = await supabase
+    .from('coexistence_records')
+    .upsert({
+      user_id: userId,
+      date: date,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id, date'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export const calculateAndSaveCoexistencePoints = async (userId, date, formData) => {
+  // 1. Borrar transacciones previas (Regla 4)
+  await deletePointTransactionsByCategory(userId, date, 'coexistence')
+
+  let total = 0
+
+  // 2. Respetó las normas (+60 pts)
+  if (formData.respected_rules) {
+    await addPointTransaction(userId, date, 60, 'Respetó las normas del día', 'coexistence', 'respected_rules')
+    total += 60
+  }
+
+  // 3. No tomó cosas ajenas (+40 pts si es false)
+  if (formData.took_others_things === false) {
+    await addPointTransaction(userId, date, 40, 'No tomó cosas ajenas', 'coexistence', 'no_others_things')
+    total += 40
+  }
+
+  // 4. Penalización por TV (asumimos límite de 120 min)
+  if (formData.tv_minutes > 120) {
+    await addPointTransaction(userId, date, -30, 'Excedió tiempo de TV (penalización)', 'coexistence', 'tv_overtime')
+    total -= 30
+  }
+
+  // Guardar en la tabla
+  const savedRecord = await upsertCoexistenceRecord(userId, date, {
+    tv_minutes: formData.tv_minutes || 0,
+    took_others_things: formData.took_others_things || false,
+    respected_rules: formData.respected_rules !== undefined ? formData.respected_rules : true,
+    incidents: formData.incidents || null,
+    respect_score: formData.respect_score || 5,
+    notes: formData.notes || null,
+    points_earned: total
+  })
+
+  return { pointsEarned: total, savedRecord }
+}

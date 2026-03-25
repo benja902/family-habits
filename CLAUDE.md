@@ -807,7 +807,7 @@ npm install -D vite-plugin-pwa
 12. ✅ `MovementModule` — Movimiento y salud física
 13. ✅ `FoodModule` — Alimentación
 14. ✅ `StudyModule` — Estudio y crecimiento
-15. ⬜ `CleaningModule` — Orden y limpieza
+15. ✅ `CleaningModule` — Orden y limpieza
 16. ⬜ `CoexistenceModule` — Respeto y convivencia
 17. ⬜ `HouseholdModule` — Tareas del hogar
 

@@ -6,7 +6,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { applyPunctuality, calculateProportional } from '../utils/points.utils';
-
+import { MAX_TV_MINUTES } from '../constants/habits.constants'; // Verifica que este import exista arriba
 // ==================== USUARIOS ====================
 
 /**

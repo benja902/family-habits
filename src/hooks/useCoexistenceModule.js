@@ -19,15 +19,14 @@ export default function useCoexistenceModule() {
   })
 
   const mutation = useMutation({
-    mutationFn: (formData) => 
-      calculateAndSaveCoexistencePoints(currentUser.id, date, formData),
+    mutationFn: (formData) => calculateAndSaveCoexistencePoints(currentUser.id, date, formData),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
       queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
       queryClient.invalidateQueries({ queryKey: ['coexistenceRecord'] })
       
       const pts = result?.pointsEarned ?? 0
-      toast.success(`¡Convivencia registrada! (${pts} pts) 🤝`)
+      toast.success(`¡+${pts} pts! Convivencia registrada 🤝`)
       navigate('/dashboard')
     },
     onError: (error) => {
@@ -39,7 +38,7 @@ export default function useCoexistenceModule() {
   return {
     coexistenceRecord: query.data || null,
     isLoading: query.isLoading,
-    hasRecord: !!query.data,
+    hasRecord: !!query.data && query.data.points_earned > 0,
     saveCoexistence: mutation.mutate,
     isSaving: mutation.isPending
   }

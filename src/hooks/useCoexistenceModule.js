@@ -24,7 +24,9 @@ export default function useCoexistenceModule() {
       queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
       queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
       queryClient.invalidateQueries({ queryKey: ['coexistenceRecord'] })
-      
+      queryClient.invalidateQueries({ queryKey: ['ranking'] })
+      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'] })
+
       const pts = result?.pointsEarned ?? 0
       toast.success(`¡+${pts} pts! Convivencia registrada 🤝`)
       navigate('/dashboard')

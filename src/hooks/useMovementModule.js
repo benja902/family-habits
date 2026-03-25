@@ -31,6 +31,8 @@ export default function useMovementModule() {
       queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
       queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
       queryClient.invalidateQueries({ queryKey: ['movementRecord'] })
+      queryClient.invalidateQueries({ queryKey: ['ranking'] })
+      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'] })
 
       const points = result?.pointsEarned ?? 0
       let message = '¡+' + points + ' pts! Movimiento registrado 💪'

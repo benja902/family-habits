@@ -25,7 +25,9 @@ export default function useStudyModule() {
       queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
       queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
       queryClient.invalidateQueries({ queryKey: ['studyRecord'] })
-      
+      queryClient.invalidateQueries({ queryKey: ['ranking'] })
+      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'] })
+
       const pts = result?.pointsEarned ?? 0
       toast.success(`¡+${pts} pts! Estudio registrado 📚`)
       navigate('/dashboard')

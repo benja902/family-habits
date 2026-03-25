@@ -25,7 +25,9 @@ export default function useCleaningModule() {
       queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
       queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
       queryClient.invalidateQueries({ queryKey: ['cleaningRecord'] })
-      
+      queryClient.invalidateQueries({ queryKey: ['ranking'] })
+      queryClient.invalidateQueries({ queryKey: ['userPointsBalance'] })
+
       const pts = result?.pointsEarned ?? 0
       toast.success(`¡+${pts} pts! Orden registrado ✨`)
       navigate('/dashboard')

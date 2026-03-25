@@ -184,27 +184,6 @@ export async function getTotalPoints(userId) {
   }
 }
 
-// ==================== RANKING ====================
-
-/**
- * Retorna el ranking familiar ordenado por puntos del día
- */
-export async function getFamilyRanking(date) {
-  try {
-    const { data, error } = await supabase
-      .from('daily_records')
-      .select('*, users(id, name, avatar_url)')
-      .eq('date', date)
-      .order('total_points', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error al obtener ranking familiar:', error);
-    throw error;
-  }
-}
-
 // ==================== TAREAS DEL HOGAR ====================
 
 /**
@@ -1134,13 +1113,12 @@ export const getUserPointsBalance = async (userId) => {
   // Nota: Asumimos que la tabla existe según el CLAUDE.md. Si aún no hay canjes, devolverá 0.
   const { data: spentData, error: spentError } = await supabase
     .from('reward_redemptions')
-    .select('points_cost')
+    .select('rewards(points_required)')    
     .eq('user_id', userId)
-    .in('status', ['aprobado', 'entregado']) // Solo restamos si fue aprobado o entregado
+    .in('status', ['pendiente', 'aprobado', 'entregado']) // Solo restamos si fue aprobado o entregado
 
   // Si la tabla no existe aún o hay un error, asumimos 0 gastados para no romper la app
-  const totalSpent = spentError ? 0 : spentData.reduce((sum, record) => sum + (record.points_cost || 0), 0)
-
+  const totalSpent = spentError ? 0 : spentData.reduce((sum, record) => sum + (record.rewards?.points_required || 0), 0)
   const currentBalance = totalEarned - totalSpent
 
   return {
@@ -1226,4 +1204,72 @@ export const getWeeklyRanking = async (startDate, endDate) => {
 
   // 4. Ordenamos de mayor a menor puntaje
   return ranking.sort((a, b) => b.totalEarned - a.totalEarned)
+}
+
+// ==================== PREMIOS (REWARDS) ====================
+
+/**
+ * Retorna el catálogo completo de premios disponibles
+ */
+export async function getRewards() {
+  try {
+    const { data, error } = await supabase
+      .from('rewards')
+      .select('*')
+      // Asumimos que tienes una columna is_active, si no la tienes, puedes borrar esta línea
+      .eq('is_active', true) 
+      .order('points_required', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener el catálogo de premios:', error);
+    throw error;
+  }
+}
+
+/**
+ * Retorna el historial de premios canjeados por el usuario
+ */
+export async function getUserRedemptions(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('reward_redemptions')
+      .select('*, rewards(*)') // Traemos también los datos del premio (nombre, tipo)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener el historial de canjes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Registra el canje de un premio por parte del usuario
+ */
+export async function redeemReward(userId, rewardId, pointsCost, type) {
+  try {
+    // REGLA CLAUDE.md: Los canjes de tipo 'dinero' requieren aprobación del admin
+    // Los demás tipos se aprueban automáticamente
+    const initialStatus = type === 'dinero' ? 'pendiente' : 'aprobado';
+
+    const { data, error } = await supabase
+      .from('reward_redemptions')
+      .insert({
+        user_id: userId,
+        reward_id: rewardId,
+        status: initialStatus
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al registrar el canje del premio:', error);
+    throw error;
+  }
 }

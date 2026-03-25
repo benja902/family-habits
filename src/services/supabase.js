@@ -1149,3 +1149,27 @@ export const getUserPointsBalance = async (userId) => {
     currentBalance
   }
 }
+
+// ==================== RANKING GLOBAL (HISTÓRICO) ====================
+
+export const getHistoricalRanking = async () => {
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, name, avatar_url, role')
+
+  if (usersError) throw usersError
+
+  const { data: records, error: recordsError } = await supabase
+    .from('daily_records')
+    .select('user_id, total_points')
+
+  if (recordsError) throw recordsError
+
+  const ranking = users.map(user => {
+    const userRecords = records.filter(r => r.user_id === user.id)
+    const totalEarned = userRecords.reduce((sum, r) => sum + (r.total_points || 0), 0)
+    return { ...user, totalEarned }
+  })
+
+  return ranking.sort((a, b) => b.totalEarned - a.totalEarned)
+}

@@ -821,3 +821,81 @@ export const calculateAndSaveMealPoints = async (userId, date, mealType, formDat
 
   return { pointsEarned: totalPoints, savedRecord }
 }
+
+// ==================== STUDY MODULE (ESTUDIO Y CRECIMIENTO) ====================
+
+export const getStudyRecord = async (userId, date) => {
+  const { data, error } = await supabase
+    .from('study_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export const upsertStudyRecord = async (userId, date, data) => {
+  const { data: result, error } = await supabase
+    .from('study_records')
+    .upsert({
+      user_id: userId,
+      date: date,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id, date'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export const calculateAndSaveStudyPoints = async (userId, date, formData) => {
+  // PRIMERA LÍNEA OBLIGATORIA (Regla 4)
+  const categoryKey = 'study'
+  await deletePointTransactionsByCategory(userId, date, categoryKey)
+
+  let totalPoints = 0
+
+  // 1. Estudio (Tiempo)
+  if (formData.did_study && formData.duration_minutes > 0) {
+    if (formData.duration_minutes >= 30) {
+      await addPointTransaction(userId, date, 100, 'Sesión de estudio completa', categoryKey, 'study_completed')
+      totalPoints += 100
+    } else {
+      const propPts = calculateProportional(formData.duration_minutes, 30, 100)
+      await addPointTransaction(userId, date, propPts, 'Sesión de estudio parcial', categoryKey, 'study_completed')
+      totalPoints += propPts
+    }
+  }
+
+  // 2. Nota de aprendizaje
+  if (formData.learning_note && formData.learning_note.length > 10) {
+    await addPointTransaction(userId, date, 20, 'Registró nota de aprendizaje', categoryKey, 'learning_note')
+    totalPoints += 20
+  }
+
+  // 3. Espacio limpio
+  if (formData.clean_space) {
+    await addPointTransaction(userId, date, 30, 'Espacio limpio al estudiar', categoryKey, 'clean_study_space')
+    totalPoints += 30
+  }
+
+  // Guardar en tabla
+  const savedRecord = await upsertStudyRecord(userId, date, {
+    did_study: formData.did_study || false,
+    subject: formData.subject || null,
+    activity_type: formData.activity_type || null,
+    duration_minutes: formData.duration_minutes || 0,
+    sessions_count: formData.sessions_count || 0,
+    learning_note: formData.learning_note || null,
+    clean_space: formData.clean_space || false,
+    points_earned: totalPoints
+  })
+
+  return { pointsEarned: totalPoints, savedRecord }
+}

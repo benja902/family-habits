@@ -13,6 +13,7 @@ import MovementModule from '../components/habits/MovementModule';
 // Agrega esta línea junto a los otros imports de módulos
 import FoodModule from '../components/habits/FoodModule'
 import StudyModule from '../components/habits/StudyModule'; // <--- ¡ESTA ES LA LÍNEA QUE TE FALTA!
+import CleaningModule from '../components/habits/CleaningModule';
 import { HABIT_LABELS_FULL, HABIT_COLORS } from '../constants/habits.constants';
 
 
@@ -78,7 +79,7 @@ export default function HabitDetail() {
     movement: <MovementModule />,
     food: <FoodModule />, // <-- ¡Le quitamos los // del principio!
     study: <StudyModule />,
-    // cleaning: <CleaningModule />,
+    cleaning: <CleaningModule />,
     // coexistence: <CoexistenceModule />,
     // household: <HouseholdModule />,
   };

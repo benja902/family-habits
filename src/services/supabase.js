@@ -899,3 +899,72 @@ export const calculateAndSaveStudyPoints = async (userId, date, formData) => {
 
   return { pointsEarned: totalPoints, savedRecord }
 }
+
+
+// ==================== CLEANING MODULE (ORDEN Y LIMPIEZA) ====================
+
+export const getCleaningRecord = async (userId, date) => {
+  const { data, error } = await supabase
+    .from('cleaning_records')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export const upsertCleaningRecord = async (userId, date, data) => {
+  const { data: result, error } = await supabase
+    .from('cleaning_records')
+    .upsert({
+      user_id: userId,
+      date: date,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id, date'
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export const calculateAndSaveCleaningPoints = async (userId, date, formData) => {
+  // PRIMERA LÍNEA OBLIGATORIA (Regla 4)
+  await deletePointTransactionsByCategory(userId, date, 'cleaning')
+
+  let total = 0
+
+  // 1. Cama tendida
+  if (formData.bed_made) {
+    await addPointTransaction(userId, date, 50, 'Tendió la cama', 'cleaning', 'bed_made')
+    total += 50
+  }
+
+  // 2. Cuarto limpio
+  if (formData.room_clean) {
+    await addPointTransaction(userId, date, 50, 'Cuarto limpio', 'cleaning', 'room_clean')
+    total += 50
+  }
+
+  // 3. Espacio ordenado
+  if (formData.space_ordered) {
+    await addPointTransaction(userId, date, 30, 'Espacio general ordenado', 'cleaning', 'space_ordered')
+    total += 30
+  }
+
+  // Guardar en tabla
+  const savedRecord = await upsertCleaningRecord(userId, date, {
+    bed_made: formData.bed_made || false,
+    room_clean: formData.room_clean || false,
+    space_ordered: formData.space_ordered || false,
+    notes: formData.notes || null,
+    points_earned: total
+  })
+
+  return { pointsEarned: total, savedRecord }
+}

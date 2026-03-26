@@ -23,10 +23,7 @@ import {
   BsCheckCircleFill,
 } from 'react-icons/bs'
 import {
-  getAdminStats,
-  getAdminWeeklyRanking,
-  getPointsActivity,
-  getHabitsStats,
+  getAdminDashboardAnalytics,
 } from '../../services/supabase'
 import { AppHeader } from '../../components/layout/AppHeader'
 
@@ -44,33 +41,19 @@ ChartJS.register(
 )
 
 export default function AdminStats() {
-  // Queries
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['adminStats'],
-    queryFn: getAdminStats,
-    staleTime: 1000 * 60 * 2, // 2 minutos
-  })
-
-  const { data: weeklyRanking, isLoading: isLoadingRanking } = useQuery({
-    queryKey: ['adminWeeklyRanking'],
-    queryFn: getAdminWeeklyRanking,
+  const { data: analytics, isLoading } = useQuery({
+    queryKey: ['adminDashboardAnalytics'],
+    queryFn: getAdminDashboardAnalytics,
     staleTime: 1000 * 60 * 5,
   })
 
-  const { data: pointsActivity, isLoading: isLoadingActivity } = useQuery({
-    queryKey: ['pointsActivity'],
-    queryFn: getPointsActivity,
-    staleTime: 1000 * 60 * 5,
-  })
-
-  const { data: habitsStats, isLoading: isLoadingHabits } = useQuery({
-    queryKey: ['habitsStats'],
-    queryFn: getHabitsStats,
-    staleTime: 1000 * 60 * 5,
-  })
+  const stats = analytics?.stats
+  const weeklyRanking = analytics?.weeklyRanking || []
+  const pointsActivity = analytics?.pointsActivity || []
+  const habitsStats = analytics?.habitsStats || []
 
   // Datos para gráfica de actividad de puntos (líneas)
-  const pointsActivityData = {
+  const pointsActivityData = React.useMemo(() => ({
     labels: pointsActivity?.map(d => {
       const date = new Date(d.date)
       return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })
@@ -90,10 +73,10 @@ export default function AdminStats() {
         pointHoverRadius: 6,
       },
     ],
-  }
+  }), [pointsActivity])
 
   // Datos para gráfica de ranking (barras horizontales)
-  const rankingData = {
+  const rankingData = React.useMemo(() => ({
     labels: weeklyRanking?.slice(0, 5).map(u => u.name) || [],
     datasets: [
       {
@@ -109,10 +92,10 @@ export default function AdminStats() {
         borderRadius: 8,
       },
     ],
-  }
+  }), [weeklyRanking])
 
   // Datos para gráfica de hábitos (barras verticales)
-  const habitsData = {
+  const habitsData = React.useMemo(() => ({
     labels: habitsStats?.map(h => h.habit) || [],
     datasets: [
       {
@@ -122,7 +105,7 @@ export default function AdminStats() {
         borderRadius: 8,
       },
     ],
-  }
+  }), [habitsStats])
 
   // Opciones de gráficas
   const lineOptions = {
@@ -196,7 +179,7 @@ export default function AdminStats() {
     },
   }
 
-  if (isLoadingStats || isLoadingRanking || isLoadingActivity || isLoadingHabits) {
+  if (isLoading) {
     return (
       <Container>
         <AppHeader title="Estadísticas" />

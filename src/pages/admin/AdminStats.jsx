@@ -45,6 +45,7 @@ export default function AdminStats() {
     queryKey: ['adminDashboardAnalytics'],
     queryFn: getAdminDashboardAnalytics,
     staleTime: 1000 * 60 * 5,
+    placeholderData: previousData => previousData,
   })
 
   const stats = analytics?.stats
@@ -179,94 +180,54 @@ export default function AdminStats() {
     },
   }
 
-  if (isLoading) {
-    return (
-      <Container>
-        <AppHeader title="Estadísticas" />
-        <LoadingMessage>Cargando estadísticas...</LoadingMessage>
-      </Container>
-    )
-  }
-
   return (
     <Container>
       <AppHeader title="Estadísticas del Sistema" />
 
       <ContentSection>
-        {/* Cards de resumen */}
         <StatsGrid>
-          <StatCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0 }}
-          >
-            <IconWrapper $color="#3B82F6">
-              <BsPeopleFill />
-            </IconWrapper>
-            <StatInfo>
-              <StatNumber>{stats?.activeUsers || 0}</StatNumber>
-              <StatLabel>Usuarios Activos</StatLabel>
-            </StatInfo>
-          </StatCard>
-
-          <StatCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <IconWrapper $color="#F59E0B">
-              <BsStarFill />
-            </IconWrapper>
-            <StatInfo>
-              <StatNumber>{stats?.totalPointsToday || 0}</StatNumber>
-              <StatLabel>Puntos Hoy</StatLabel>
-            </StatInfo>
-          </StatCard>
-
-          <StatCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <IconWrapper $color="#22C55E">
-              <BsCheckCircleFill />
-            </IconWrapper>
-            <StatInfo>
-              <StatNumber>{stats?.habitsCompletedToday || 0}</StatNumber>
-              <StatLabel>Días Completos</StatLabel>
-            </StatInfo>
-          </StatCard>
-
-          <StatCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <IconWrapper $color="#EC4899">
-              <BsGiftFill />
-            </IconWrapper>
-            <StatInfo>
-              <StatNumber>{stats?.pendingRewards || 0}</StatNumber>
-              <StatLabel>Premios Pendientes</StatLabel>
-            </StatInfo>
-          </StatCard>
-
-          <StatCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <IconWrapper $color="#EF4444">
-              <BsShieldFillExclamation />
-            </IconWrapper>
-            <StatInfo>
-              <StatNumber>{stats?.pendingPunishments || 0}</StatNumber>
-              <StatLabel>Castigos Activos</StatLabel>
-            </StatInfo>
-          </StatCard>
+          <SummaryCard
+            color="#3B82F6"
+            icon={<BsPeopleFill />}
+            label="Usuarios Activos"
+            value={stats?.activeUsers}
+            isLoading={isLoading}
+            delay={0}
+          />
+          <SummaryCard
+            color="#F59E0B"
+            icon={<BsStarFill />}
+            label="Puntos Hoy"
+            value={stats?.totalPointsToday}
+            isLoading={isLoading}
+            delay={0.1}
+          />
+          <SummaryCard
+            color="#22C55E"
+            icon={<BsCheckCircleFill />}
+            label="Días Completos"
+            value={stats?.habitsCompletedToday}
+            isLoading={isLoading}
+            delay={0.2}
+          />
+          <SummaryCard
+            color="#EC4899"
+            icon={<BsGiftFill />}
+            label="Premios Pendientes"
+            value={stats?.pendingRewards}
+            isLoading={isLoading}
+            delay={0.3}
+          />
+          <SummaryCard
+            color="#EF4444"
+            icon={<BsShieldFillExclamation />}
+            label="Castigos Activos"
+            value={stats?.pendingPunishments}
+            isLoading={isLoading}
+            delay={0.4}
+          />
         </StatsGrid>
 
-        {/* Gráfica de actividad de puntos */}
         <ChartCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -274,11 +235,14 @@ export default function AdminStats() {
         >
           <ChartTitle>Actividad de Puntos (Últimos 7 Días)</ChartTitle>
           <ChartWrapper>
-            <Line data={pointsActivityData} options={lineOptions} />
+            {isLoading ? (
+              <ChartSkeleton />
+            ) : (
+              <Line data={pointsActivityData} options={lineOptions} />
+            )}
           </ChartWrapper>
         </ChartCard>
 
-        {/* Gráficas lado a lado */}
         <ChartsRow>
           <ChartCard
             initial={{ opacity: 0, y: 20 }}
@@ -287,7 +251,11 @@ export default function AdminStats() {
           >
             <ChartTitle>Top 5 de la Semana</ChartTitle>
             <ChartWrapper>
-              <Bar data={rankingData} options={barOptions} />
+              {isLoading ? (
+                <ChartSkeleton />
+              ) : (
+                <Bar data={rankingData} options={barOptions} />
+              )}
             </ChartWrapper>
           </ChartCard>
 
@@ -298,12 +266,34 @@ export default function AdminStats() {
           >
             <ChartTitle>Hábitos Más Completados</ChartTitle>
             <ChartWrapper>
-              <Bar data={habitsData} options={habitsBarOptions} />
+              {isLoading ? (
+                <ChartSkeleton />
+              ) : (
+                <Bar data={habitsData} options={habitsBarOptions} />
+              )}
             </ChartWrapper>
           </ChartCard>
         </ChartsRow>
       </ContentSection>
     </Container>
+  )
+}
+
+function SummaryCard({ color, icon, label, value, isLoading, delay }) {
+  return (
+    <StatCard
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+    >
+      <IconWrapper $color={color}>
+        {icon}
+      </IconWrapper>
+      <StatInfo>
+        {isLoading ? <NumberSkeleton /> : <StatNumber>{value ?? 0}</StatNumber>}
+        <StatLabel>{label}</StatLabel>
+      </StatInfo>
+    </StatCard>
   )
 }
 
@@ -499,4 +489,30 @@ const LoadingMessage = styled.div`
     padding: 48px 24px;
     font-size: 16px;
   }
+`
+
+const NumberSkeleton = styled.div`
+  width: 72px;
+  height: 24px;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.border};
+  margin-bottom: 6px;
+
+  @media (min-width: 768px) {
+    height: 28px;
+  }
+`
+
+const ChartSkeleton = styled.div`
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      180deg,
+      ${({ theme }) => theme.colors.border} 0%,
+      ${({ theme }) => theme.colors.border} 72%,
+      transparent 72%
+    );
+  opacity: 0.7;
 `

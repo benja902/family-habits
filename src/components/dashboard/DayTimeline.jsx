@@ -1,111 +1,202 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import { motion } from 'framer-motion'
-import { BsCheckCircleFill, BsCircleFill } from 'react-icons/bs'
+import { BsCheckCircleFill, BsCircleFill, BsClock } from 'react-icons/bs'
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 
-// Importamos los hooks específicos para leer la granularidad de cada acción
-import useSleepModule from '../../hooks/useSleepModule'
-import useFoodModule from '../../hooks/useFoodModule'
-import useMovementModule from '../../hooks/useMovementModule'
-import useStudyModule from '../../hooks/useStudyModule'
+dayjs.extend(customParseFormat)
 
-export default function DayTimeline() {
-  const { sleepRecord } = useSleepModule()
-  const { mealRecords } = useFoodModule()
-  const { movementRecord } = useMovementModule()
-  const { studyRecord } = useStudyModule()
+/**
+ * DayTimeline — Línea de tiempo del día.
+ * Recibe datos por props (NO hace queries propias).
+ * PROMPT 3-5: Arquitectura correcta según CLAUDE.md.
+ * Detecta evento "próximo" basado en hora actual.
+ */
+export default function DayTimeline({
+  sleepRecord,
+  mealRecords,
+  movementRecord,
+  studyRecord
+}) {
+  const now = dayjs()
 
-  // Definimos los hitos del día con los nombres EXACTOS de tu base de datos
+  const parseTodayTime = (time) => {
+    if (!time) return null
+    return dayjs(`${now.format('YYYY-MM-DD')} ${time}`, 'YYYY-MM-DD HH:mm')
+  }
+
+  const hasValue = (value) => {
+    if (value === null || value === undefined) return false
+    if (typeof value === 'string') return value.trim() !== ''
+    return true
+  }
+
+  // Función para determinar si un evento es "próximo" (dentro de 30 min)
+  const isUpcoming = (eventTime, isCompleted) => {
+    if (!eventTime || isCompleted) return false
+
+    const eventMoment = parseTodayTime(eventTime)
+    if (!eventMoment || !eventMoment.isValid()) return false
+
+    const diffMinutes = eventMoment.diff(now, 'minute')
+    return diffMinutes > 0 && diffMinutes <= 30
+  }
+
+  // Función para determinar si un evento está overdue (pasó y no se completó)
+  const isOverdue = (eventTime, isCompleted) => {
+    if (!eventTime || isCompleted) return false
+
+    const eventMoment = parseTodayTime(eventTime)
+    if (!eventMoment || !eventMoment.isValid()) return false
+
+    return now.isAfter(eventMoment)
+  }
+
+  // Verificar comidas: si existe el registro significa que comió
+  // La tabla meal_records NO tiene campo did_eat, solo se crea registro cuando come
+  const breakfastCompleted = mealRecords?.desayuno != null
+  const lunchCompleted = mealRecords?.almuerzo != null
+  const morningSnackCompleted = mealRecords?.merienda_manana != null
+  const afternoonSnackCompleted = mealRecords?.merienda_tarde != null
+
+  // 9 eventos fijos del timeline según PROMPT 3-5-1
   const timelineEvents = [
     {
       id: 'wake',
-      time: '06:30 a. m.',
+      time: '06:30',
       title: 'Levantarse',
-      isCompleted: sleepRecord?.wake_time != null,
-      color: '#6366F1' // sleep
+      isCompleted: hasValue(sleepRecord?.wake_time),
+      color: '#6366F1'
     },
     {
       id: 'breakfast',
-      time: '07:00 a. m.',
+      time: '07:30',
       title: 'Desayuno',
-      isCompleted: mealRecords?.desayuno?.did_eat || false,
-      color: '#F97316' // food
+      isCompleted: breakfastCompleted,
+      color: '#F97316'
     },
     {
-      id: 'snack',
-      time: '10:00 a. m.',
-      title: 'Merienda',
-      isCompleted: mealRecords?.merienda?.did_eat || false,
-      color: '#F97316' // food
+      id: 'snack_morning',
+      time: '10:00',
+      title: 'Merienda mañana',
+      isCompleted: morningSnackCompleted,
+      color: '#F97316'
     },
     {
       id: 'lunch',
-      time: '13:00 p. m.',
-      title: 'Almuerzo',
-      isCompleted: mealRecords?.almuerzo?.did_eat || false,
-      color: '#F97316' // food
+      time: '13:00',
+      title: 'Almuerzo + caminata',
+      isCompleted: lunchCompleted,
+      color: '#F97316'
     },
     {
-      id: 'movement',
-      time: 'Tarde',
-      title: 'Caminata / Ejercicio',
-      isCompleted: movementRecord?.did_exercise || (movementRecord?.walk_minutes || 0) >= 15,
-      color: '#22C55E' // movement
+      id: 'snack_afternoon',
+      time: '16:00',
+      title: 'Merienda tarde',
+      isCompleted: afternoonSnackCompleted,
+      color: '#F97316'
+    },
+    {
+      id: 'exercise',
+      time: '19:00',
+      title: 'Ejercicio',
+      isCompleted: !!movementRecord?.did_exercise,
+      color: '#22C55E'
     },
     {
       id: 'study',
-      time: 'Tarde',
-      title: 'Estudio y aprendizaje',
-      isCompleted: studyRecord?.did_study || false,
-      color: '#3B82F6' // study
+      time: '20:00',
+      title: 'Estudio',
+      isCompleted: !!studyRecord?.did_study,
+      color: '#3B82F6'
     },
     {
       id: 'devices',
-      time: '10:00 p. m.',
-      title: 'Entregar aparatos e ir a cama',
-      // CORRECCIÓN APLICADA AQUÍ: device_delivered_at
-      isCompleted: sleepRecord?.device_delivered_at != null && sleepRecord?.bed_time != null,
-      color: '#6366F1' // sleep
+      time: '22:00',
+      title: 'Entregar dispositivos',
+      isCompleted: hasValue(sleepRecord?.device_delivered_at),
+      color: '#6366F1'
     },
     {
-      id: 'asleep',
-      time: '11:00 p. m.',
-      title: 'Ya dormía',
-      isCompleted: sleepRecord?.asleep_at_11 === true,
-      color: '#6366F1' // sleep
+      id: 'sleep',
+      time: '23:00',
+      title: 'Dormir',
+      isCompleted: sleepRecord?.slept_by_11 === true || sleepRecord?.asleep_at_11 === true,
+      color: '#6366F1'
     }
   ]
 
+  const eventsWithStatus = timelineEvents.map((event) => ({
+    ...event,
+    isUpcoming: isUpcoming(event.time, event.isCompleted),
+    isOverdue: isOverdue(event.time, event.isCompleted)
+  }))
+
   return (
     <Card>
-      <Title>Línea del día</Title>
+      <Header>
+        <Title>Tu día</Title>
+        <CurrentTime>{now.format('hh:mm A')}</CurrentTime>
+      </Header>
+
       <TimelineContainer>
-        {timelineEvents.map((event, index) => {
-          const isLast = index === timelineEvents.length - 1
+        {eventsWithStatus.map((event, index) => {
+          const isLast = index === eventsWithStatus.length - 1
 
           return (
-            <TimelineItem 
+            <TimelineItem
               key={event.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.05 }}
             >
               <LeftCol>
-                <TimeText $isCompleted={event.isCompleted}>{event.time}</TimeText>
+                <TimeText
+                  $isCompleted={event.isCompleted}
+                  $isUpcoming={event.isUpcoming}
+                  $isOverdue={event.isOverdue}
+                >
+                  {event.time}
+                </TimeText>
               </LeftCol>
 
               <CenterCol>
                 <NodeWrapper>
-                  <IconNode $isCompleted={event.isCompleted} $color={event.color}>
-                    {event.isCompleted ? <BsCheckCircleFill /> : <BsCircleFill size={12} />}
+                  <IconNode
+                    $isCompleted={event.isCompleted}
+                    $isUpcoming={event.isUpcoming}
+                    $isOverdue={event.isOverdue}
+                    $color={event.color}
+                  >
+                    {event.isCompleted ? (
+                      <BsCheckCircleFill />
+                    ) : event.isUpcoming ? (
+                      <BsClock />
+                    ) : (
+                      <BsCircleFill size={12} />
+                    )}
                   </IconNode>
                 </NodeWrapper>
-                {/* Línea conectora vertical */}
-                {!isLast && <Line $isCompleted={event.isCompleted} $color={event.color} />}
+
+                {!isLast && (
+                  <Line
+                    $isCompleted={event.isCompleted}
+                    $isUpcoming={event.isUpcoming}
+                    $isOverdue={event.isOverdue}
+                    $color={event.color}
+                  />
+                )}
               </CenterCol>
 
               <RightCol>
-                <EventTitle $isCompleted={event.isCompleted}>{event.title}</EventTitle>
+                <EventTitle
+                  $isCompleted={event.isCompleted}
+                  $isUpcoming={event.isUpcoming}
+                  $isOverdue={event.isOverdue}
+                >
+                  {event.title}
+                </EventTitle>
               </RightCol>
             </TimelineItem>
           )
@@ -117,6 +208,17 @@ export default function DayTimeline() {
 
 // ==================== STYLED COMPONENTS ====================
 
+const pulse = keyframes`
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+`
+
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
@@ -126,11 +228,27 @@ const Card = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.xl};
 `
 
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+`
+
 const Title = styled.h3`
   font-size: ${({ theme }) => theme.typography.sizes.md};
   font-weight: ${({ theme }) => theme.typography.weights.bold};
   color: ${({ theme }) => theme.colors.textPrimary};
-  margin: 0 0 ${({ theme }) => theme.spacing.lg} 0;
+  margin: 0;
+`
+
+const CurrentTime = styled.div`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.primary};
+  background: ${({ theme }) => `${theme.colors.primary}15`};
+  padding: 4px 10px;
+  border-radius: 8px;
 `
 
 const TimelineContainer = styled.div`
@@ -154,8 +272,17 @@ const LeftCol = styled.div`
 const TimeText = styled.span`
   font-size: 12px;
   font-weight: 700;
-  color: ${({ $isCompleted, theme }) => $isCompleted ? theme.colors.textPrimary : theme.colors.textSecondary};
-  opacity: ${({ $isCompleted }) => $isCompleted ? 1 : 0.7};
+  color: ${({ $isCompleted, $isUpcoming, $isOverdue, theme }) => {
+    if ($isCompleted) return theme.colors.textPrimary
+    if ($isUpcoming) return theme.colors.primary
+    if ($isOverdue) return theme.colors.danger
+    return theme.colors.textSecondary
+  }};
+  opacity: ${({ $isCompleted, $isUpcoming }) => {
+    if ($isUpcoming) return 1
+    if ($isCompleted) return 1
+    return 0.7
+  }};
 `
 
 const CenterCol = styled.div`
@@ -179,15 +306,31 @@ const IconNode = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ $isCompleted, $color, theme }) => $isCompleted ? $color : theme.colors.border};
-  font-size: ${({ $isCompleted }) => $isCompleted ? '20px' : '12px'};
+  color: ${({ $isCompleted, $isUpcoming, $isOverdue, $color, theme }) => {
+    if ($isCompleted) return $color
+    if ($isUpcoming) return theme.colors.primary
+    if ($isOverdue) return theme.colors.danger
+    return theme.colors.border
+  }};
+  font-size: ${({ $isCompleted, $isUpcoming }) => {
+    if ($isUpcoming) return '24px'
+    if ($isCompleted) return '20px'
+    return '12px'
+  }};
   transition: all 0.3s ease;
+  animation: ${({ $isUpcoming }) =>
+    $isUpcoming ? pulse : 'none'} 2s ease-in-out infinite;
 `
 
 const Line = styled.div`
   width: 2px;
   flex-grow: 1;
-  background: ${({ $isCompleted, $color, theme }) => $isCompleted ? `${$color}66` : theme.colors.border};
+  background: ${({ $isCompleted, $isUpcoming, $isOverdue, $color, theme }) => {
+    if ($isCompleted) return `${$color}66`
+    if ($isUpcoming) return theme.colors.primary
+    if ($isOverdue) return theme.colors.danger
+    return theme.colors.border
+  }};
   margin-top: -4px;
   margin-bottom: -4px;
   transition: background 0.3s ease;
@@ -202,10 +345,20 @@ const RightCol = styled.div`
 
 const EventTitle = styled.h4`
   font-size: 14px;
-  font-weight: 700;
+  font-weight: ${({ $isUpcoming }) => ($isUpcoming ? 800 : 700)};
   margin: 0;
-  color: ${({ $isCompleted, theme }) => $isCompleted ? theme.colors.textPrimary : theme.colors.textSecondary};
-  text-decoration: ${({ $isCompleted }) => $isCompleted ? 'line-through' : 'none'};
-  opacity: ${({ $isCompleted }) => $isCompleted ? 0.7 : 1};
+  color: ${({ $isCompleted, $isUpcoming, $isOverdue, theme }) => {
+    if ($isUpcoming) return theme.colors.primary
+    if ($isOverdue) return theme.colors.danger
+    if ($isCompleted) return theme.colors.textPrimary
+    return theme.colors.textSecondary
+  }};
+  text-decoration: ${({ $isCompleted }) =>
+    $isCompleted ? 'line-through' : 'none'};
+  opacity: ${({ $isCompleted, $isUpcoming }) => {
+    if ($isUpcoming) return 1
+    if ($isCompleted) return 0.7
+    return 1
+  }};
   transition: all 0.3s ease;
 `

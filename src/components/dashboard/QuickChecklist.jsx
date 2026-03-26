@@ -1,72 +1,73 @@
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
 import { BsCheckCircleFill, BsCircle } from 'react-icons/bs'
+import { useNavigate } from 'react-router-dom'
 
-// Importamos los hooks centralizados para leer datos precisos del día
-import useSleepModule from '../../hooks/useSleepModule'
-import useFoodModule from '../../hooks/useFoodModule'
-import useMovementModule from '../../hooks/useMovementModule'
-import useStudyModule from '../../hooks/useStudyModule'
-import useHouseholdModule from '../../hooks/useHouseholdModule'
-import useCleaningModule from '../../hooks/useCleaningModule'
+/**
+ * QuickChecklist — Checklist rápido del Dashboard.
+ * Recibe datos por props (NO hace queries propias).
+ * PROMPT 3-4: Arquitectura correcta según CLAUDE.md.
+ */
+export default function QuickChecklist({
+  sleepRecord,
+  mealRecords,
+  movementRecord,
+  studyRecord,
+  cleaningRecord,
+  hasHouseholdRecord
+}) {
+  const navigate = useNavigate()
 
-export default function QuickChecklist() {
-  // Consultamos los registros específicos del día
-  const { sleepRecord } = useSleepModule()
-  const { mealRecords } = useFoodModule()
-  const { movementRecord } = useMovementModule()
-  const { studyRecord } = useStudyModule()
-  const { hasRecord: hasHouseholdRecord } = useHouseholdModule()
-  const { cleaningRecord } = useCleaningModule()
-
-  // Rediseñamos el checklist para que sea único y no redundante
+  // 7 items del checklist según CLAUDE.md PROMPT 3-4-1
   const checklist = [
     {
       id: 'bed',
-      label: 'Cama matutina (Tendida)',
-      // Vigilamos si limpieza está completado (points > 0), pero mostramos etiqueta de Cama
-      isCompleted: (cleaningRecord?.points_earned || 0) > 0,
-      color: '#EAB308' // cleaning
-    },
-    {
-      id: 'breakfast',
-      label: 'Nutrición (Desayuno)',
-      isCompleted: mealRecords?.desayuno?.did_eat || false,
-      color: '#F97316' // food
+      label: '🛏️ Cama tendida',
+      isCompleted: cleaningRecord?.bed_made || false,
+      color: '#EAB308', // cleaning
+      route: '/habits/cleaning'
     },
     {
       id: 'water',
-      label: 'Hidratación (8 vasos)',
+      label: '💧 8 vasos de agua',
       isCompleted: (movementRecord?.water_glasses || 0) >= 8,
-      color: '#22C55E' // movement
-    },
-    {
-      id: 'studyNote',
-      label: 'Crecimiento (Nota Estudio)',
-      // ÚNICO: Vigilamos si escribió una nota de aprendizaje, no si solo estudió
-      isCompleted: (studyRecord?.learning_note?.length || 0) > 10,
-      color: '#3B82F6' // study
+      color: '#22C55E', // movement
+      route: '/habits/movement'
     },
     {
       id: 'exercise',
-      label: 'Actividad Física (Ejercicio)',
-      // ÚNICO: Vigilamos el ejercicio intenso, no la caminata
+      label: '⚡ Ejercicio',
       isCompleted: movementRecord?.did_exercise || false,
-      color: '#22C55E' // movement
-    },
-    {
-      id: 'household',
-      label: 'Tareas del Hogar Completas',
-      // Vigilamos que el módulo Hogar esté listo, pero con un nombre más claro
-      isCompleted: hasHouseholdRecord,
-      color: '#D97706' // household
+      color: '#22C55E', // movement
+      route: '/habits/movement'
     },
     {
       id: 'devices',
-      label: 'Descanso Digital (Celular)',
-      // Vigilamos específicamente que entregó el dispositivo (device_delivered_at en Supabase)
+      label: '📱 Entregó dispositivos',
       isCompleted: sleepRecord?.device_delivered_at != null,
-      color: '#6366F1' // sleep
+      color: '#6366F1', // sleep
+      route: '/habits/sleep'
+    },
+    {
+      id: 'study',
+      label: '📚 Estudió hoy',
+      isCompleted: studyRecord?.did_study || false,
+      color: '#3B82F6', // study
+      route: '/habits/study'
+    },
+    {
+      id: 'room',
+      label: '🧹 Cuarto limpio',
+      isCompleted: cleaningRecord?.room_clean || false,
+      color: '#EAB308', // cleaning
+      route: '/habits/cleaning'
+    },
+    {
+      id: 'household',
+      label: '🏠 Tareas del hogar',
+      isCompleted: hasHouseholdRecord,
+      color: '#14B8A6', // household
+      route: '/habits/household'
     }
   ]
 
@@ -77,19 +78,21 @@ export default function QuickChecklist() {
   return (
     <Card>
       <Header>
-        <Title>Checklist de Acciones Clave</Title>
+        <Title>Resumen del día</Title>
         <Counter $isComplete={allCompleted}>
-          {completedCount}/{totalCount}
+          {completedCount} / {totalCount}
         </Counter>
       </Header>
 
       <List>
         {checklist.map((item, index) => (
-          <ListItem 
+          <ListItem
             key={item.id}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate(item.route)}
           >
             <IconWrapper $isCompleted={item.isCompleted} $color={item.color}>
               {item.isCompleted ? <BsCheckCircleFill /> : <BsCircle />}
@@ -98,13 +101,13 @@ export default function QuickChecklist() {
           </ListItem>
         ))}
       </List>
-      
+
       {allCompleted && (
         <MotivationalText
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          ¡Perfecto, David! Superaste tus micro-metas de hoy. 🌟
+          ¡Perfecto! Completaste todas las acciones clave del día. 🌟
         </MotivationalText>
       )}
     </Card>
@@ -156,6 +159,14 @@ const ListItem = styled(motion.div)`
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.background};
+  }
 `
 
 const IconWrapper = styled.div`

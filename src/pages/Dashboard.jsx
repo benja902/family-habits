@@ -6,11 +6,14 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { BsBoxArrowRight, BsShieldLockFill } from 'react-icons/bs';import { PageContainer } from '../components/layout/PageContainer';
+import { BsBoxArrowRight, BsShieldLockFill, BsExclamationTriangleFill } from 'react-icons/bs';
+import { PageContainer } from '../components/layout/PageContainer';
 import { AppHeader } from '../components/layout/AppHeader';
 import { ProgressRing } from '../components/ui/ProgressRing';
 import { DayStatusBadge } from '../components/ui/DayStatusBadge';
 import HabitCategoryCard from '../components/habits/HabitCategoryCard';
+import QuickChecklist from '../components/dashboard/QuickChecklist';
+import DayTimeline from '../components/dashboard/DayTimeline';
 import { theme } from '../styles/theme';
 import { HABIT_KEYS } from '../constants/habits.constants';
 import { getGreeting } from '../utils/dates.utils';
@@ -18,10 +21,13 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useDayStore } from '../stores/useDayStore';
 import useDailyRecord from '../hooks/useDailyRecord';
 import useCompletedHabits from '../hooks/useCompletedHabits';
-import QuickChecklist from '../components/dashboard/QuickChecklist';
-import DayTimeline from '../components/dashboard/DayTimeline';
-import { BsExclamationTriangleFill } from 'react-icons/bs';
 import usePunishments from '../hooks/usePunishments';
+import useSleepModule from '../hooks/useSleepModule';
+import useFoodModule from '../hooks/useFoodModule';
+import useMovementModule from '../hooks/useMovementModule';
+import useStudyModule from '../hooks/useStudyModule';
+import useCleaningModule from '../hooks/useCleaningModule';
+import useHouseholdModule from '../hooks/useHouseholdModule';
 
 // Mensajes motivacionales por estado del día
 const MOTIVATIONAL_MESSAGES = {
@@ -39,6 +45,7 @@ const Dashboard = () => {
   const dayPoints = useDayStore((state) => state.dayPoints);
   const completionPct = useDayStore((state) => state.completionPct);
   const dayStatus = useDayStore((state) => state.dayStatus);
+
   // Cargar datos de castigos para la alerta
   const { punishments } = usePunishments();
   const pendingPunishments = punishments?.filter(p => p.status === 'pendiente') || [];
@@ -49,6 +56,14 @@ const Dashboard = () => {
 
   // Cargar hábitos completados del día
   const { completedHabits, completedCount } = useCompletedHabits();
+
+  // Cargar datos de módulos para pasar a QuickChecklist y DayTimeline
+  const { sleepRecord } = useSleepModule();
+  const { mealRecords } = useFoodModule();
+  const { movementRecord } = useMovementModule();
+  const { studyRecord } = useStudyModule();
+  const { cleaningRecord } = useCleaningModule();
+  const { hasRecord: hasHouseholdRecord } = useHouseholdModule();
 
   const handleLogout = () => {
     logout();
@@ -158,8 +173,20 @@ const Dashboard = () => {
       </HabitsSection>
       {/* 👇 AGREGA ESTE BLOQUE AQUÍ 👇 */}
       <div style={{ marginTop: '32px' }}>
-        <QuickChecklist />
-        <DayTimeline />
+        <QuickChecklist
+          sleepRecord={sleepRecord}
+          mealRecords={mealRecords}
+          movementRecord={movementRecord}
+          studyRecord={studyRecord}
+          cleaningRecord={cleaningRecord}
+          hasHouseholdRecord={hasHouseholdRecord}
+        />
+        <DayTimeline
+          sleepRecord={sleepRecord}
+          mealRecords={mealRecords}
+          movementRecord={movementRecord}
+          studyRecord={studyRecord}
+        />
       </div>
     </PageContainer>
   );

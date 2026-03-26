@@ -786,6 +786,8 @@ export const calculateAndSaveMealPoints = async (userId, date, mealType, formDat
   totalPoints = Math.max(0, totalPoints)
 
   // Guardar en base de datos
+  // NOTA: La tabla meal_records NO tiene campo did_eat
+  // Si existe el registro, significa que el usuario comió
   const savedRecord = await upsertMealRecord(userId, date, mealType, {
     meal_time: formData.meal_time,
     food_description: formData.food_description,

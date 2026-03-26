@@ -11,6 +11,7 @@ import { Toaster } from 'sonner';
 import AppRouter from './router/AppRouter';
 import { lightTheme, darkTheme } from './styles/theme';
 import useThemeStore from './stores/useThemeStore';
+import useRealtimeListeners from './hooks/useRealtimeListeners';
 
 // Configuración del cliente de React Query
 const queryClient = new QueryClient({
@@ -66,6 +67,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <GlobalStyle />
+          <RealtimeProvider />
           <Toaster
             position="top-center"
             richColors
@@ -82,6 +84,12 @@ function App() {
       </QueryClientProvider>
     </ThemeProvider>
   );
+}
+
+// Componente wrapper para montar el hook global de realtime
+function RealtimeProvider() {
+  useRealtimeListeners();
+  return null;
 }
 
 export default App;

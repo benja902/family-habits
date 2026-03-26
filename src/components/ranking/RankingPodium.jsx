@@ -1,5 +1,5 @@
 import React from 'react'
-import styled from 'styled-components'
+import styled, { keyframes } from 'styled-components'
 import { motion } from 'framer-motion'
 import { FaCrown } from 'react-icons/fa'
 
@@ -12,6 +12,12 @@ const PODIUM_CONFIG = {
 
 // Orden visual en pantalla de izquierda a derecha: 2do, 1ro, 3ro
 const visualOrder = [1, 0, 2]
+
+// Animación pulsante para el usuario actual
+const pulse = keyframes`
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+`
 
 export function RankingPodium({ top3, currentUser }) {
   return (
@@ -103,6 +109,7 @@ const AvatarContainer = styled.div`
   border: 4px solid ${({ $borderColor }) => $borderColor};
   display: flex; align-items: center; justify-content: center;
   box-shadow: ${({ theme }) => theme.shadows.card}; margin-bottom: 8px; z-index: 5; overflow: hidden;
+  animation: ${({ $isMe }) => ($isMe ? pulse : 'none')} 2s ease-in-out infinite;
 `
 const AvatarImage = styled.img`width: 100%; height: 100%; object-fit: cover;`
 const AvatarFallback = styled.div`

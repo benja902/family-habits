@@ -6,6 +6,7 @@ import useRanking from '../hooks/useRanking'
 import { useAuthStore } from '../stores/useAuthStore'
 import { RankingPodium } from '../components/ranking/RankingPodium'
 import { RankingList } from '../components/ranking/RankingList'
+import { BsTrophyFill } from 'react-icons/bs'
 
 export default function Ranking() {
   const [mode, setMode] = useState('general') // 'daily', 'weekly', 'general'
@@ -44,6 +45,14 @@ export default function Ranking() {
 
       {isLoading ? (
         <LoadingText>Calculando posiciones...</LoadingText>
+      ) : ranking.length === 0 ? (
+        <EmptyStateContainer>
+          <TrophyIcon>
+            <BsTrophyFill />
+          </TrophyIcon>
+          <EmptyTitle>¡Aún no hay puntos registrados!</EmptyTitle>
+          <EmptySubtitle>Completa hábitos para aparecer en el ranking</EmptySubtitle>
+        </EmptyStateContainer>
       ) : (
         <>
           <RankingPodium top3={top3} currentUser={currentUser} />
@@ -68,4 +77,19 @@ const ToggleButton = styled.button`
   background: ${({ $isActive, theme }) => ($isActive ? theme.colors.surface : 'transparent')};
   color: ${({ $isActive, theme }) => ($isActive ? theme.colors.textPrimary : theme.colors.textSecondary)};
   box-shadow: ${({ $isActive, theme }) => ($isActive ? theme.shadows.card : 'none')};
+`
+const EmptyStateContainer = styled.div`
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 48px 24px; text-align: center; min-height: 400px;
+`
+const TrophyIcon = styled.div`
+  font-size: 80px; color: ${({ theme }) => theme.points.gold};
+  margin-bottom: 24px; opacity: 0.8;
+`
+const EmptyTitle = styled.h2`
+  font-size: 20px; font-weight: 700; color: ${({ theme }) => theme.colors.textPrimary};
+  margin-bottom: 8px;
+`
+const EmptySubtitle = styled.p`
+  font-size: 15px; color: ${({ theme }) => theme.colors.textSecondary};
 `

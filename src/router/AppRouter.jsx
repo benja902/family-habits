@@ -22,6 +22,7 @@ const Rewards = React.lazy(() => import('../pages/Rewards'));
 const AdminDashboard = React.lazy(() => import('../pages/admin/AdminDashboard'));
 const AdminRewards = React.lazy(() => import('../pages/admin/AdminRewards'));
 const AdminPunishments = React.lazy(() => import('../pages/admin/AdminPunishments'));
+const AdminUsers = React.lazy(() => import('../pages/admin/AdminUsers'));
 // Componente de carga mientras se cargan las páginas
 const LoadingFallback = () => (
   <div style={{
@@ -189,7 +190,7 @@ export const AppRouter = () => {
           />
 
           {/* =========================================================
-              RUTAS PROTEGIDAS POR ROL ADMIN: Panel de Benjamín 
+              RUTAS PROTEGIDAS POR ROL ADMIN: Panel de Benjamín
               ========================================================= */}
           <Route
             path="/admin"
@@ -198,6 +199,18 @@ export const AppRouter = () => {
                 <AdminLayout>
                   <PageTransition>
                     <AdminDashboard />
+                  </PageTransition>
+                </AdminLayout>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminLayout>
+                  <PageTransition>
+                    <AdminUsers />
                   </PageTransition>
                 </AdminLayout>
               </AdminRoute>

@@ -5,7 +5,11 @@ import {
   updateRedemptionStatus,
   assignPunishment,
   cancelPunishment,
-  getFamilyMembers
+  getFamilyMembers,
+  getAllUsersForAdmin,
+  updateUserDetails,
+  toggleUserActive,
+  createUser
 } from '../services/supabase';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabaseClient'; // Cliente de Supabase
@@ -28,6 +32,13 @@ export default function useAdmin() {
     queryKey: ['familyMembers'],
     queryFn: getFamilyMembers,
     staleTime: 1000 * 60 * 60, // Esto casi no cambia, lo guardamos 1 hora
+  });
+
+  // Lista completa de usuarios para gestión (incluye PIN, is_active, etc.)
+  const allUsersQuery = useQuery({
+    queryKey: ['allUsersAdmin'],
+    queryFn: getAllUsersForAdmin,
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
   // ESCUCHA EN TIEMPO REAL: Si alguien pide un premio, el admin se entera al instante
@@ -101,21 +112,75 @@ export default function useAdmin() {
     }
   });
 
+  // 3. MUTATIONS DE USUARIOS
+
+  // Actualizar datos de un usuario (nombre, avatar, PIN)
+  const updateUserMutation = useMutation({
+    mutationFn: ({ userId, updates }) => updateUserDetails(userId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsersAdmin'] });
+      queryClient.invalidateQueries({ queryKey: ['familyMembers'] });
+      toast.success('Usuario actualizado correctamente.');
+    },
+    onError: (error) => {
+      console.error('Error al actualizar usuario:', error);
+      toast.error('No se pudo actualizar el usuario.');
+    }
+  });
+
+  // Activar/Desactivar usuario
+  const toggleUserMutation = useMutation({
+    mutationFn: ({ userId, isActive }) => toggleUserActive(userId, isActive),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['allUsersAdmin'] });
+      queryClient.invalidateQueries({ queryKey: ['familyMembers'] });
+      toast.success(data.is_active ? 'Usuario activado.' : 'Usuario desactivado.');
+    },
+    onError: (error) => {
+      console.error('Error al cambiar estado del usuario:', error);
+      toast.error('No se pudo cambiar el estado del usuario.');
+    }
+  });
+
+  // Crear nuevo usuario
+  const createUserMutation = useMutation({
+    mutationFn: (userData) => createUser(userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUsersAdmin'] });
+      queryClient.invalidateQueries({ queryKey: ['familyMembers'] });
+      toast.success('¡Usuario creado exitosamente!');
+    },
+    onError: (error) => {
+      console.error('Error al crear usuario:', error);
+      toast.error('No se pudo crear el usuario.');
+    }
+  });
+
   return {
     // Datos
     pendingRedemptions: pendingRedemptionsQuery.data || [],
     isLoadingRedemptions: pendingRedemptionsQuery.isLoading,
     familyMembers: familyMembersQuery.data || [],
     isLoadingMembers: familyMembersQuery.isLoading,
-    
-    // Funciones
+    allUsers: allUsersQuery.data || [],
+    isLoadingUsers: allUsersQuery.isLoading,
+
+    // Funciones de premios
     resolveRedemption: resolveRedemptionMutation.mutate,
     isResolvingRedemption: resolveRedemptionMutation.isPending,
-    
+
+    // Funciones de castigos
     assignPunishment: assignPunishmentMutation.mutate,
     isAssigningPunishment: assignPunishmentMutation.isPending,
-    
     cancelPunishment: cancelPunishmentMutation.mutate,
     isCancelingPunishment: cancelPunishmentMutation.isPending,
+
+    // Funciones de usuarios
+    updateUser: updateUserMutation.mutate,
+    isUpdatingUser: updateUserMutation.isPending,
+    toggleUser: toggleUserMutation.mutate,
+    isTogglingUser: toggleUserMutation.isPending,
+    createUser: createUserMutation.mutate,
+    isCreatingUser: createUserMutation.isPending,
   };
 }

@@ -1440,11 +1440,112 @@ export async function getFamilyMembers() {
       .from('users')
       .select('id, name, avatar_url, role')
       .order('name');
-      
+
     if (error) throw error;
     return data;
   } catch (error) {
     console.error('Error al obtener la familia:', error);
+    throw error;
+  }
+}
+
+// ==================== ADMIN: GESTIÓN DE USUARIOS ====================
+
+/**
+ * Obtiene todos los usuarios con información completa para el admin
+ * Incluye: id, name, avatar_url, role, is_active, pin, created_at
+ */
+export async function getAllUsersForAdmin() {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, avatar_url, role, is_active, pin, created_at')
+      .order('name');
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener usuarios para admin:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualiza los datos de un usuario (nombre, avatar, PIN)
+ * @param {string} userId - ID del usuario
+ * @param {object} updates - Campos a actualizar { name?, avatar_url?, pin? }
+ */
+export async function updateUserDetails(userId, updates) {
+  try {
+    // Filtrar solo los campos permitidos
+    const allowedFields = ['name', 'avatar_url', 'pin'];
+    const filteredUpdates = {};
+
+    for (const key of allowedFields) {
+      if (updates[key] !== undefined) {
+        filteredUpdates[key] = updates[key];
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(filteredUpdates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error);
+    throw error;
+  }
+}
+
+/**
+ * Activa o desactiva un usuario
+ * @param {string} userId - ID del usuario
+ * @param {boolean} isActive - true = activo, false = inactivo
+ */
+export async function toggleUserActive(userId, isActive) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ is_active: isActive })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al cambiar estado del usuario:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea un nuevo usuario
+ * @param {object} userData - { name, pin, avatar_url?, role? }
+ */
+export async function createUser(userData) {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        name: userData.name,
+        pin: userData.pin,
+        avatar_url: userData.avatar_url || null,
+        role: userData.role || 'usuario',
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
     throw error;
   }
 }

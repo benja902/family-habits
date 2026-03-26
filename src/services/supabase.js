@@ -1549,3 +1549,249 @@ export async function createUser(userData) {
     throw error;
   }
 }
+
+// ==================== ADMIN: GESTIÓN DE REGLAS DE PUNTOS ====================
+
+/**
+ * Obtiene todas las reglas de puntos organizadas por categoría
+ * Para el panel de administración
+ */
+export async function getAllPointsRules() {
+  try {
+    const { data, error } = await supabase
+      .from('points_rules')
+      .select('*')
+      .order('category', { ascending: true })
+      .order('action_key', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener reglas de puntos:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualiza el valor de puntos de una regla específica
+ * @param {string} ruleId - ID de la regla
+ * @param {number} newPoints - Nuevo valor de puntos
+ */
+export async function updatePointsRule(ruleId, newPoints) {
+  try {
+    const { data, error } = await supabase
+      .from('points_rules')
+      .update({ points: newPoints })
+      .eq('id', ruleId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al actualizar regla de puntos:', error);
+    throw error;
+  }
+}
+
+// ==================== ADMIN: ESTADÍSTICAS ====================
+
+/**
+ * Obtiene estadísticas generales del sistema para el panel admin
+ */
+export async function getAdminStats() {
+  try {
+    // 1. Total de usuarios activos
+    const { count: activeUsersCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    // 2. Total de puntos del día de hoy
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayRecords } = await supabase
+      .from('daily_records')
+      .select('total_points')
+      .eq('date', today);
+
+    const totalPointsToday = todayRecords?.reduce((sum, r) => sum + (r.total_points || 0), 0) || 0;
+
+    // 3. Premios pendientes de aprobación
+    const { count: pendingRewardsCount } = await supabase
+      .from('reward_redemptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pendiente');
+
+    // 4. Castigos pendientes
+    const { count: pendingPunishmentsCount } = await supabase
+      .from('punishments')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pendiente');
+
+    // 5. Hábitos completados hoy
+    const { count: habitsCompletedToday } = await supabase
+      .from('daily_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('date', today)
+      .gte('completion_pct', 100);
+
+    return {
+      activeUsers: activeUsersCount || 0,
+      totalPointsToday,
+      pendingRewards: pendingRewardsCount || 0,
+      pendingPunishments: pendingPunishmentsCount || 0,
+      habitsCompletedToday: habitsCompletedToday || 0,
+    };
+  } catch (error) {
+    console.error('Error al obtener estadísticas generales:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene el ranking de usuarios por puntos totales de la semana actual (Admin)
+ */
+export async function getAdminWeeklyRanking() {
+  try {
+    // Calculamos el inicio de la semana (lunes)
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const monday = new Date(today.setDate(diff));
+    const mondayStr = monday.toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('daily_records')
+      .select(`
+        user_id,
+        total_points,
+        users (name, avatar_url)
+      `)
+      .gte('date', mondayStr);
+
+    if (error) throw error;
+
+    // Agrupar por usuario y sumar puntos
+    const userPointsMap = {};
+    data.forEach(record => {
+      const userId = record.user_id;
+      if (!userPointsMap[userId]) {
+        userPointsMap[userId] = {
+          userId,
+          name: record.users?.name || 'Usuario',
+          avatar_url: record.users?.avatar_url,
+          totalPoints: 0,
+        };
+      }
+      userPointsMap[userId].totalPoints += record.total_points || 0;
+    });
+
+    // Convertir a array y ordenar
+    const ranking = Object.values(userPointsMap)
+      .sort((a, b) => b.totalPoints - a.totalPoints);
+
+    return ranking;
+  } catch (error) {
+    console.error('Error al obtener ranking semanal:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene la actividad de puntos de los últimos 7 días
+ * Para mostrar en gráfica de líneas
+ */
+export async function getPointsActivity() {
+  try {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+    const startDate = sevenDaysAgo.toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('daily_records')
+      .select('date, total_points')
+      .gte('date', startDate)
+      .order('date', { ascending: true });
+
+    if (error) throw error;
+
+    // Agrupar por fecha
+    const pointsByDate = {};
+    data.forEach(record => {
+      if (!pointsByDate[record.date]) {
+        pointsByDate[record.date] = 0;
+      }
+      pointsByDate[record.date] += record.total_points || 0;
+    });
+
+    // Crear array con todos los días (incluso si no hay datos)
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      result.push({
+        date: dateStr,
+        totalPoints: pointsByDate[dateStr] || 0,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error al obtener actividad de puntos:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene estadísticas de hábitos más completados
+ */
+export async function getHabitsStats() {
+  try {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+    const startDate = sevenDaysAgo.toISOString().split('T')[0];
+
+    // Obtener todas las tablas de registros de hábitos
+    const tables = [
+      'sleep_records',
+      'movement_records',
+      'meal_records',
+      'study_records',
+      'cleaning_records',
+      'coexistence_records',
+      'household_task_completions',
+    ];
+
+    const habitNames = {
+      sleep_records: 'Descanso',
+      movement_records: 'Movimiento',
+      meal_records: 'Alimentación',
+      study_records: 'Estudio',
+      cleaning_records: 'Orden',
+      coexistence_records: 'Convivencia',
+      household_task_completions: 'Hogar',
+    };
+
+    const stats = [];
+
+    for (const table of tables) {
+      const { count } = await supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .gte('date', startDate);
+
+      stats.push({
+        habit: habitNames[table],
+        completions: count || 0,
+      });
+    }
+
+    return stats.sort((a, b) => b.completions - a.completions);
+  } catch (error) {
+    console.error('Error al obtener estadísticas de hábitos:', error);
+    throw error;
+  }
+}

@@ -23,6 +23,8 @@ const AdminDashboard = React.lazy(() => import('../pages/admin/AdminDashboard'))
 const AdminRewards = React.lazy(() => import('../pages/admin/AdminRewards'));
 const AdminPunishments = React.lazy(() => import('../pages/admin/AdminPunishments'));
 const AdminUsers = React.lazy(() => import('../pages/admin/AdminUsers'));
+const AdminPoints = React.lazy(() => import('../pages/admin/AdminPoints'));
+const AdminStats = React.lazy(() => import('../pages/admin/AdminStats'));
 // Componente de carga mientras se cargan las páginas
 const LoadingFallback = () => (
   <div style={{
@@ -217,6 +219,18 @@ export const AppRouter = () => {
             }
           />
           <Route
+            path="/admin/points"
+            element={
+              <AdminRoute>
+                <AdminLayout>
+                  <PageTransition>
+                    <AdminPoints />
+                  </PageTransition>
+                </AdminLayout>
+              </AdminRoute>
+            }
+          />
+          <Route
             path="/admin/rewards"
             element={
               <AdminRoute>
@@ -235,6 +249,18 @@ export const AppRouter = () => {
                 <AdminLayout>
                   <PageTransition>
                     <AdminPunishments />
+                  </PageTransition>
+                </AdminLayout>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/stats"
+            element={
+              <AdminRoute>
+                <AdminLayout>
+                  <PageTransition>
+                    <AdminStats />
                   </PageTransition>
                 </AdminLayout>
               </AdminRoute>

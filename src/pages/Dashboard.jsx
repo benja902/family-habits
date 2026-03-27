@@ -15,7 +15,6 @@ import HabitCategoryCard from '../components/habits/HabitCategoryCard';
 import QuickChecklist from '../components/dashboard/QuickChecklist';
 import DayTimeline from '../components/dashboard/DayTimeline';
 import { theme } from '../styles/theme';
-import { HABIT_KEYS } from '../constants/habits.constants';
 import { getGreeting } from '../utils/dates.utils';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useDayStore } from '../stores/useDayStore';
@@ -38,6 +37,17 @@ const MOTIVATIONAL_MESSAGES = {
   'excelente': '¡Día perfecto! 🎉',
 };
 
+const MAIN_FLOW_HABIT_KEYS = [
+  'morning-routine',
+  'movement',
+  'food',
+  'study',
+  'cleaning',
+  'phone-use',
+  'coexistence',
+  'night-routine',
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.currentUser);
@@ -55,7 +65,7 @@ const Dashboard = () => {
   useDailyRecord();
 
   // Cargar hábitos completados del día
-  const { completedHabits, completedCount } = useCompletedHabits();
+  const { completedHabits } = useCompletedHabits();
 
   // Cargar datos de módulos para pasar a QuickChecklist y DayTimeline
   const { sleepRecord } = useSleepModule();
@@ -76,6 +86,26 @@ const Dashboard = () => {
 
   const greeting = getGreeting();
   const headerTitle = `${greeting}, ${currentUser?.name}`;
+
+  const mainFlowCompletedHabits = {
+    'morning-routine': !!sleepRecord?.wake_time || !!cleaningRecord?.bed_made,
+    movement: !!completedHabits.movement,
+    food: !!completedHabits.food,
+    study: !!completedHabits.study,
+    cleaning: !!completedHabits.cleaning,
+    'phone-use': !!(
+      sleepRecord?.device_delivered ||
+      sleepRecord?.device_delivered_at ||
+      sleepRecord?.device_in_bathroom ||
+      sleepRecord?.device_in_bed
+    ),
+    coexistence: !!completedHabits.coexistence,
+    'night-routine': !!(sleepRecord?.sleep_time || sleepRecord?.slept_by_11),
+  };
+
+  const mainFlowCompletedCount = MAIN_FLOW_HABIT_KEYS.filter(
+    (habitKey) => mainFlowCompletedHabits[habitKey]
+  ).length;
 
   const LogoutButton = () => (
     <motion.button
@@ -140,7 +170,7 @@ const Dashboard = () => {
           {MOTIVATIONAL_MESSAGES[dayStatus] || '¡A por ello!'}
         </MotivationalText>
         <ProgressText>
-          {completedCount} de 7 hábitos completados
+          {mainFlowCompletedCount} de {MAIN_FLOW_HABIT_KEYS.length} hábitos completados
         </ProgressText>
       </Hero>
       {/* 👇 ALERTA DINÁMICA DE CASTIGOS 👇 */}
@@ -160,12 +190,12 @@ const Dashboard = () => {
       {/* Grid de hábitos */}
       <HabitsSection>
         <SectionTitle>Mis hábitos de hoy</SectionTitle>
-        <HabitsGrid>
-          {HABIT_KEYS.map((habitKey) => (
+          <HabitsGrid>
+          {MAIN_FLOW_HABIT_KEYS.map((habitKey) => (
             <HabitCategoryCard
               key={habitKey}
               habitKey={habitKey}
-              isCompleted={completedHabits[habitKey]}
+              isCompleted={mainFlowCompletedHabits[habitKey]}
               onClick={() => handleHabitClick(habitKey)}
             />
           ))}
@@ -267,4 +297,3 @@ const AlertText = styled.p`
 `;
 
 export default Dashboard;
-

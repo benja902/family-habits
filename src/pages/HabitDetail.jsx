@@ -6,9 +6,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { BsArrowRight, BsMoonStarsFill, BsPhoneFill, BsSunFill } from 'react-icons/bs';
 import AppHeader from '../components/layout/AppHeader';
 import PageContainer from '../components/layout/PageContainer';
-import SleepModule from '../components/habits/SleepModule';
 import PhoneUseModule from '../components/habits/PhoneUseModule';
 import NightRoutineModule from '../components/habits/NightRoutineModule';
 import MorningRoutineModule from '../components/habits/MorningRoutineModule';
@@ -72,6 +72,144 @@ const BackButton = styled(motion.button)`
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
+const LegacyBridge = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.xl} ${({ theme }) => theme.spacing.md};
+`;
+
+const BridgeCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+`;
+
+const BridgeTitle = styled.h2`
+  margin: 0 0 ${({ theme }) => theme.spacing.sm};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
+`;
+
+const BridgeText = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  line-height: 1.5;
+`;
+
+const BridgeGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const BridgeOption = styled(motion.button)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.md};
+  width: 100%;
+  border: 1px solid ${({ $color }) => `${$color}33`};
+  background: ${({ $color }) => `${$color}12`};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  padding: ${({ theme }) => theme.spacing.lg};
+  cursor: pointer;
+  text-align: left;
+`;
+
+const BridgeOptionContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const BridgeIcon = styled.div`
+  color: ${({ $color }) => $color};
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const BridgeOptionTitle = styled.div`
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+`;
+
+const BridgeOptionText = styled.div`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  margin-top: 2px;
+`;
+
+function LegacySleepBridge({ navigate }) {
+  const options = [
+    {
+      id: 'morning-routine',
+      title: 'Rutina de mañana',
+      text: 'Levantarte a tiempo y tender la cama.',
+      icon: <BsSunFill />,
+      color: HABIT_COLORS.sleep,
+    },
+    {
+      id: 'phone-use',
+      title: 'Rutina del celular',
+      text: 'Entrega del celular y uso en baño o cama.',
+      icon: <BsPhoneFill />,
+      color: HABIT_COLORS.sleep,
+    },
+    {
+      id: 'night-routine',
+      title: 'Rutina de noche',
+      text: 'Hora de dormir y cierre del día.',
+      icon: <BsMoonStarsFill />,
+      color: HABIT_COLORS.sleep,
+    },
+  ];
+
+  return (
+    <LegacyBridge>
+      <BridgeCard>
+        <BridgeTitle>Este módulo ya no se usa directamente</BridgeTitle>
+        <BridgeText>
+          La antigua ruta <strong>sleep</strong> fue reemplazada por tres módulos más claros.
+          Elige a cuál quieres ir.
+        </BridgeText>
+      </BridgeCard>
+
+      <BridgeGrid>
+        {options.map((option) => (
+          <BridgeOption
+            key={option.id}
+            $color={option.color}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate(`/habits/${option.id}`)}
+          >
+            <BridgeOptionContent>
+              <BridgeIcon $color={option.color}>{option.icon}</BridgeIcon>
+              <div>
+                <BridgeOptionTitle>{option.title}</BridgeOptionTitle>
+                <BridgeOptionText>{option.text}</BridgeOptionText>
+              </div>
+            </BridgeOptionContent>
+            <BridgeIcon $color={option.color}>
+              <BsArrowRight />
+            </BridgeIcon>
+          </BridgeOption>
+        ))}
+      </BridgeGrid>
+
+      <BackButton whileTap={{ scale: 0.96 }} onClick={() => navigate('/dashboard')}>
+        Volver al Dashboard
+      </BackButton>
+    </LegacyBridge>
+  );
+}
+
 // ==================== COMPONENTE ====================
 
 export default function HabitDetail() {
@@ -80,7 +218,7 @@ export default function HabitDetail() {
 
   // Mapa de módulos disponibles
   const HABIT_MODULES = {
-    sleep: <SleepModule />,
+    sleep: <LegacySleepBridge navigate={navigate} />,
     'morning-routine': <MorningRoutineModule />,
     'phone-use': <PhoneUseModule />,
     'night-routine': <NightRoutineModule />,

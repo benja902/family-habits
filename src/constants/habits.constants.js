@@ -17,6 +17,9 @@ export const HABIT_KEYS = [
 // Nombres cortos en español (para cards y navegación)
 export const HABIT_LABELS = {
   sleep: 'Rutina',
+  'morning-routine': 'Mañana',
+  'phone-use': 'Celular',
+  'night-routine': 'Noche',
   movement: 'Movimiento',
   food: 'Alimentación',
   study: 'Estudio',
@@ -28,6 +31,9 @@ export const HABIT_LABELS = {
 // Nombres completos en español (para headers de módulos)
 export const HABIT_LABELS_FULL = {
   sleep: 'Rutina, celular y noche',
+  'morning-routine': 'Rutina de mañana',
+  'phone-use': 'Rutina del celular',
+  'night-routine': 'Rutina de noche',
   movement: 'Movimiento y salud física',
   food: 'Alimentación',
   study: 'Estudio y crecimiento',
@@ -39,6 +45,9 @@ export const HABIT_LABELS_FULL = {
 // Íconos de react-icons/bs (Bootstrap Icons)
 export const HABIT_ICONS = {
   sleep: 'BsMoonStarsFill',
+  'morning-routine': 'BsSunFill',
+  'phone-use': 'BsPhoneFill',
+  'night-routine': 'BsMoonStarsFill',
   movement: 'BsLightningChargeFill',
   food: 'BsEggFried',
   study: 'BsBookFill',
@@ -50,6 +59,9 @@ export const HABIT_ICONS = {
 // Colores hex de cada ámbito (sincronizados con theme.HABIT_COLORS)
 export const HABIT_COLORS = {
   sleep: '#6366F1',
+  'morning-routine': '#6366F1',
+  'phone-use': '#6366F1',
+  'night-routine': '#6366F1',
   movement: '#22C55E',
   food: '#F97316',
   study: '#3B82F6',

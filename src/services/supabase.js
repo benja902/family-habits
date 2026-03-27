@@ -7,7 +7,14 @@
 import { supabase } from '../lib/supabaseClient';
 import { applyPunctuality, calculateProportional } from '../utils/points.utils';
 import { isBeforeCurrentTime, isFutureTime } from '../utils/dates.utils';
-import { DEVICE_CURFEW, MAX_TV_MINUTES, WAKE_TARGET } from '../constants/habits.constants'; // Verifica que este import exista arriba
+import {
+  DEVICE_CURFEW,
+  MAX_TV_MINUTES,
+  MAX_WATER_GLASSES,
+  MIN_EXERCISE_MINUTES,
+  MIN_WALK_AFTER_LUNCH_MINUTES,
+  WAKE_TARGET,
+} from '../constants/habits.constants';
 // ==================== USUARIOS ====================
 
 /**
@@ -527,7 +534,7 @@ export async function getCompletedHabitsToday(userId, date) {
 
     return {
       sleep: !!sleepData.data,
-      movement: !!(movementData.data && movementData.data.points_earned > 0),
+      movement: !!movementData.data,
       food: !!(foodData.data && foodData.data.length > 0),
       study: !!(studyData.data && studyData.data.points_earned > 0),
       cleaning: !!(cleaningData.data && cleaningData.data.points_earned > 0),
@@ -623,7 +630,7 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
     let totalPoints = 0;
 
     // 1. Ejercicio
-    if (formData.did_exercise && formData.exercise_minutes >= 20) {
+    if (formData.did_exercise && formData.exercise_minutes >= MIN_EXERCISE_MINUTES) {
       // Ejercicio completo (>= 20 minutos)
       totalPoints += 100;
       await addPointTransaction(
@@ -634,9 +641,13 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
         'movement',
         'exercise_completed'
       );
-    } else if (formData.did_exercise && formData.exercise_minutes > 0 && formData.exercise_minutes < 20) {
+    } else if (
+      formData.did_exercise &&
+      formData.exercise_minutes > 0 &&
+      formData.exercise_minutes < MIN_EXERCISE_MINUTES
+    ) {
       // Ejercicio parcial (< 20 minutos)
-      const points = calculateProportional(formData.exercise_minutes, 20, 100);
+      const points = calculateProportional(formData.exercise_minutes, MIN_EXERCISE_MINUTES, 100);
       totalPoints += points;
       await addPointTransaction(
         userId,
@@ -650,7 +661,7 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
 
     // 2. Agua
     if (formData.water_glasses > 0) {
-      const points = calculateProportional(formData.water_glasses, 8, 100);
+      const points = calculateProportional(formData.water_glasses, MAX_WATER_GLASSES, 100);
       totalPoints += points;
       await addPointTransaction(
         userId,
@@ -663,7 +674,7 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
     }
 
     // 3. Caminata después del almuerzo
-    if (formData.walk_after_lunch) {
+    if (formData.walk_after_lunch && formData.walk_minutes >= MIN_WALK_AFTER_LUNCH_MINUTES) {
       totalPoints += 50;
       await addPointTransaction(
         userId,

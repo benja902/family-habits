@@ -65,4 +65,5 @@ export const DEVICE_CURFEW = '22:00';
 export const SLEEP_TARGET = '23:00';
 export const WAKE_TARGET = '06:30';
 export const MIN_EXERCISE_MINUTES = 20;
+export const MIN_WALK_AFTER_LUNCH_MINUTES = 1;
 export const MIN_STUDY_MINUTES = 30;

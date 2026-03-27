@@ -22,7 +22,7 @@ export default function useMovementModule() {
   })
 
   // Determinar si ya hay un registro guardado
-  const hasRecord = movementRecord && movementRecord.points_earned > 0
+  const hasRecord = !!movementRecord
 
   // Mutation para guardar el registro
   const mutation = useMutation({

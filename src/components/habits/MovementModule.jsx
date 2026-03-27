@@ -4,7 +4,11 @@ import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BsCupFill } from 'react-icons/bs'
 import useMovementModule from '../../hooks/useMovementModule'
-import { MIN_EXERCISE_MINUTES } from '../../constants/habits.constants'
+import {
+  MAX_WATER_GLASSES,
+  MIN_EXERCISE_MINUTES,
+  MIN_WALK_AFTER_LUNCH_MINUTES,
+} from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 
@@ -57,11 +61,11 @@ export default function MovementModule() {
   }
 
   const calculateWaterPoints = () => {
-    return Math.round((waterGlasses / 8) * 100)
+    return Math.round((waterGlasses / MAX_WATER_GLASSES) * 100)
   }
 
   const calculateWalkPoints = () => {
-    return walkAfterLunch && walkMinutes > 0 ? 50 : 0
+    return walkAfterLunch && walkMinutes >= MIN_WALK_AFTER_LUNCH_MINUTES ? 50 : 0
   }
 
   const exercisePoints = calculateExercisePoints()
@@ -222,7 +226,7 @@ export default function MovementModule() {
                   <WaterText $isComplete={field.value >= 8}>
                     {field.value >= 8
                       ? '¡Meta cumplida! 💧'
-                      : `${field.value} / 8 vasos`}
+                      : `${field.value} / ${MAX_WATER_GLASSES} vasos`}
                   </WaterText>
                 </>
               )}
@@ -241,7 +245,7 @@ export default function MovementModule() {
               <ToggleCard $isActive={field.value}>
                 <ToggleLabel>
                   ¿Caminaste después del almuerzo?
-                  {field.value && <Badge>+50 pts</Badge>}
+                  {walkAfterLunch && walkMinutes >= MIN_WALK_AFTER_LUNCH_MINUTES && <Badge>+50 pts</Badge>}
                 </ToggleLabel>
                 <ToggleSwitch
                   type="button"
@@ -267,10 +271,13 @@ export default function MovementModule() {
                   <Label>Minutos de caminata</Label>
                   <Input
                     type="number"
-                    min="1"
+                    min={MIN_WALK_AFTER_LUNCH_MINUTES}
                     max="120"
                     {...register('walk_minutes')}
                   />
+                  <Hint>
+                    Registra al menos {MIN_WALK_AFTER_LUNCH_MINUTES} minuto para sumar puntos.
+                  </Hint>
                 </FormGroup>
               </WalkDetails>
             )}

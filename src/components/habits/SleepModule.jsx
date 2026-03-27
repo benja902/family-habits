@@ -1,6 +1,6 @@
 /**
- * Módulo de descanso y dispositivos
- * Formulario para registrar hábitos de sueño y uso de dispositivos
+ * Módulo transitorio de rutina, celular y noche.
+ * Agrupa mañana, PhoneUse y cierre del día mientras conservamos el guardado legacy.
  */
 
 import { useForm, Controller } from 'react-hook-form';
@@ -603,9 +603,9 @@ export default function SleepModule() {
 
       <FormContent onSubmit={handleSubmit(onSubmit)}>
         <TransitionBanner>
-          <TransitionTitle>Transición de módulo</TransitionTitle>
+          <TransitionTitle>Rutina del día</TransitionTitle>
           <TransitionText>
-            Por ahora este módulo sigue guardándose como <strong>sleep</strong>, pero ya está organizado como rutina de mañana, <strong>PhoneUse</strong> y rutina de noche.
+            Aquí registras mañana, celular y noche en un solo espacio. Internamente todavía usa la base del módulo <strong>sleep</strong>.
           </TransitionText>
         </TransitionBanner>
 
@@ -716,9 +716,9 @@ export default function SleepModule() {
 
         {/* ==================== SECCIÓN 2: CELULAR ==================== */}
         <SectionTitle>📱 Uso del celular</SectionTitle>
-        <SectionDescription>
-          Esta sección ya funciona como transición al futuro módulo de PhoneUse.
-        </SectionDescription>
+          <SectionDescription>
+            Aquí dejas solo lo relacionado con el uso del celular durante el día y al cerrar la noche.
+          </SectionDescription>
 
         {/* Campo 1: ¿Entregaste tu celular? */}
         <Controller

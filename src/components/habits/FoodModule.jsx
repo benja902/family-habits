@@ -129,7 +129,7 @@ export default function FoodModule() {
       <Container>
       <HydrationCard>
         <SectionTitle>💧 Hidratación</SectionTitle>
-        <Hint style={{ marginTop: 0 }}>La hidratación ya se registra desde alimentación en esta transición.</Hint>
+        <Hint style={{ marginTop: 0 }}>Aquí registras tus vasos de agua del día.</Hint>
         <GlassesContainer>
           {[1, 2, 3, 4, 5, 6, 7, 8].map((glass) => (
             <GlassButton
@@ -272,7 +272,7 @@ export default function FoodModule() {
                         <CounterButton type="button" onClick={() => setValue('carb_count', Math.min(5, formValues.carb_count + 1))}><BsPlus /></CounterButton>
                       </CounterContainer>
                     </Row>
-                    {formValues.carb_count >= 2 && <Hint style={{ color: '#EF4444' }}>Dato informativo, ya no cambia puntos en esta fase.</Hint>}
+                    {formValues.carb_count >= 2 && <Hint style={{ color: '#EF4444' }}>Dato informativo, no cambia puntos.</Hint>}
                   </Card>
 
                   {/* Campos EXCLUSIVOS Almuerzo */}

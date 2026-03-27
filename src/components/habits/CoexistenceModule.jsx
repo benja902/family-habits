@@ -76,12 +76,9 @@ export default function CoexistenceModule() {
 
       <Form onSubmit={handleSubmit(onSubmit)}>
         <SectionTitle>🤝 Respeto y convivencia</SectionTitle>
-        <IntroCard>
-          <IntroTitle>En esta nueva etapa, este módulo queda centrado en una sola pregunta clave.</IntroTitle>
-          <IntroText>
-            Lo importante aquí es registrar si tomaste o no algo ajeno sin permiso. El resto de señales antiguas ya no forman parte del puntaje principal.
-          </IntroText>
-        </IntroCard>
+        <IntroText>
+          Aquí solo registras si tomaste algo ajeno sin permiso y, si pasó, qué ocurrió.
+        </IntroText>
 
         <ToggleCard 
           as={motion.div}
@@ -100,7 +97,7 @@ export default function CoexistenceModule() {
               </ToggleInfo>
               {formValues.took_others_things && <Badge $color="#EF4444">{COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY} pts</Badge>}
             </div>
-            {formValues.took_others_things && <Hint>Ser honesto aquí también suma</Hint>}
+            {formValues.took_others_things && <Hint>Si pasó, regístralo tal como fue.</Hint>}
           </div>
         </ToggleCard>
 
@@ -178,30 +175,19 @@ const SectionTitle = styled.h2`
   margin: 24px 0 16px 0;
 `
 
+const IntroText = styled.p`
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`
+
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 2px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
-`
-
-const IntroCard = styled(Card)`
-  background: ${({ theme }) => `${theme.colors.surface}`};
-`
-
-const IntroTitle = styled.h3`
-  margin: 0 0 6px 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
-
-const IntroText = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `
 
 const ToggleCard = styled.div`

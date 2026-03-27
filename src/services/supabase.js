@@ -1563,9 +1563,8 @@ export async function getUserRedemptions(userId) {
  */
 export async function redeemReward(userId, rewardId, type) {
   try {
-    // REGLA CLAUDE.md: Los canjes de tipo 'dinero' requieren aprobación del admin
-    // Los demás tipos se aprueban automáticamente
-    const initialStatus = type === 'dinero' ? 'pendiente' : 'aprobado';
+    // Todos los canjes requieren aprobación del admin.
+    const initialStatus = 'pendiente';
 
     const { data, error } = await supabase
       .from('reward_redemptions')

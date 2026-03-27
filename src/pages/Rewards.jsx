@@ -46,6 +46,7 @@ export default function Rewards() {
           {isLoadingPoints ? '...' : balance.toLocaleString('es-PE')} pts
         </PointsValue>
         {!isLoadingPoints && <MoneyEquivalence>Equivale a {formattedMoney}</MoneyEquivalence>}
+        <ApprovalText>Todos los canjes requieren aprobación del admin.</ApprovalText>
       </PointsHeader>
 
       <ToggleContainer>
@@ -136,6 +137,12 @@ const MoneyEquivalence = styled.span`
   font-size: 13px; font-weight: 700; color: ${({ theme }) => theme.colors.success};
   margin-top: 8px; background: ${({ theme }) => `${theme.colors.success}15`};
   padding: 4px 12px; border-radius: 12px;
+`
+const ApprovalText = styled.span`
+  font-size: 12px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.warning};
+  margin-top: 10px;
 `
 const ToggleContainer = styled.div`
   display: flex; background: ${({ theme }) => theme.colors.border};

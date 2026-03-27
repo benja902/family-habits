@@ -20,17 +20,11 @@ export default function useRewards() {
   });
 
   const redeemMutation = useMutation({
-    // 👇 AQUÍ ESTABA EL ERROR: Ahora empatamos perfectamente los datos 👇
     mutationFn: ({ rewardId, type }) => redeemReward(currentUser?.id, rewardId, type),
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['redemptions', currentUser?.id], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' });
-
-      if (variables.type === 'dinero') {
-        toast.success('¡Solicitud enviada! Benjamín debe aprobarla.');
-      } else {
-        toast.success('¡Premio canjeado con éxito!');
-      }
+      toast.success('¡Solicitud enviada! Espera la aprobación del admin.');
     },
     onError: (error) => {
       console.error('Error al canjear:', error);

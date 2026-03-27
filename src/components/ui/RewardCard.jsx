@@ -38,6 +38,11 @@ function resolveRewardIcon(reward) {
 export function RewardCard({ reward, onRedeem, userPoints = 0, isRedeeming }) {
   const Icon = resolveRewardIcon(reward)
   const canAfford = userPoints >= reward.points_required
+  const buttonLabel = !canAfford
+    ? 'Faltan puntos'
+    : isRedeeming
+      ? '...'
+      : 'Solicitar'
 
   return (
     <Card
@@ -51,6 +56,7 @@ export function RewardCard({ reward, onRedeem, userPoints = 0, isRedeeming }) {
       <Info>
         <Title $canAfford={canAfford}>{reward.name}</Title>
         {reward.description && <Description>{reward.description}</Description>}
+        <ApprovalHint>Requiere aprobación del admin.</ApprovalHint>
       </Info>
 
       <ActionArea>
@@ -60,7 +66,7 @@ export function RewardCard({ reward, onRedeem, userPoints = 0, isRedeeming }) {
           onClick={() => onRedeem(reward)}
           disabled={!canAfford || isRedeeming}
         >
-          {!canAfford ? 'Faltan puntos' : isRedeeming ? '...' : 'Canjear'}
+          {buttonLabel}
         </RedeemButton>
       </ActionArea>
     </Card>
@@ -109,6 +115,12 @@ const Description = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.3;
+`
+const ApprovalHint = styled.p`
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.warning};
 `
 const ActionArea = styled.div`
   display: flex;

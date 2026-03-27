@@ -11,6 +11,7 @@ import PageContainer from '../components/layout/PageContainer';
 import SleepModule from '../components/habits/SleepModule';
 import PhoneUseModule from '../components/habits/PhoneUseModule';
 import NightRoutineModule from '../components/habits/NightRoutineModule';
+import MorningRoutineModule from '../components/habits/MorningRoutineModule';
 import MovementModule from '../components/habits/MovementModule';
 // Agrega esta línea junto a los otros imports de módulos
 import FoodModule from '../components/habits/FoodModule'
@@ -80,6 +81,7 @@ export default function HabitDetail() {
   // Mapa de módulos disponibles
   const HABIT_MODULES = {
     sleep: <SleepModule />,
+    'morning-routine': <MorningRoutineModule />,
     'phone-use': <PhoneUseModule />,
     'night-routine': <NightRoutineModule />,
     movement: <MovementModule />,
@@ -92,12 +94,14 @@ export default function HabitDetail() {
 
   const HABIT_TITLES = {
     ...HABIT_LABELS_FULL,
+    'morning-routine': 'Rutina de mañana',
     'phone-use': 'Rutina del celular',
     'night-routine': 'Rutina de noche',
   };
 
   const HABIT_PAGE_COLORS = {
     ...HABIT_COLORS,
+    'morning-routine': HABIT_COLORS.sleep,
     'phone-use': HABIT_COLORS.sleep,
     'night-routine': HABIT_COLORS.sleep,
   };

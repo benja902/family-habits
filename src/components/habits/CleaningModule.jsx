@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsStars, BsCheckCircleFill } from 'react-icons/bs'
+import { BsCheckCircleFill } from 'react-icons/bs'
 import useCleaningModule from '../../hooks/useCleaningModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
@@ -36,12 +36,13 @@ export default function CleaningModule() {
   const formValues = watch()
   const roomClean = formValues.room_clean
   const spaceOrdered = formValues.space_ordered
-  
-  const allCompleted = roomClean && spaceOrdered
+  const roomOrdered = roomClean || spaceOrdered
 
   const onSubmit = (data) => {
     const cleanData = {
       ...data,
+      room_clean: roomOrdered,
+      space_ordered: roomOrdered,
       notes: data.notes || null,
     }
     saveCleaning(cleanData)
@@ -66,58 +67,40 @@ export default function CleaningModule() {
       <Form onSubmit={handleSubmit(onSubmit)}>
         
         <TransitionNote>
-          La cama ahora se registra en la rutina de mañana. Aquí dejas solo el orden del cuarto.
+          La cama ya se registra en la rutina de mañana. Aquí solo marcas si dejaste tu cuarto ordenado.
         </TransitionNote>
 
-        {/* Card 1: Cuarto */}
         <LargeToggleCard
-          $isOn={roomClean}
-          onClick={() => setValue('room_clean', !roomClean)}
+          $isOn={roomOrdered}
+          onClick={() => {
+            const nextValue = !roomOrdered
+            setValue('room_clean', nextValue)
+            setValue('space_ordered', nextValue)
+          }}
           whileTap={{ scale: 0.97 }}
-          animate={{ scale: roomClean ? [1, 1.03, 0.98, 1] : 1 }}
+          animate={{ scale: roomOrdered ? [1, 1.03, 0.98, 1] : 1 }}
           transition={{ duration: 0.3 }}
         >
-          <IconWrapper $isOn={roomClean}><BsStars /></IconWrapper>
+          <IconWrapper $isOn={roomOrdered}><BsCheckCircleFill /></IconWrapper>
           <TextContent>
-            <CardTitle>Mi cuarto está limpio</CardTitle>
+            <CardTitle>Dejé mi cuarto ordenado</CardTitle>
           </TextContent>
           <RightAction>
-            {roomClean && <Badge>+{CLEANING_ROOM_POINTS} pts</Badge>}
-            <ToggleSwitch $isOn={roomClean}>
-              <ToggleThumb $isOn={roomClean} />
+            {roomOrdered && <Badge>+{CLEANING_ROOM_POINTS} pts</Badge>}
+            <ToggleSwitch $isOn={roomOrdered}>
+              <ToggleThumb $isOn={roomOrdered} />
             </ToggleSwitch>
           </RightAction>
         </LargeToggleCard>
 
-        {/* Card 2: Espacio ordenado */}
-        <LargeToggleCard
-          $isOn={spaceOrdered}
-          onClick={() => setValue('space_ordered', !spaceOrdered)}
-          whileTap={{ scale: 0.97 }}
-          animate={{ scale: spaceOrdered ? [1, 1.03, 0.98, 1] : 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <IconWrapper $isOn={spaceOrdered}><BsCheckCircleFill /></IconWrapper>
-          <TextContent>
-            <CardTitle>Mi espacio está ordenado</CardTitle>
-          </TextContent>
-          <RightAction>
-            {(roomClean || spaceOrdered) && <Badge>+{CLEANING_ROOM_POINTS} pts</Badge>}
-            <ToggleSwitch $isOn={spaceOrdered}>
-              <ToggleThumb $isOn={spaceOrdered} />
-            </ToggleSwitch>
-          </RightAction>
-        </LargeToggleCard>
-
-        {/* Mensaje Motivacional */}
         <AnimatePresence>
-          {allCompleted && (
+          {roomOrdered && (
             <MotivationalMessage
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              ¡Perfecto! 🌟 Tu cuarto quedó en orden
+              ¡Perfecto! Tu cuarto quedó en orden
             </MotivationalMessage>
           )}
         </AnimatePresence>
@@ -132,23 +115,23 @@ export default function CleaningModule() {
         {/* Área Inferior Estándar */}
         <PointsSummaryCard
           pointsSummary={[
-            { label: 'Cuarto ordenado', points: (roomClean || spaceOrdered) ? CLEANING_ROOM_POINTS : 0, color: MODULE_COLOR },
+            { label: 'Cuarto ordenado', points: roomOrdered ? CLEANING_ROOM_POINTS : 0, color: MODULE_COLOR },
           ]}
           totalPoints={
-            ((roomClean || spaceOrdered) ? CLEANING_ROOM_POINTS : 0)
+            (roomOrdered ? CLEANING_ROOM_POINTS : 0)
           }
           accentColor={MODULE_COLOR}
         />
         <FooterSpacer />
       </Form>
 
-      <ModuleSaveButton
-        onSave={handleSubmit(onSubmit)}
-        isSaving={isSaving}
-        label="Guardar orden"
-        color={MODULE_COLOR}
-        icon={<BsStars />}
-      />
+        <ModuleSaveButton
+          onSave={handleSubmit(onSubmit)}
+          isSaving={isSaving}
+          label="Guardar orden"
+          color={MODULE_COLOR}
+          icon={<BsCheckCircleFill />}
+        />
     </Container>
   )
 }

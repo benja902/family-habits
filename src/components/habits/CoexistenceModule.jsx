@@ -1,15 +1,14 @@
 import { useEffect } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsPeopleFill, BsDash, BsPlus, BsStarFill, BsShieldFillCheck, BsExclamationTriangleFill } from 'react-icons/bs'
+import { BsPeopleFill, BsExclamationTriangleFill } from 'react-icons/bs'
 import useCoexistenceModule from '../../hooks/useCoexistenceModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
 import {
   COEXISTENCE_NO_OTHERS_THINGS_POINTS,
   COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY,
-  MAX_TV_MINUTES,
 } from '../../constants/habits.constants'
 
 const MODULE_COLOR = '#EC4899' // Rosa
@@ -17,41 +16,22 @@ const MODULE_COLOR = '#EC4899' // Rosa
 export default function CoexistenceModule() {
   const { coexistenceRecord, isLoading, hasRecord, saveCoexistence, isSaving } = useCoexistenceModule()
   
-  const { register, handleSubmit, watch, control, reset, setValue } = useForm({
+  const { register, handleSubmit, watch, reset, setValue } = useForm({
     defaultValues: {
-      respected_rules: true,
       took_others_things: false,
-      respect_score: 3,
-      tv_minutes: 0,
       incidents: '',
     },
   })
 
   useEffect(() => {
-    if (coexistenceRecord) {
-      reset({
-        respected_rules: coexistenceRecord.respected_rules ?? true,
-        took_others_things: coexistenceRecord.took_others_things || false,
-        respect_score: coexistenceRecord.respect_score || 3,
-        tv_minutes: coexistenceRecord.tv_minutes || 0,
-        incidents: coexistenceRecord.incidents || '',
-      })
-    }
+    reset({
+      took_others_things: coexistenceRecord?.took_others_things || false,
+      incidents: coexistenceRecord?.incidents || '',
+    })
   }, [coexistenceRecord, reset])
 
   const formValues = watch()
-  const showIncidents = formValues.took_others_things === true || formValues.respected_rules === false
-
-  const getScoreText = (score) => {
-    switch(score) {
-      case 1: return 'Estuvo difícil hoy'
-      case 2: return 'Podría mejorar'
-      case 3: return 'Regular'
-      case 4: return 'Bien 👍'
-      case 5: return '¡Excelente! 🌟'
-      default: return ''
-    }
-  }
+  const showIncidents = formValues.took_others_things === true
 
   const calculatePoints = () => {
     let thingsPts = formValues.took_others_things
@@ -68,10 +48,12 @@ export default function CoexistenceModule() {
 
   const onSubmit = (data) => {
     const cleanData = {
-      ...data,
       incidents: data.incidents || null,
-      tv_minutes: Number(data.tv_minutes) || 0,
-      respect_score: Number(data.respect_score) || 3,
+      respected_rules: coexistenceRecord?.respected_rules ?? true,
+      took_others_things: !!data.took_others_things,
+      tv_minutes: coexistenceRecord?.tv_minutes || 0,
+      respect_score: coexistenceRecord?.respect_score || 3,
+      notes: coexistenceRecord?.notes || null,
     }
     saveCoexistence(cleanData)
   }
@@ -93,22 +75,13 @@ export default function CoexistenceModule() {
       </AnimatePresence>
 
       <Form onSubmit={handleSubmit(onSubmit)}>
-        
-        {/* SECCIÓN 1: Reglas y Respeto */}
-        <SectionTitle>🤝 Respeto</SectionTitle>
-        
-        <ToggleCard 
-          as={motion.div}
-          whileTap={{ scale: 0.98 }}
-          $isActive={formValues.respected_rules} 
-          $activeColor={MODULE_COLOR}
-          $activeBg={`${MODULE_COLOR}1A`}
-          onClick={() => setValue('respected_rules', !formValues.respected_rules)}
-        >
-          <ToggleInfo>
-            <BsShieldFillCheck size={24} color={formValues.respected_rules ? MODULE_COLOR : '#9CA3AF'} />            <ToggleLabel>¿Respetaste las normas hoy?</ToggleLabel>
-          </ToggleInfo>
-        </ToggleCard>
+        <SectionTitle>🤝 Respeto y convivencia</SectionTitle>
+        <IntroCard>
+          <IntroTitle>En esta nueva etapa, este módulo queda centrado en una sola pregunta clave.</IntroTitle>
+          <IntroText>
+            Lo importante aquí es registrar si tomaste o no algo ajeno sin permiso. El resto de señales antiguas ya no forman parte del puntaje principal.
+          </IntroText>
+        </IntroCard>
 
         <ToggleCard 
           as={motion.div}
@@ -131,67 +104,7 @@ export default function CoexistenceModule() {
           </div>
         </ToggleCard>
 
-        {/* SECCIÓN 2: Pantallas */}
-        <SectionTitle>📺 Tiempo de pantalla</SectionTitle>
-        <Card>
-          <CounterContainer>
-            <CounterBtn type="button" onClick={() => setValue('tv_minutes', Math.max(0, formValues.tv_minutes - 15))}>
-              <BsDash /> 15m
-            </CounterBtn>
-            <CounterValueLg>{formValues.tv_minutes} min</CounterValueLg>
-            <CounterBtn type="button" onClick={() => setValue('tv_minutes', formValues.tv_minutes + 15)}>
-              <BsPlus /> 15m
-            </CounterBtn>
-          </CounterContainer>
-
-          <ProgressBarContainer>
-            <ProgressFill 
-              $isOver={formValues.tv_minutes > MAX_TV_MINUTES} 
-              style={{ width: `${Math.min(100, (formValues.tv_minutes / MAX_TV_MINUTES) * 100)}%` }} 
-            />
-          </ProgressBarContainer>
-          
-          <ProgressText $isOver={formValues.tv_minutes > MAX_TV_MINUTES}>
-            {`${formValues.tv_minutes} / ${MAX_TV_MINUTES} min · dato informativo`}
-          </ProgressText>
-
-          {formValues.tv_minutes > MAX_TV_MINUTES && (
-            <Hint style={{ color: '#EF4444', textAlign: 'center', marginTop: '8px', fontWeight: 'bold' }}>
-              ⚠ Excediste el tiempo de TV
-            </Hint>
-          )}
-        </Card>
-
-        {/* SECCIÓN 3: Autoevaluación */}
-        <SectionTitle>⭐ ¿Cómo estuvo tu convivencia hoy?</SectionTitle>
-        <Card>
-          <Controller
-            name="respect_score"
-            control={control}
-            render={({ field }) => (
-              <ScoreContainer>
-                {[1, 2, 3, 4, 5].map((score) => (
-                  <motion.button
-                    key={score}
-                    type="button"
-                    whileTap={{ scale: 0.85 }}
-                    onClick={() => field.onChange(score)}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                  >
-                    <BsStarFill 
-                      size={36} 
-                      color={field.value >= score ? '#F59E0B' : '#E2E8F0'} 
-                      style={{ transition: 'color 0.2s' }}
-                    />
-                  </motion.button>
-                ))}
-              </ScoreContainer>
-            )}
-          />
-          <ScoreText>{getScoreText(formValues.respect_score)}</ScoreText>
-        </Card>
-
-        {/* SECCIÓN 4: Incidentes (Condicional) */}
+        {/* SECCIÓN 2: Incidentes (Condicional) */}
         <AnimatePresence>
           {showIncidents && (
             <DetailsContainer
@@ -273,6 +186,24 @@ const Card = styled.div`
   margin-bottom: 16px;
 `
 
+const IntroCard = styled(Card)`
+  background: ${({ theme }) => `${theme.colors.surface}`};
+`
+
+const IntroTitle = styled.h3`
+  margin: 0 0 6px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`
+
+const IntroText = styled.p`
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`
+
 const ToggleCard = styled.div`
   background: ${({ $isActive, $activeBg, theme }) => $isActive ? $activeBg : theme.colors.surface};
   border: 2px solid ${({ $isActive, $activeColor, theme }) => $isActive ? $activeColor : theme.colors.border};
@@ -313,79 +244,6 @@ const Hint = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 8px;
   margin-bottom: 0;
-`
-
-const CounterContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: ${({ theme }) => theme.colors.background};
-  border-radius: 8px;
-  padding: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  margin-bottom: 16px;
-`
-
-const CounterBtn = styled.button`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 2px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 16px;
-  font-weight: 700;
-  color: ${MODULE_COLOR};
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  
-  &:active {
-    transform: scale(0.95);
-  }
-`
-
-const CounterValueLg = styled.span`
-  font-size: 24px;
-  font-weight: 900;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`
-
-const ProgressBarContainer = styled.div`
-  width: 100%;
-  height: 8px;
-  background: ${({ theme }) => theme.colors.border};
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-`
-
-const ProgressFill = styled.div`
-  height: 100%;
-  background: ${({ $isOver }) => $isOver ? '#EF4444' : MODULE_COLOR};
-  transition: width 0.3s ease, background 0.3s ease;
-`
-
-const ProgressText = styled.div`
-  text-align: right;
-  font-size: 12px;
-  font-weight: 600;
-  color: ${({ $isOver, theme }) => $isOver ? '#EF4444' : theme.colors.textSecondary};
-`
-
-const ScoreContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 8px;
-`
-
-const ScoreText = styled.p`
-  text-align: center;
-  font-weight: 600;
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin: 0;
 `
 
 const Textarea = styled.textarea`

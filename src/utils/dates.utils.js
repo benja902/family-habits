@@ -95,6 +95,44 @@ export const formatTime = (timeString) => {
 };
 
 /**
+ * Obtiene la hora actual del dispositivo en formato 'HH:mm'
+ * @returns {string}
+ */
+export const getCurrentTimeString = () => {
+  return dayjs().format('HH:mm');
+};
+
+/**
+ * Verifica si una hora en formato HH:mm es posterior a la hora actual
+ * del dispositivo.
+ * @param {string | null | undefined} timeString
+ * @returns {boolean}
+ */
+export const isFutureTime = (timeString) => {
+  if (!timeString) return false;
+
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const candidate = dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
+
+  return candidate.isAfter(dayjs());
+};
+
+/**
+ * Verifica si una hora en formato HH:mm es anterior a la hora actual
+ * del dispositivo.
+ * @param {string | null | undefined} timeString
+ * @returns {boolean}
+ */
+export const isBeforeCurrentTime = (timeString) => {
+  if (!timeString) return false;
+
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const candidate = dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
+
+  return candidate.isBefore(dayjs());
+};
+
+/**
  * Obtiene el domingo (fin de la semana) de una fecha dada
  * @param {string} dateString - Fecha en formato 'YYYY-MM-DD'
  * @returns {string} - Domingo de esa semana en formato 'YYYY-MM-DD'

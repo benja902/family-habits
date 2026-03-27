@@ -7,7 +7,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getSleepRecord, calculateAndSaveSleepPoints } from '../services/supabase';
 import useAuthStore from '../stores/useAuthStore';
-import useDayStore from '../stores/useDayStore';
 import { getTodayString } from '../utils/dates.utils';
 import { toast } from 'sonner';
 
@@ -58,19 +57,17 @@ export default function useSleepModule() {
       }
 
       toast.success(message);
-      // navigate('/dashboard');
-      // Recargar datos y ESPERAR que terminen antes de navegar
+
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['dailyRecord'] }),
-        queryClient.refetchQueries({ queryKey: ['completedHabits'] }),
+        queryClient.invalidateQueries({ queryKey: ['dailyRecord'] }),
+        queryClient.invalidateQueries({ queryKey: ['completedHabits'] }),
       ]);
 
-      // Invalidar las demás sin esperar
       queryClient.invalidateQueries({ queryKey: ['sleepRecord'] });
       queryClient.invalidateQueries({ queryKey: ['pointTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['ranking'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' });
-      navigate('/dashboard')        // ← al final
+      navigate('/dashboard');
 
     },
     onError: () => {

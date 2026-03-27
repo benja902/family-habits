@@ -4,18 +4,21 @@
  */
 
 import { useForm, Controller } from 'react-hook-form';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useSleepModule from '../../hooks/useSleepModule';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  BsArrowClockwise,
   BsCheckCircleFill,
   BsClockFill,
   BsExclamationTriangleFill,
   BsMoonStarsFill,
+  BsPencilSquare,
 } from 'react-icons/bs';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 import { DEVICE_CURFEW, WAKE_TARGET } from '../../constants/habits.constants';
+import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../utils/dates.utils';
 import { applyPunctuality } from '../../utils/points.utils';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
@@ -222,20 +225,96 @@ const Textarea = styled.textarea`
   }
 `;
 
+const ActionRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+const ActionButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  border: 1px solid ${({ $active, $activeColor, theme }) => (
+    $active ? ($activeColor || theme.colors.primary) : theme.colors.border
+  )};
+  background: ${({ $active, $activeColor, theme }) => (
+    $active ? `${$activeColor || theme.colors.primary}15` : theme.colors.surface
+  )};
+  color: ${({ $active, $activeColor, theme }) => (
+    $active ? ($activeColor || theme.colors.primary) : theme.colors.textPrimary
+  )};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  cursor: pointer;
+  transition: all 0.2s ease;
+`;
+
+const ErrorText = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.danger};
+  margin: 0;
+`;
+
+const StatusBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  width: fit-content;
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  background: ${({ $color }) => `${$color}15`};
+  color: ${({ $color }) => $color};
+`;
+
+const SummaryChips = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.xs};
+`;
+
+const SummaryChip = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  background: ${({ $color }) => `${$color}15`};
+  color: ${({ $color }) => $color};
+`;
+
 // ==================== COMPONENTE ====================
 
 export default function SleepModule() {
+  const [showManualDeviceTime, setShowManualDeviceTime] = useState(false);
+  const [showManualWakeTime, setShowManualWakeTime] = useState(false);
   const { sleepRecord, isLoading, hasRecord, saveSleep, isSaving } = useSleepModule();
-  console.log('isSaving:', isSaving); // 👈 AQUÍ
-  const { control, handleSubmit, watch, reset } = useForm({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm({
     defaultValues: {
       device_delivered: false,
       device_delivered_at: '',
+      device_delivered_at_source: null,
       device_in_bathroom: false,
       device_in_bed: false,
       sleep_time: '',
       slept_by_11: false,
       wake_time: '',
+      wake_time_source: null,
       notes: '',
     },
   });
@@ -246,18 +325,23 @@ export default function SleepModule() {
       reset({
         device_delivered: sleepRecord.device_delivered || false,
         device_delivered_at: sleepRecord.device_delivered_at || '',
+        device_delivered_at_source: sleepRecord.device_delivered_at_source || null,
         device_in_bathroom: sleepRecord.device_in_bathroom || false,
         device_in_bed: sleepRecord.device_in_bed || false,
         sleep_time: sleepRecord.sleep_time || '',
         slept_by_11: sleepRecord.slept_by_11 || false,
         wake_time: sleepRecord.wake_time || '',
+        wake_time_source: sleepRecord.wake_time_source || null,
         notes: sleepRecord.notes || '',
       });
+      setShowManualDeviceTime(!sleepRecord.device_delivered_at_source || sleepRecord.device_delivered_at_source === 'manual');
+      setShowManualWakeTime(!sleepRecord.wake_time_source || sleepRecord.wake_time_source === 'manual');
     }
   }, [sleepRecord, reset]);
 
   // Observar cambios en el formulario para calcular puntos
   const formValues = watch();
+  const currentTime = getCurrentTimeString();
 
   // Calcular puntos en tiempo real
   const calculatePoints = () => {
@@ -283,27 +367,167 @@ export default function SleepModule() {
     }
 
     // 4. Levantado a tiempo (puntos de sueño)
-    if (formValues.wake_time) {
-      const [hours] = formValues.wake_time.split(':').map(Number);
-      if (hours < 7) {
-        sleepPoints += 50;
-      }
+    if (formValues.wake_time && formValues.wake_time <= WAKE_TARGET) {
+      sleepPoints += 50;
     }
 
     return { devicePoints, sleepPoints, total: devicePoints + sleepPoints };
   };
 
   const points = calculatePoints();
+  const isDeviceCurrentMode = formValues.device_delivered_at_source === 'current_time' && !!formValues.device_delivered_at;
+  const isWakeCurrentMode = formValues.wake_time_source === 'current_time' && !!formValues.wake_time;
 
-  const onSubmit = (data) => {
-  const cleanedData = {
-    ...data,
-    device_delivered_at: data.device_delivered_at || null,
-    sleep_time: data.sleep_time || null,
-    wake_time: data.wake_time || null,
+  const setCurrentTimeForField = (fieldName, sourceField) => {
+    const now = getCurrentTimeString();
+    clearErrors(fieldName);
+    setValue(fieldName, now, { shouldDirty: true, shouldValidate: true });
+    setValue(sourceField, 'current_time', { shouldDirty: true });
+
+    if (fieldName === 'device_delivered_at') {
+      setShowManualDeviceTime(false);
+    }
+
+    if (fieldName === 'wake_time') {
+      setShowManualWakeTime(false);
+    }
   };
 
-    // console.log('DATA ENVIADA:', cleanedData);
+  const toggleManualTimeInput = (fieldName) => {
+    if (fieldName === 'device_delivered_at') {
+      setShowManualDeviceTime((value) => !value);
+      clearErrors('device_delivered_at');
+      return;
+    }
+
+    setShowManualWakeTime((value) => !value);
+    clearErrors('wake_time');
+  };
+
+  const handleManualTimeChange = (fieldName, sourceField, value, errorMessage) => {
+    setValue(fieldName, value, { shouldDirty: true, shouldValidate: true });
+    setValue(sourceField, value ? 'manual' : null, { shouldDirty: true });
+
+    if (!value) {
+      clearErrors(fieldName);
+      return;
+    }
+
+    if (isBeforeCurrentTime(value) || isFutureTime(value)) {
+      setError(fieldName, { type: 'manual', message: errorMessage });
+      return;
+    }
+
+    clearErrors(fieldName);
+  };
+
+  const validateClockControlledTime = (fieldName, value, source, errorMessage) => {
+    if (!value || source !== 'manual') return false;
+
+    if (isBeforeCurrentTime(value) || isFutureTime(value)) {
+      setError(fieldName, {
+        type: 'manual',
+        message: errorMessage,
+      });
+      return true;
+    }
+
+    clearErrors(fieldName);
+    return false;
+  };
+
+  const getDeviceTimeFeedback = () => {
+    if (!formValues.device_delivered_at) return null;
+
+    if (errors.device_delivered_at) {
+      return {
+        color: theme.colors.danger,
+        mode: formValues.device_delivered_at_source === 'current_time' ? 'Ahora' : 'Manual',
+        status: 'Inválida',
+        points: null,
+      };
+    }
+
+    const pointsEarned = applyPunctuality(100, formValues.device_delivered_at, DEVICE_CURFEW);
+    const isOnTime = formValues.device_delivered_at <= DEVICE_CURFEW;
+
+    return {
+      color: isOnTime ? theme.colors.success : theme.colors.warning,
+      mode: formValues.device_delivered_at_source === 'current_time' ? 'Ahora' : 'Manual',
+      status: isOnTime ? 'A tiempo' : 'Tarde',
+      points: `+${pointsEarned} pts`,
+    };
+  };
+
+  const getWakeTimeFeedback = () => {
+    if (!formValues.wake_time) return null;
+
+    if (errors.wake_time) {
+      return {
+        color: theme.colors.danger,
+        mode: formValues.wake_time_source === 'current_time' ? 'Ahora' : 'Manual',
+        status: 'Inválida',
+        points: null,
+      };
+    }
+
+    const isOnTime = formValues.wake_time <= WAKE_TARGET;
+
+    return {
+      color: isOnTime ? theme.colors.success : theme.colors.warning,
+      mode: formValues.wake_time_source === 'current_time' ? 'Ahora' : 'Manual',
+      status: isOnTime ? 'A tiempo' : 'Tarde',
+      points: isOnTime ? '+50 pts' : '0 pts',
+    };
+  };
+
+  const deviceTimeFeedback = getDeviceTimeFeedback();
+  const wakeTimeFeedback = getWakeTimeFeedback();
+
+  const onSubmit = (data) => {
+    if (validateClockControlledTime(
+      'device_delivered_at',
+      data.device_delivered_at,
+      data.device_delivered_at_source,
+      'Si ingresas la hora manualmente, debe coincidir con la hora actual.'
+    )) {
+      return;
+    }
+
+    if (data.device_delivered_at && isFutureTime(data.device_delivered_at)) {
+      setError('device_delivered_at', {
+        type: 'manual',
+        message: 'La hora de entrega no puede ser posterior a la hora actual.',
+      });
+      return;
+    }
+
+    if (validateClockControlledTime(
+      'wake_time',
+      data.wake_time,
+      data.wake_time_source,
+      'Si ingresas la hora manualmente, debe coincidir con la hora actual.'
+    )) {
+      return;
+    }
+
+    if (data.wake_time && isFutureTime(data.wake_time)) {
+      setError('wake_time', {
+        type: 'manual',
+        message: 'La hora de levantarse no puede ser posterior a la hora actual.',
+      });
+      return;
+    }
+
+    const cleanedData = {
+      ...data,
+      device_delivered_at: data.device_delivered_at || null,
+      device_delivered_at_source: data.device_delivered_at ? data.device_delivered_at_source || 'manual' : null,
+      sleep_time: data.sleep_time || null,
+      wake_time: data.wake_time || null,
+      wake_time_source: data.wake_time ? data.wake_time_source || 'manual' : null,
+    };
+
     saveSleep(cleanedData);
   };
   if (isLoading) {
@@ -364,36 +588,88 @@ export default function SleepModule() {
                     transition={{ duration: 0.25 }}
                   >
                     <Label>Hora de entrega</Label>
+                    <ActionRow>
+                      <ActionButton
+                        type="button"
+                        $active={isDeviceCurrentMode && !showManualDeviceTime}
+                        $activeColor={theme.colors.success}
+                        onClick={() => setCurrentTimeForField('device_delivered_at', 'device_delivered_at_source')}
+                      >
+                        <BsArrowClockwise />
+                        Registrar hora de ahora
+                      </ActionButton>
+                      <ActionButton
+                        type="button"
+                        $active={showManualDeviceTime}
+                        $activeColor={theme.colors.warning}
+                        onClick={() => toggleManualTimeInput('device_delivered_at')}
+                      >
+                        <BsPencilSquare />
+                        {showManualDeviceTime ? 'Cancelar entrada manual' : 'Escribir hora manual'}
+                      </ActionButton>
+                    </ActionRow>
                     <Controller
                       name="device_delivered_at"
                       control={control}
                       render={({ field: timeField }) => (
                         <>
-                          <TimeInputRow>
-                            <TimeInput
-                              type="time"
-                              {...timeField}
-                            />
-                            {timeField.value && (
-                              <Indicator
-                                $color={
-                                  timeField.value <= DEVICE_CURFEW
-                                    ? theme.colors.success
-                                    : theme.colors.warning
-                                }
-                              >
-                                {timeField.value <= DEVICE_CURFEW ? (
-                                  <BsCheckCircleFill />
-                                ) : (
-                                  <BsExclamationTriangleFill />
+                          {showManualDeviceTime && (
+                            <TimeInputRow>
+                              <TimeInput
+                                type="time"
+                                min={currentTime}
+                                max={currentTime}
+                                value={timeField.value || ''}
+                                onChange={(event) => handleManualTimeChange(
+                                  'device_delivered_at',
+                                  'device_delivered_at_source',
+                                  event.target.value,
+                                  'Debe coincidir con la hora actual.'
                                 )}
-                              </Indicator>
-                            )}
-                          </TimeInputRow>
+                              />
+                              {timeField.value && (
+                                <Indicator
+                                  $color={
+                                    timeField.value <= DEVICE_CURFEW
+                                      ? theme.colors.success
+                                      : theme.colors.warning
+                                  }
+                                >
+                                  {timeField.value <= DEVICE_CURFEW ? (
+                                    <BsCheckCircleFill />
+                                  ) : (
+                                    <BsExclamationTriangleFill />
+                                  )}
+                                </Indicator>
+                              )}
+                            </TimeInputRow>
+                          )}
+                          {deviceTimeFeedback && (
+                            <SummaryChips>
+                              <SummaryChip $color={theme.colors.textSecondary}>
+                                {deviceTimeFeedback.mode}
+                              </SummaryChip>
+                              <SummaryChip $color={deviceTimeFeedback.color}>
+                                {deviceTimeFeedback.status}
+                              </SummaryChip>
+                              {deviceTimeFeedback.points && (
+                                <SummaryChip $color={deviceTimeFeedback.color}>
+                                  {deviceTimeFeedback.points}
+                                </SummaryChip>
+                              )}
+                            </SummaryChips>
+                          )}
+                          {errors.device_delivered_at && (
+                            <ErrorText>{errors.device_delivered_at.message}</ErrorText>
+                          )}
                           <Hint>
-                            <BsClockFill />
-                            Antes de las {DEVICE_CURFEW} = puntos completos
+                            <BsClockFill /> Meta: antes de las {DEVICE_CURFEW}
                           </Hint>
+                          {showManualDeviceTime && !errors.device_delivered_at && (
+                            <Hint>
+                              Debe ser la hora exacta de ahora.
+                            </Hint>
+                          )}
                         </>
                       )}
                     />
@@ -486,23 +762,76 @@ export default function SleepModule() {
         {/* Campo 6: Hora en que te levantaste */}
         <FieldWrapper>
           <Label>Hora en que te levantaste</Label>
+          <ActionRow>
+            <ActionButton
+              type="button"
+              $active={isWakeCurrentMode && !showManualWakeTime}
+              $activeColor={theme.colors.success}
+              onClick={() => setCurrentTimeForField('wake_time', 'wake_time_source')}
+            >
+              <BsArrowClockwise />
+              Registrar hora de ahora
+            </ActionButton>
+            <ActionButton
+              type="button"
+              $active={showManualWakeTime}
+              $activeColor={theme.colors.warning}
+              onClick={() => toggleManualTimeInput('wake_time')}
+            >
+              <BsPencilSquare />
+              {showManualWakeTime ? 'Cancelar entrada manual' : 'Escribir hora manual'}
+            </ActionButton>
+          </ActionRow>
           <Controller
             name="wake_time"
             control={control}
             render={({ field }) => (
               <>
-                <TimeInputRow>
-                  <TimeInput type="time" {...field} />
-                  {field.value && field.value <= WAKE_TARGET && (
-                    <Indicator $color={theme.colors.success}>
-                      <BsCheckCircleFill />
-                    </Indicator>
-                  )}
-                </TimeInputRow>
+                {showManualWakeTime && (
+                  <TimeInputRow>
+                    <TimeInput
+                      type="time"
+                      min={currentTime}
+                      max={currentTime}
+                      value={field.value || ''}
+                      onChange={(event) => handleManualTimeChange(
+                        'wake_time',
+                        'wake_time_source',
+                        event.target.value,
+                        'Debe coincidir con la hora actual.'
+                      )}
+                    />
+                    {field.value && field.value <= WAKE_TARGET && (
+                      <Indicator $color={theme.colors.success}>
+                        <BsCheckCircleFill />
+                      </Indicator>
+                    )}
+                  </TimeInputRow>
+                )}
+                {wakeTimeFeedback && (
+                  <SummaryChips>
+                    <SummaryChip $color={theme.colors.textSecondary}>
+                      {wakeTimeFeedback.mode}
+                    </SummaryChip>
+                    <SummaryChip $color={wakeTimeFeedback.color}>
+                      {wakeTimeFeedback.status}
+                    </SummaryChip>
+                    {wakeTimeFeedback.points && (
+                      <SummaryChip $color={wakeTimeFeedback.color}>
+                        {wakeTimeFeedback.points}
+                      </SummaryChip>
+                    )}
+                  </SummaryChips>
+                )}
+                {errors.wake_time && <ErrorText>{errors.wake_time.message}</ErrorText>}
                 <Hint>
-                  <BsClockFill />
-                  Antes de las {WAKE_TARGET} = +50 pts
+                  <BsClockFill /> Meta: hasta las {WAKE_TARGET}
                 </Hint>
+                {showManualWakeTime && !errors.wake_time && (
+                  <Hint>
+                    Debe ser la hora exacta de ahora.
+                  </Hint>
+                )}
               </>
             )}
           />

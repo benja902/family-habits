@@ -40,6 +40,77 @@ ChartJS.register(
   Filler
 )
 
+const LINE_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      padding: 12,
+      titleFont: { size: 14, weight: 'bold' },
+      bodyFont: { size: 13 },
+      cornerRadius: 8,
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: { color: 'rgba(0, 0, 0, 0.05)' },
+      ticks: { font: { size: 12 } },
+    },
+    x: {
+      grid: { display: false },
+      ticks: { font: { size: 12 } },
+    },
+  },
+}
+
+const RANKING_BAR_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  indexAxis: 'y',
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      padding: 12,
+      cornerRadius: 8,
+    },
+  },
+  scales: {
+    x: {
+      beginAtZero: true,
+      grid: { color: 'rgba(0, 0, 0, 0.05)' },
+    },
+    y: {
+      grid: { display: false },
+    },
+  },
+}
+
+const HABITS_BAR_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      padding: 12,
+      cornerRadius: 8,
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: { color: 'rgba(0, 0, 0, 0.05)' },
+    },
+    x: {
+      grid: { display: false },
+    },
+  },
+}
+
 export default function AdminStats() {
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['adminDashboardAnalytics'],
@@ -52,17 +123,19 @@ export default function AdminStats() {
   const weeklyRanking = analytics?.weeklyRanking || []
   const pointsActivity = analytics?.pointsActivity || []
   const habitsStats = analytics?.habitsStats || []
+  const hasPointsActivity = pointsActivity.length > 0
+  const hasWeeklyRanking = weeklyRanking.length > 0
+  const hasHabitsStats = habitsStats.length > 0
 
-  // Datos para gráfica de actividad de puntos (líneas)
   const pointsActivityData = React.useMemo(() => ({
-    labels: pointsActivity?.map(d => {
+    labels: pointsActivity.map(d => {
       const date = new Date(d.date)
       return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })
-    }) || [],
+    }),
     datasets: [
       {
         label: 'Puntos totales',
-        data: pointsActivity?.map(d => d.totalPoints) || [],
+        data: pointsActivity.map(d => d.totalPoints),
         fill: true,
         backgroundColor: 'rgba(99, 102, 241, 0.1)',
         borderColor: 'rgba(99, 102, 241, 1)',
@@ -76,13 +149,12 @@ export default function AdminStats() {
     ],
   }), [pointsActivity])
 
-  // Datos para gráfica de ranking (barras horizontales)
   const rankingData = React.useMemo(() => ({
-    labels: weeklyRanking?.slice(0, 5).map(u => u.name) || [],
+    labels: weeklyRanking.slice(0, 5).map(u => u.name),
     datasets: [
       {
         label: 'Puntos de la semana',
-        data: weeklyRanking?.slice(0, 5).map(u => u.totalPoints) || [],
+        data: weeklyRanking.slice(0, 5).map(u => u.totalPoints),
         backgroundColor: [
           'rgba(245, 158, 11, 0.8)',  // Oro
           'rgba(148, 163, 184, 0.8)', // Plata
@@ -95,90 +167,17 @@ export default function AdminStats() {
     ],
   }), [weeklyRanking])
 
-  // Datos para gráfica de hábitos (barras verticales)
   const habitsData = React.useMemo(() => ({
-    labels: habitsStats?.map(h => h.habit) || [],
+    labels: habitsStats.map(h => h.habit),
     datasets: [
       {
         label: 'Veces completado',
-        data: habitsStats?.map(h => h.completions) || [],
+        data: habitsStats.map(h => h.completions),
         backgroundColor: 'rgba(34, 197, 94, 0.8)',
         borderRadius: 8,
       },
     ],
   }), [habitsStats])
-
-  // Opciones de gráficas
-  const lineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        titleFont: { size: 14, weight: 'bold' },
-        bodyFont: { size: 13 },
-        cornerRadius: 8,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-        ticks: { font: { size: 12 } },
-      },
-      x: {
-        grid: { display: false },
-        ticks: { font: { size: 12 } },
-      },
-    },
-  }
-
-  const barOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        cornerRadius: 8,
-      },
-    },
-    scales: {
-      x: {
-        beginAtZero: true,
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-      },
-      y: {
-        grid: { display: false },
-      },
-    },
-  }
-
-  const habitsBarOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        cornerRadius: 8,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-      },
-      x: {
-        grid: { display: false },
-      },
-    },
-  }
 
   return (
     <Container>
@@ -235,11 +234,11 @@ export default function AdminStats() {
         >
           <ChartTitle>Actividad de Puntos (Últimos 7 Días)</ChartTitle>
           <ChartWrapper>
-            {isLoading ? (
-              <ChartSkeleton />
-            ) : (
-              <Line data={pointsActivityData} options={lineOptions} />
-            )}
+            <LineChartSection
+              isLoading={isLoading}
+              hasData={hasPointsActivity}
+              data={pointsActivityData}
+            />
           </ChartWrapper>
         </ChartCard>
 
@@ -251,11 +250,11 @@ export default function AdminStats() {
           >
             <ChartTitle>Top 5 de la Semana</ChartTitle>
             <ChartWrapper>
-              {isLoading ? (
-                <ChartSkeleton />
-              ) : (
-                <Bar data={rankingData} options={barOptions} />
-              )}
+              <RankingChartSection
+                isLoading={isLoading}
+                hasData={hasWeeklyRanking}
+                data={rankingData}
+              />
             </ChartWrapper>
           </ChartCard>
 
@@ -266,11 +265,11 @@ export default function AdminStats() {
           >
             <ChartTitle>Hábitos Más Completados</ChartTitle>
             <ChartWrapper>
-              {isLoading ? (
-                <ChartSkeleton />
-              ) : (
-                <Bar data={habitsData} options={habitsBarOptions} />
-              )}
+              <HabitsChartSection
+                isLoading={isLoading}
+                hasData={hasHabitsStats}
+                data={habitsData}
+              />
             </ChartWrapper>
           </ChartCard>
         </ChartsRow>
@@ -279,7 +278,7 @@ export default function AdminStats() {
   )
 }
 
-function SummaryCard({ color, icon, label, value, isLoading, delay }) {
+const SummaryCard = React.memo(function SummaryCard({ color, icon, label, value, isLoading, delay }) {
   return (
     <StatCard
       initial={{ opacity: 0, y: 20 }}
@@ -295,7 +294,28 @@ function SummaryCard({ color, icon, label, value, isLoading, delay }) {
       </StatInfo>
     </StatCard>
   )
-}
+})
+
+const LineChartSection = React.memo(function LineChartSection({ isLoading, hasData, data }) {
+  if (isLoading) return <ChartSkeleton />
+  if (!hasData) return <ChartEmptyState>Sin datos recientes</ChartEmptyState>
+
+  return <Line data={data} options={LINE_OPTIONS} />
+})
+
+const RankingChartSection = React.memo(function RankingChartSection({ isLoading, hasData, data }) {
+  if (isLoading) return <ChartSkeleton />
+  if (!hasData) return <ChartEmptyState>Sin ranking disponible</ChartEmptyState>
+
+  return <Bar data={data} options={RANKING_BAR_OPTIONS} />
+})
+
+const HabitsChartSection = React.memo(function HabitsChartSection({ isLoading, hasData, data }) {
+  if (isLoading) return <ChartSkeleton />
+  if (!hasData) return <ChartEmptyState>Sin hábitos registrados</ChartEmptyState>
+
+  return <Bar data={data} options={HABITS_BAR_OPTIONS} />
+})
 
 // ==================== STYLED COMPONENTS ====================
 const Container = styled.div`
@@ -478,19 +498,6 @@ const ChartsRow = styled.div`
   }
 `
 
-const LoadingMessage = styled.div`
-  text-align: center;
-  padding: 32px 16px;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-weight: 600;
-
-  @media (min-width: 768px) {
-    padding: 48px 24px;
-    font-size: 16px;
-  }
-`
-
 const NumberSkeleton = styled.div`
   width: 72px;
   height: 24px;
@@ -515,4 +522,19 @@ const ChartSkeleton = styled.div`
       transparent 72%
     );
   opacity: 0.7;
+`
+
+const ChartEmptyState = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  padding: 16px;
 `

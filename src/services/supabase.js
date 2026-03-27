@@ -6,7 +6,8 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { applyPunctuality, calculateProportional } from '../utils/points.utils';
-import { MAX_TV_MINUTES } from '../constants/habits.constants'; // Verifica que este import exista arriba
+import { isBeforeCurrentTime, isFutureTime } from '../utils/dates.utils';
+import { DEVICE_CURFEW, MAX_TV_MINUTES, WAKE_TARGET } from '../constants/habits.constants'; // Verifica que este import exista arriba
 // ==================== USUARIOS ====================
 
 /**
@@ -332,6 +333,28 @@ export async function upsertSleepRecord(userId, date, data) {
  */
 export async function calculateAndSaveSleepPoints(userId, date, formData) {
   try {
+    if (
+      formData.device_delivered_at_source === 'manual' &&
+      (isBeforeCurrentTime(formData.device_delivered_at) || isFutureTime(formData.device_delivered_at))
+    ) {
+      throw new Error('Si ingresas la hora de entrega manualmente, debe coincidir con la hora actual.');
+    }
+
+    if (isFutureTime(formData.device_delivered_at)) {
+      throw new Error('La hora de entrega no puede ser posterior a la hora actual.');
+    }
+
+    if (
+      formData.wake_time_source === 'manual' &&
+      (isBeforeCurrentTime(formData.wake_time) || isFutureTime(formData.wake_time))
+    ) {
+      throw new Error('Si ingresas la hora de levantarse manualmente, debe coincidir con la hora actual.');
+    }
+
+    if (isFutureTime(formData.wake_time)) {
+      throw new Error('La hora de levantarse no puede ser posterior a la hora actual.');
+    }
+
     // Borrar transacciones anteriores de 'sleep' para evitar duplicados
     await deletePointTransactionsByCategory(userId, date, 'sleep');
 
@@ -340,7 +363,7 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
 
     // 1. Dispositivo entregado a tiempo
     if (formData.device_delivered && formData.device_delivered_at) {
-      const points = applyPunctuality(100, formData.device_delivered_at, '22:00');
+      const points = applyPunctuality(100, formData.device_delivered_at, DEVICE_CURFEW);
       totalPoints += points;
 
       const transaction = await addPointTransaction(
@@ -399,10 +422,8 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
       transactions.push(transaction);
     }
 
-    // 5. Levantado a tiempo (antes de las 07:00)
-    if (formData.wake_time) {
-      const [hours] = formData.wake_time.split(':').map(Number);
-      if (hours < 7) {
+    // 5. Levantado a tiempo (antes o a la hora objetivo)
+    if (formData.wake_time && formData.wake_time <= WAKE_TARGET) {
         totalPoints += 50;
 
         const transaction = await addPointTransaction(
@@ -414,7 +435,6 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
           'wake_on_time'
         );
         transactions.push(transaction);
-      }
     }
 
     // Guardar el registro con los puntos calculados
@@ -506,7 +526,7 @@ export async function getCompletedHabitsToday(userId, date) {
     ]);
 
     return {
-      sleep: !!(sleepData.data && sleepData.data.points_earned > 0),
+      sleep: !!sleepData.data,
       movement: !!(movementData.data && movementData.data.points_earned > 0),
       food: !!(foodData.data && foodData.data.length > 0),
       study: !!(studyData.data && studyData.data.points_earned > 0),

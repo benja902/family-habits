@@ -8,6 +8,9 @@ import { supabase } from '../lib/supabaseClient';
 import { applyPunctuality, calculateProportional } from '../utils/points.utils';
 import { isBeforeCurrentTime, isFutureTime } from '../utils/dates.utils';
 import {
+  CLEANING_BED_POINTS,
+  CLEANING_ROOM_POINTS,
+  CLEANING_SPACE_POINTS,
   DEVICE_CURFEW,
   FOOD_EXTRA_CARBS_PENALTY,
   FOOD_NO_TV_LUNCH_POINTS,
@@ -18,7 +21,12 @@ import {
   MAX_TV_MINUTES,
   MAX_WATER_GLASSES,
   MIN_EXERCISE_MINUTES,
+  MIN_STUDY_MINUTES,
   MIN_WALK_AFTER_LUNCH_MINUTES,
+  STUDY_CLEAN_SPACE_POINTS,
+  STUDY_FULL_POINTS,
+  STUDY_NOTE_MIN_CHARS,
+  STUDY_NOTE_POINTS,
   WAKE_TARGET,
 } from '../constants/habits.constants';
 // ==================== USUARIOS ====================
@@ -541,8 +549,8 @@ export async function getCompletedHabitsToday(userId, date) {
       sleep: !!sleepData.data,
       movement: !!movementData.data,
       food: !!(foodData.data && foodData.data.length > 0),
-      study: !!(studyData.data && studyData.data.points_earned > 0),
-      cleaning: !!(cleaningData.data && cleaningData.data.points_earned > 0),
+      study: !!studyData.data,
+      cleaning: !!cleaningData.data,
       coexistence: !!(coexistenceData.data && coexistenceData.data.points_earned > 0),
       household: !!(householdData.data && householdData.data.length > 0),
     };
@@ -876,26 +884,26 @@ export const calculateAndSaveStudyPoints = async (userId, date, formData) => {
 
   // 1. Estudio (Tiempo)
   if (formData.did_study && formData.duration_minutes > 0) {
-    if (formData.duration_minutes >= 30) {
-      await addPointTransaction(userId, date, 100, 'Sesión de estudio completa', categoryKey, 'study_completed')
-      totalPoints += 100
+    if (formData.duration_minutes >= MIN_STUDY_MINUTES) {
+      await addPointTransaction(userId, date, STUDY_FULL_POINTS, 'Sesión de estudio completa', categoryKey, 'study_completed')
+      totalPoints += STUDY_FULL_POINTS
     } else {
-      const propPts = calculateProportional(formData.duration_minutes, 30, 100)
+      const propPts = calculateProportional(formData.duration_minutes, MIN_STUDY_MINUTES, STUDY_FULL_POINTS)
       await addPointTransaction(userId, date, propPts, 'Sesión de estudio parcial', categoryKey, 'study_completed')
       totalPoints += propPts
     }
   }
 
   // 2. Nota de aprendizaje
-  if (formData.learning_note && formData.learning_note.length > 10) {
-    await addPointTransaction(userId, date, 20, 'Registró nota de aprendizaje', categoryKey, 'learning_note')
-    totalPoints += 20
+  if (formData.learning_note && formData.learning_note.length > STUDY_NOTE_MIN_CHARS) {
+    await addPointTransaction(userId, date, STUDY_NOTE_POINTS, 'Registró nota de aprendizaje', categoryKey, 'learning_note')
+    totalPoints += STUDY_NOTE_POINTS
   }
 
   // 3. Espacio limpio
   if (formData.clean_space) {
-    await addPointTransaction(userId, date, 30, 'Espacio limpio al estudiar', categoryKey, 'clean_study_space')
-    totalPoints += 30
+    await addPointTransaction(userId, date, STUDY_CLEAN_SPACE_POINTS, 'Espacio limpio al estudiar', categoryKey, 'clean_study_space')
+    totalPoints += STUDY_CLEAN_SPACE_POINTS
   }
 
   // Guardar en tabla
@@ -954,20 +962,20 @@ export const calculateAndSaveCleaningPoints = async (userId, date, formData) => 
 
   // 1. Cama tendida
   if (formData.bed_made) {
-    await addPointTransaction(userId, date, 50, 'Tendió la cama', 'cleaning', 'bed_made')
-    total += 50
+    await addPointTransaction(userId, date, CLEANING_BED_POINTS, 'Tendió la cama', 'cleaning', 'bed_made')
+    total += CLEANING_BED_POINTS
   }
 
   // 2. Cuarto limpio
   if (formData.room_clean) {
-    await addPointTransaction(userId, date, 50, 'Cuarto limpio', 'cleaning', 'room_clean')
-    total += 50
+    await addPointTransaction(userId, date, CLEANING_ROOM_POINTS, 'Cuarto limpio', 'cleaning', 'room_clean')
+    total += CLEANING_ROOM_POINTS
   }
 
   // 3. Espacio ordenado
   if (formData.space_ordered) {
-    await addPointTransaction(userId, date, 30, 'Espacio general ordenado', 'cleaning', 'space_ordered')
-    total += 30
+    await addPointTransaction(userId, date, CLEANING_SPACE_POINTS, 'Espacio general ordenado', 'cleaning', 'space_ordered')
+    total += CLEANING_SPACE_POINTS
   }
 
   // Guardar en tabla

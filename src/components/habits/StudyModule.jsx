@@ -7,6 +7,13 @@ import useStudyModule from '../../hooks/useStudyModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
 import { calculateProportional } from '../../utils/points.utils'
+import {
+  MIN_STUDY_MINUTES,
+  STUDY_CLEAN_SPACE_POINTS,
+  STUDY_FULL_POINTS,
+  STUDY_NOTE_MIN_CHARS,
+  STUDY_NOTE_POINTS,
+} from '../../constants/habits.constants'
 
 const MODULE_COLOR = '#3B82F6' // theme.HABIT_COLORS.study
 const ACTIVITY_TYPES = ['Lectura', 'Video', 'Práctica', 'Escritura', 'Otro']
@@ -46,13 +53,15 @@ export default function StudyModule() {
   const calculatePoints = () => {
     let studyPts = 0
     if (formValues.did_study && formValues.duration_minutes > 0) {
-      studyPts = formValues.duration_minutes >= 30 
-        ? 100 
-        : calculateProportional(formValues.duration_minutes, 30, 100)
+      studyPts = formValues.duration_minutes >= MIN_STUDY_MINUTES
+        ? STUDY_FULL_POINTS
+        : calculateProportional(formValues.duration_minutes, MIN_STUDY_MINUTES, STUDY_FULL_POINTS)
     }
     
-    const notePts = (formValues.learning_note && formValues.learning_note.length > 10) ? 20 : 0
-    const spacePts = formValues.clean_space ? 30 : 0
+    const notePts = (formValues.learning_note && formValues.learning_note.length > STUDY_NOTE_MIN_CHARS)
+      ? STUDY_NOTE_POINTS
+      : 0
+    const spacePts = formValues.clean_space ? STUDY_CLEAN_SPACE_POINTS : 0
 
     return { studyPts, notePts, spacePts, total: studyPts + notePts + spacePts }
   }
@@ -158,14 +167,14 @@ export default function StudyModule() {
 
                 <ProgressBarContainer>
                   <ProgressBar
-                    $progress={Math.min((formValues.duration_minutes / 30) * 100, 100)}
-                    $isComplete={formValues.duration_minutes >= 30}
+                    $progress={Math.min((formValues.duration_minutes / MIN_STUDY_MINUTES) * 100, 100)}
+                    $isComplete={formValues.duration_minutes >= MIN_STUDY_MINUTES}
                   />
                 </ProgressBarContainer>
-                <ProgressText $isComplete={formValues.duration_minutes >= 30}>
-                  {formValues.duration_minutes >= 30
-                    ? `¡Meta cumplida! +100 pts`
-                    : `${formValues.duration_minutes} / 30 min`}
+                <ProgressText $isComplete={formValues.duration_minutes >= MIN_STUDY_MINUTES}>
+                  {formValues.duration_minutes >= MIN_STUDY_MINUTES
+                    ? `¡Meta cumplida! +${STUDY_FULL_POINTS} pts`
+                    : `${formValues.duration_minutes} / ${MIN_STUDY_MINUTES} min`}
                 </ProgressText>
               </Card>
 
@@ -193,10 +202,10 @@ export default function StudyModule() {
                 />
                 <CharCountContainer>
                   <CharCount>{formValues.learning_note?.length || 0} caracteres</CharCount>
-                  {(formValues.learning_note?.length || 0) > 10 ? (
-                    <Badge $color={MODULE_COLOR}>+20 pts</Badge>
+                  {(formValues.learning_note?.length || 0) > STUDY_NOTE_MIN_CHARS ? (
+                    <Badge $color={MODULE_COLOR}>+{STUDY_NOTE_POINTS} pts</Badge>
                   ) : (
-                    <Hint style={{ margin: 0 }}>Mínimo 10 caracteres para ganar puntos</Hint>
+                    <Hint style={{ margin: 0 }}>Mínimo {STUDY_NOTE_MIN_CHARS} caracteres para ganar puntos</Hint>
                   )}
                 </CharCountContainer>
               </Card>
@@ -206,7 +215,11 @@ export default function StudyModule() {
               <ToggleCard $isActive={formValues.clean_space} $color={MODULE_COLOR}>
                 <ToggleLabel>
                   ¿Estudiaste en un espacio limpio y ordenado?
-                  {formValues.clean_space && <Badge $color={MODULE_COLOR} style={{ marginTop: 4 }}>+30 pts</Badge>}
+                  {formValues.clean_space && (
+                    <Badge $color={MODULE_COLOR} style={{ marginTop: 4 }}>
+                      +{STUDY_CLEAN_SPACE_POINTS} pts
+                    </Badge>
+                  )}
                 </ToggleLabel>
                 <ToggleSwitch type="button" $isActive={formValues.clean_space} $color={MODULE_COLOR} onClick={() => setValue('clean_space', !formValues.clean_space)}>
                   <ToggleThumb $isActive={formValues.clean_space} />

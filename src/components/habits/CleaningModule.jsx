@@ -9,7 +9,6 @@ import { ModuleSaveButton } from '../ui/ModuleSaveButton'
 import {
   CLEANING_BED_POINTS,
   CLEANING_ROOM_POINTS,
-  CLEANING_SPACE_POINTS,
 } from '../../constants/habits.constants'
 
 const MODULE_COLOR = '#EAB308' // theme.HABIT_COLORS.cleaning
@@ -123,7 +122,7 @@ export default function CleaningModule() {
             <CardTitle>Mi espacio está ordenado</CardTitle>
           </TextContent>
           <RightAction>
-            {spaceOrdered && <Badge>+{CLEANING_SPACE_POINTS} pts</Badge>}
+            {(roomClean || spaceOrdered) && <Badge>+{CLEANING_ROOM_POINTS} pts</Badge>}
             <ToggleSwitch $isOn={spaceOrdered}>
               <ToggleThumb $isOn={spaceOrdered} />
             </ToggleSwitch>
@@ -154,13 +153,11 @@ export default function CleaningModule() {
         <PointsSummaryCard
           pointsSummary={[
             { label: 'Cama tendida', points: bedMade ? CLEANING_BED_POINTS : 0, color: MODULE_COLOR },
-            { label: 'Cuarto limpio', points: roomClean ? CLEANING_ROOM_POINTS : 0, color: MODULE_COLOR },
-            { label: 'Espacio ordenado', points: spaceOrdered ? CLEANING_SPACE_POINTS : 0, color: MODULE_COLOR },
+            { label: 'Cuarto ordenado', points: (roomClean || spaceOrdered) ? CLEANING_ROOM_POINTS : 0, color: MODULE_COLOR },
           ]}
           totalPoints={
             (bedMade ? CLEANING_BED_POINTS : 0) +
-            (roomClean ? CLEANING_ROOM_POINTS : 0) +
-            (spaceOrdered ? CLEANING_SPACE_POINTS : 0)
+            ((roomClean || spaceOrdered) ? CLEANING_ROOM_POINTS : 0)
           }
           accentColor={MODULE_COLOR}
         />

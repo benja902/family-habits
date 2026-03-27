@@ -11,8 +11,6 @@ import {
   MIN_STUDY_MINUTES,
   STUDY_CLEAN_SPACE_POINTS,
   STUDY_FULL_POINTS,
-  STUDY_NOTE_MIN_CHARS,
-  STUDY_NOTE_POINTS,
 } from '../../constants/habits.constants'
 
 const MODULE_COLOR = '#3B82F6' // theme.HABIT_COLORS.study
@@ -58,12 +56,9 @@ export default function StudyModule() {
         : calculateProportional(formValues.duration_minutes, MIN_STUDY_MINUTES, STUDY_FULL_POINTS)
     }
     
-    const notePts = (formValues.learning_note && formValues.learning_note.length > STUDY_NOTE_MIN_CHARS)
-      ? STUDY_NOTE_POINTS
-      : 0
     const spacePts = formValues.clean_space ? STUDY_CLEAN_SPACE_POINTS : 0
 
-    return { studyPts, notePts, spacePts, total: studyPts + notePts + spacePts }
+    return { studyPts, spacePts, total: studyPts + spacePts }
   }
 
   const points = calculatePoints()
@@ -202,11 +197,7 @@ export default function StudyModule() {
                 />
                 <CharCountContainer>
                   <CharCount>{formValues.learning_note?.length || 0} caracteres</CharCount>
-                  {(formValues.learning_note?.length || 0) > STUDY_NOTE_MIN_CHARS ? (
-                    <Badge $color={MODULE_COLOR}>+{STUDY_NOTE_POINTS} pts</Badge>
-                  ) : (
-                    <Hint style={{ margin: 0 }}>Mínimo {STUDY_NOTE_MIN_CHARS} caracteres para ganar puntos</Hint>
-                  )}
+                  <Hint style={{ margin: 0 }}>Campo opcional, ya no suma puntos en esta fase.</Hint>
                 </CharCountContainer>
               </Card>
 
@@ -236,7 +227,6 @@ export default function StudyModule() {
             <PointsSummaryCard
               pointsSummary={[
                 { label: 'Estudio', points: points.studyPts, color: MODULE_COLOR },
-                { label: 'Aprendizaje', points: points.notePts, color: MODULE_COLOR },
                 { label: 'Espacio limpio', points: points.spacePts, color: MODULE_COLOR },
               ]}
               totalPoints={points.total}

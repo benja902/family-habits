@@ -5,35 +5,28 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
-import { applyPunctuality, calculateProportional } from '../utils/points.utils';
+import { calculateProportional } from '../utils/points.utils';
 import { isBeforeCurrentTime, isFutureTime } from '../utils/dates.utils';
 import {
   CLEANING_BED_POINTS,
   CLEANING_ROOM_POINTS,
-  CLEANING_SPACE_POINTS,
   COEXISTENCE_NO_OTHERS_THINGS_POINTS,
-  COEXISTENCE_RESPECT_SCORE_POINTS,
-  COEXISTENCE_RULES_POINTS,
   COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY,
-  COEXISTENCE_TV_OVERTIME_PENALTY,
-  COEXISTENCE_TV_WITHIN_LIMIT_POINTS,
   DEVICE_CURFEW,
-  FOOD_EXTRA_CARBS_PENALTY,
   FOOD_NO_TV_LUNCH_POINTS,
-  FOOD_ON_TIME_POINTS,
-  FOOD_QUALITY_POINTS,
-  FOOD_SALAD_POINTS,
-  FOOD_VARIETY_POINTS,
+  FOOD_TV_LUNCH_PENALTY,
   HOUSEHOLD_TASK_POINTS,
   MAX_TV_MINUTES,
   MAX_WATER_GLASSES,
   MIN_EXERCISE_MINUTES,
   MIN_STUDY_MINUTES,
   MIN_WALK_AFTER_LUNCH_MINUTES,
+  MOVEMENT_EXERCISE_FULL_POINTS,
+  MOVEMENT_HYDRATION_FULL_POINTS,
+  MOVEMENT_WALK_POINTS,
+  SLEEP_TARGET,
   STUDY_CLEAN_SPACE_POINTS,
   STUDY_FULL_POINTS,
-  STUDY_NOTE_MIN_CHARS,
-  STUDY_NOTE_POINTS,
   WAKE_TARGET,
 } from '../constants/habits.constants';
 // ==================== USUARIOS ====================
@@ -389,30 +382,42 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
     let totalPoints = 0;
     const transactions = [];
 
-    // 1. Dispositivo entregado a tiempo
+    // 1. Entrega de celular
     if (formData.device_delivered && formData.device_delivered_at) {
-      const points = applyPunctuality(100, formData.device_delivered_at, DEVICE_CURFEW);
+      const points = formData.device_delivered_at <= DEVICE_CURFEW ? 20 : -10;
       totalPoints += points;
 
       const transaction = await addPointTransaction(
         userId,
         date,
         points,
-        'Entregó dispositivos',
+        points > 0 ? 'Entregó el celular a tiempo' : 'Entregó el celular tarde',
+        'sleep',
+        'device_delivered_ontime'
+      );
+      transactions.push(transaction);
+    } else if (!formData.device_delivered) {
+      totalPoints -= 10;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        -10,
+        'No entregó el celular a tiempo',
         'sleep',
         'device_delivered_ontime'
       );
       transactions.push(transaction);
     }
 
-    // 2. Dispositivo en el baño (penalización)
+    // 2. Celular en el baño
     if (formData.device_in_bathroom) {
-      totalPoints -= 20;
+      totalPoints -= 25;
 
       const transaction = await addPointTransaction(
         userId,
         date,
-        -20,
+        -25,
         'Usó dispositivo en el baño',
         'sleep',
         'device_in_bathroom'
@@ -420,14 +425,14 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
       transactions.push(transaction);
     }
 
-    // 3. Dispositivo en la cama (penalización)
+    // 3. Celular en la cama
     if (formData.device_in_bed) {
-      totalPoints -= 20;
+      totalPoints -= 25;
 
       const transaction = await addPointTransaction(
         userId,
         date,
-        -20,
+        -25,
         'Usó dispositivo en la cama',
         'sleep',
         'device_in_bed'
@@ -435,30 +440,54 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
       transactions.push(transaction);
     }
 
-    // 4. Dormido antes de las 11pm
+    // 4. Dormirse a tiempo
     if (formData.slept_by_11) {
-      totalPoints += 50;
+      totalPoints += 25;
 
       const transaction = await addPointTransaction(
         userId,
         date,
-        50,
-        'Dormido antes de las 11pm',
+        25,
+        'Se acostó a tiempo',
+        'sleep',
+        'slept_by_11'
+      );
+      transactions.push(transaction);
+    } else {
+      totalPoints -= 35;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        -35,
+        'Se acostó tarde',
         'sleep',
         'slept_by_11'
       );
       transactions.push(transaction);
     }
 
-    // 5. Levantado a tiempo (antes o a la hora objetivo)
+    // 5. Levantarse a tiempo
     if (formData.wake_time && formData.wake_time <= WAKE_TARGET) {
-        totalPoints += 50;
+        totalPoints += 25;
 
         const transaction = await addPointTransaction(
           userId,
           date,
-          50,
+          25,
           'Se levantó a tiempo',
+          'sleep',
+          'wake_on_time'
+        );
+        transactions.push(transaction);
+    } else if (formData.wake_time && formData.wake_time > WAKE_TARGET) {
+        totalPoints -= 15;
+
+        const transaction = await addPointTransaction(
+          userId,
+          date,
+          -15,
+          'Se levantó tarde',
           'sleep',
           'wake_on_time'
         );
@@ -650,12 +679,11 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
 
     // 1. Ejercicio
     if (formData.did_exercise && formData.exercise_minutes >= MIN_EXERCISE_MINUTES) {
-      // Ejercicio completo (>= 20 minutos)
-      totalPoints += 100;
+      totalPoints += MOVEMENT_EXERCISE_FULL_POINTS;
       await addPointTransaction(
         userId,
         date,
-        100,
+        MOVEMENT_EXERCISE_FULL_POINTS,
         'Ejercicio completado',
         'movement',
         'exercise_completed'
@@ -665,8 +693,7 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
       formData.exercise_minutes > 0 &&
       formData.exercise_minutes < MIN_EXERCISE_MINUTES
     ) {
-      // Ejercicio parcial (< 20 minutos)
-      const points = calculateProportional(formData.exercise_minutes, MIN_EXERCISE_MINUTES, 100);
+      const points = calculateProportional(formData.exercise_minutes, MIN_EXERCISE_MINUTES, MOVEMENT_EXERCISE_FULL_POINTS);
       totalPoints += points;
       await addPointTransaction(
         userId,
@@ -680,7 +707,7 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
 
     // 2. Agua
     if (formData.water_glasses > 0) {
-      const points = calculateProportional(formData.water_glasses, MAX_WATER_GLASSES, 100);
+      const points = calculateProportional(formData.water_glasses, MAX_WATER_GLASSES, MOVEMENT_HYDRATION_FULL_POINTS);
       totalPoints += points;
       await addPointTransaction(
         userId,
@@ -694,11 +721,11 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
 
     // 3. Caminata después del almuerzo
     if (formData.walk_after_lunch && formData.walk_minutes >= MIN_WALK_AFTER_LUNCH_MINUTES) {
-      totalPoints += 50;
+      totalPoints += MOVEMENT_WALK_POINTS;
       await addPointTransaction(
         userId,
         date,
-        50,
+        MOVEMENT_WALK_POINTS,
         'Caminata después del almuerzo',
         'movement',
         'walk_after_lunch'
@@ -788,48 +815,14 @@ export const calculateAndSaveMealPoints = async (userId, date, mealType, formDat
 
   let totalPoints = 0
 
-  // 1. Comió a tiempo
-  if (formData.ate_on_time) {
-    await addPointTransaction(userId, date, FOOD_ON_TIME_POINTS, 'Comió a tiempo', categoryKey, 'meal_on_time')
-    totalPoints += FOOD_ON_TIME_POINTS
+  // Fase 1: el puntaje de alimentación queda centrado solo en TV durante el almuerzo.
+  if (mealType === 'almuerzo') {
+    const points = formData.watched_tv ? FOOD_TV_LUNCH_PENALTY : FOOD_NO_TV_LUNCH_POINTS
+    const reason = formData.watched_tv ? 'Vio TV durante el almuerzo' : 'Almorzó sin TV'
+
+    await addPointTransaction(userId, date, points, reason, categoryKey, 'tv_lunch')
+    totalPoints += points
   }
-
-  // 2. Ensalada (solo almuerzo)
-  if (mealType === 'almuerzo' && formData.had_salad) {
-    await addPointTransaction(userId, date, FOOD_SALAD_POINTS, 'Incluyó ensalada', categoryKey, 'had_salad')
-    totalPoints += FOOD_SALAD_POINTS
-  }
-
-  // 3. Variedad
-  if (formData.variety) {
-    await addPointTransaction(userId, date, FOOD_VARIETY_POINTS, 'Buena variedad', categoryKey, 'good_variety')
-    totalPoints += FOOD_VARIETY_POINTS
-  }
-
-  // 4. Sin TV (solo almuerzo)
-  if (mealType === 'almuerzo' && formData.watched_tv === false) {
-    await addPointTransaction(userId, date, FOOD_NO_TV_LUNCH_POINTS, 'Sin TV en el almuerzo', categoryKey, 'no_tv_lunch')
-    totalPoints += FOOD_NO_TV_LUNCH_POINTS
-  }
-
-  // 5. Carbohidratos (Penalización)
-  if (formData.carb_count >= 2) {
-    await addPointTransaction(userId, date, FOOD_EXTRA_CARBS_PENALTY, 'Doble carbohidrato', categoryKey, 'extra_carbs')
-    totalPoints += FOOD_EXTRA_CARBS_PENALTY
-  }
-
-  // 6. Calidad
-  if (formData.quality) {
-    const qualityPts = FOOD_QUALITY_POINTS[formData.quality] ?? 0
-
-    if (qualityPts !== 0) {
-      await addPointTransaction(userId, date, qualityPts, `Calidad de comida: ${formData.quality}`, categoryKey)
-      totalPoints += qualityPts
-    }
-  }
-
-  // Asegurar que el total no sea negativo para la tabla general
-  totalPoints = Math.max(0, totalPoints)
 
   // Guardar en base de datos
   // NOTA: La tabla meal_records NO tiene campo did_eat
@@ -896,17 +889,11 @@ export const calculateAndSaveStudyPoints = async (userId, date, formData) => {
     } else {
       const propPts = calculateProportional(formData.duration_minutes, MIN_STUDY_MINUTES, STUDY_FULL_POINTS)
       await addPointTransaction(userId, date, propPts, 'Sesión de estudio parcial', categoryKey, 'study_completed')
-      totalPoints += propPts
-    }
+        totalPoints += propPts
+      }
   }
 
-  // 2. Nota de aprendizaje
-  if (formData.learning_note && formData.learning_note.length > STUDY_NOTE_MIN_CHARS) {
-    await addPointTransaction(userId, date, STUDY_NOTE_POINTS, 'Registró nota de aprendizaje', categoryKey, 'learning_note')
-    totalPoints += STUDY_NOTE_POINTS
-  }
-
-  // 3. Espacio limpio
+  // 2. Espacio limpio
   if (formData.clean_space) {
     await addPointTransaction(userId, date, STUDY_CLEAN_SPACE_POINTS, 'Espacio limpio al estudiar', categoryKey, 'clean_study_space')
     totalPoints += STUDY_CLEAN_SPACE_POINTS
@@ -972,16 +959,17 @@ export const calculateAndSaveCleaningPoints = async (userId, date, formData) => 
     total += CLEANING_BED_POINTS
   }
 
-  // 2. Cuarto limpio
-  if (formData.room_clean) {
-    await addPointTransaction(userId, date, CLEANING_ROOM_POINTS, 'Cuarto limpio', 'cleaning', 'room_clean')
+  // 2. Cuarto ordenado
+  if (formData.room_clean || formData.space_ordered) {
+    await addPointTransaction(
+      userId,
+      date,
+      CLEANING_ROOM_POINTS,
+      'Mantuvo su cuarto ordenado',
+      'cleaning',
+      'room_ordered'
+    )
     total += CLEANING_ROOM_POINTS
-  }
-
-  // 3. Espacio ordenado
-  if (formData.space_ordered) {
-    await addPointTransaction(userId, date, CLEANING_SPACE_POINTS, 'Espacio general ordenado', 'cleaning', 'space_ordered')
-    total += CLEANING_SPACE_POINTS
   }
 
   // Guardar en tabla
@@ -1034,35 +1022,13 @@ export const calculateAndSaveCoexistencePoints = async (userId, date, formData) 
 
   let total = 0
 
-  // 2. Respetó las normas (+60 pts)
-  if (formData.respected_rules) {
-    await addPointTransaction(userId, date, COEXISTENCE_RULES_POINTS, 'Respetó las normas del día', 'coexistence', 'respected_rules')
-    total += COEXISTENCE_RULES_POINTS
-  }
-
-  // 3. Tomó o no tomó cosas ajenas
+  // Fase 1: convivencia puntúa solo el respeto por las cosas ajenas.
   if (formData.took_others_things === false) {
     await addPointTransaction(userId, date, COEXISTENCE_NO_OTHERS_THINGS_POINTS, 'No tomó cosas ajenas', 'coexistence', 'no_others_things')
     total += COEXISTENCE_NO_OTHERS_THINGS_POINTS
   } else {
     await addPointTransaction(userId, date, COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY, 'Tomó cosas ajenas', 'coexistence', 'took_others_things')
     total += COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY
-  }
-
-  // 4. TV dentro o fuera del límite
-  if (formData.tv_minutes > MAX_TV_MINUTES) {
-    await addPointTransaction(userId, date, COEXISTENCE_TV_OVERTIME_PENALTY, 'Excedió tiempo de TV', 'coexistence', 'tv_overtime')
-    total += COEXISTENCE_TV_OVERTIME_PENALTY
-  } else {
-    await addPointTransaction(userId, date, COEXISTENCE_TV_WITHIN_LIMIT_POINTS, 'Mantuvo el tiempo de TV dentro del límite', 'coexistence', 'tv_within_limit')
-    total += COEXISTENCE_TV_WITHIN_LIMIT_POINTS
-  }
-
-  // 5. Autoevaluación de convivencia
-  const respectScorePoints = COEXISTENCE_RESPECT_SCORE_POINTS[formData.respect_score] || 0
-  if (respectScorePoints > 0) {
-    await addPointTransaction(userId, date, respectScorePoints, `Autoevaluación de convivencia: ${formData.respect_score}`, 'coexistence', 'respect_score')
-    total += respectScorePoints
   }
 
   // Guardar en la tabla

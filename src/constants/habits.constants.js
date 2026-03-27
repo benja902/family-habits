@@ -62,40 +62,44 @@ export const HABIT_COLORS = {
 export const MAX_WATER_GLASSES = 8;
 export const MAX_TV_MINUTES = 120;
 export const DEVICE_CURFEW = '22:00';
-export const SLEEP_TARGET = '23:00';
+export const SLEEP_TARGET = '22:25';
 export const WAKE_TARGET = '06:30';
-export const MIN_EXERCISE_MINUTES = 20;
-export const MIN_WALK_AFTER_LUNCH_MINUTES = 1;
+export const MIN_EXERCISE_MINUTES = 30;
+export const MIN_WALK_AFTER_LUNCH_MINUTES = 10;
+export const MOVEMENT_EXERCISE_FULL_POINTS = 45;
+export const MOVEMENT_HYDRATION_FULL_POINTS = 35;
+export const MOVEMENT_WALK_POINTS = 15;
 export const MIN_STUDY_MINUTES = 30;
-export const STUDY_FULL_POINTS = 100;
-export const STUDY_NOTE_POINTS = 20;
-export const STUDY_CLEAN_SPACE_POINTS = 30;
+export const STUDY_FULL_POINTS = 30;
+export const STUDY_NOTE_POINTS = 0;
+export const STUDY_CLEAN_SPACE_POINTS = 15;
 export const STUDY_NOTE_MIN_CHARS = 10;
-export const CLEANING_BED_POINTS = 50;
-export const CLEANING_ROOM_POINTS = 50;
-export const CLEANING_SPACE_POINTS = 30;
-export const COEXISTENCE_RULES_POINTS = 60;
-export const COEXISTENCE_NO_OTHERS_THINGS_POINTS = 40;
-export const COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY = -20;
-export const COEXISTENCE_TV_WITHIN_LIMIT_POINTS = 30;
-export const COEXISTENCE_TV_OVERTIME_PENALTY = -30;
+export const CLEANING_BED_POINTS = 15;
+export const CLEANING_ROOM_POINTS = 20;
+export const CLEANING_SPACE_POINTS = 0;
+export const COEXISTENCE_RULES_POINTS = 0;
+export const COEXISTENCE_NO_OTHERS_THINGS_POINTS = 5;
+export const COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY = -10;
+export const COEXISTENCE_TV_WITHIN_LIMIT_POINTS = 0;
+export const COEXISTENCE_TV_OVERTIME_PENALTY = 0;
 export const COEXISTENCE_RESPECT_SCORE_POINTS = {
   1: 0,
   2: 0,
   3: 0,
-  4: 10,
-  5: 20,
+  4: 0,
+  5: 0,
 };
 export const HOUSEHOLD_TASK_POINTS = 80;
 
-export const FOOD_ON_TIME_POINTS = 30;
-export const FOOD_VARIETY_POINTS = 20;
-export const FOOD_SALAD_POINTS = 30;
-export const FOOD_NO_TV_LUNCH_POINTS = 30;
-export const FOOD_EXTRA_CARBS_PENALTY = -25;
+export const FOOD_ON_TIME_POINTS = 0;
+export const FOOD_VARIETY_POINTS = 0;
+export const FOOD_SALAD_POINTS = 0;
+export const FOOD_NO_TV_LUNCH_POINTS = 20;
+export const FOOD_TV_LUNCH_PENALTY = -35;
+export const FOOD_EXTRA_CARBS_PENALTY = 0;
 export const FOOD_QUALITY_POINTS = {
-  excelente: 20,
+  excelente: 0,
   buena: 0,
-  regular: -10,
-  mala: -20,
+  regular: 0,
+  mala: 0,
 };

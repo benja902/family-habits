@@ -17,9 +17,8 @@ import {
 } from 'react-icons/bs';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
-import { DEVICE_CURFEW, WAKE_TARGET } from '../../constants/habits.constants';
+import { DEVICE_CURFEW, SLEEP_TARGET, WAKE_TARGET } from '../../constants/habits.constants';
 import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../utils/dates.utils';
-import { applyPunctuality } from '../../utils/points.utils';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 
@@ -348,27 +347,29 @@ export default function SleepModule() {
     let devicePoints = 0;
     let sleepPoints = 0;
 
-    // 1. Dispositivo entregado a tiempo (puntos de dispositivos)
+    // 1. Entrega de celular
     if (formValues.device_delivered && formValues.device_delivered_at) {
-      devicePoints += applyPunctuality(100, formValues.device_delivered_at, DEVICE_CURFEW);
+      devicePoints += formValues.device_delivered_at <= DEVICE_CURFEW ? 20 : -10;
     }
 
     // 2. Penalizaciones de dispositivos
     if (formValues.device_in_bathroom) {
-      devicePoints -= 20;
+      devicePoints -= 25;
     }
     if (formValues.device_in_bed) {
-      devicePoints -= 20;
+      devicePoints -= 25;
     }
 
-    // 3. Dormido antes de las 11pm (puntos de sueño)
+    // 3. Rutina de noche
     if (formValues.slept_by_11) {
-      sleepPoints += 50;
+      sleepPoints += 25;
     }
 
-    // 4. Levantado a tiempo (puntos de sueño)
+    // 4. Rutina de mañana
     if (formValues.wake_time && formValues.wake_time <= WAKE_TARGET) {
-      sleepPoints += 50;
+      sleepPoints += 25;
+    } else if (formValues.wake_time && formValues.wake_time > WAKE_TARGET) {
+      sleepPoints -= 15;
     }
 
     return { devicePoints, sleepPoints, total: devicePoints + sleepPoints };
@@ -448,14 +449,14 @@ export default function SleepModule() {
       };
     }
 
-    const pointsEarned = applyPunctuality(100, formValues.device_delivered_at, DEVICE_CURFEW);
+    const pointsEarned = formValues.device_delivered_at <= DEVICE_CURFEW ? 20 : -10;
     const isOnTime = formValues.device_delivered_at <= DEVICE_CURFEW;
 
     return {
       color: isOnTime ? theme.colors.success : theme.colors.warning,
       mode: formValues.device_delivered_at_source === 'current_time' ? 'Ahora' : 'Manual',
       status: isOnTime ? 'A tiempo' : 'Tarde',
-      points: `+${pointsEarned} pts`,
+      points: `${pointsEarned > 0 ? '+' : ''}${pointsEarned} pts`,
     };
   };
 
@@ -477,7 +478,7 @@ export default function SleepModule() {
       color: isOnTime ? theme.colors.success : theme.colors.warning,
       mode: formValues.wake_time_source === 'current_time' ? 'Ahora' : 'Manual',
       status: isOnTime ? 'A tiempo' : 'Tarde',
-      points: isOnTime ? '+50 pts' : '0 pts',
+      points: isOnTime ? '+25 pts' : '-15 pts',
     };
   };
 
@@ -697,7 +698,7 @@ export default function SleepModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.danger}>-20 pts</Badge>}
+              {field.value && <Badge $color={theme.colors.danger}>-25 pts</Badge>}
             </ToggleCard>
           )}
         />
@@ -719,7 +720,7 @@ export default function SleepModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.danger}>-20 pts</Badge>}
+              {field.value && <Badge $color={theme.colors.danger}>-25 pts</Badge>}
             </ToggleCard>
           )}
         />
@@ -737,14 +738,14 @@ export default function SleepModule() {
           />
         </FieldWrapper>
 
-        {/* Campo 5: ¿Dormiste antes de las 11pm? */}
+        {/* Campo 5: ¿Te acostaste a tiempo? */}
         <Controller
           name="slept_by_11"
           control={control}
           render={({ field }) => (
             <ToggleCard $bgColor={`${theme.colors.success}15`}>
               <ToggleRow>
-                <ToggleLabel>¿Dormiste antes de las 11pm?</ToggleLabel>
+                <ToggleLabel>¿Te acostaste antes de las {SLEEP_TARGET}?</ToggleLabel>
                 <Switch>
                   <input
                     type="checkbox"
@@ -754,7 +755,7 @@ export default function SleepModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.success}>+50 pts</Badge>}
+              {field.value && <Badge $color={theme.colors.success}>+25 pts</Badge>}
             </ToggleCard>
           )}
         />

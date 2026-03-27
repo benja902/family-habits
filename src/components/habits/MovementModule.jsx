@@ -8,6 +8,9 @@ import {
   MAX_WATER_GLASSES,
   MIN_EXERCISE_MINUTES,
   MIN_WALK_AFTER_LUNCH_MINUTES,
+  MOVEMENT_EXERCISE_FULL_POINTS,
+  MOVEMENT_HYDRATION_FULL_POINTS,
+  MOVEMENT_WALK_POINTS,
 } from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
@@ -56,16 +59,16 @@ export default function MovementModule() {
   // Calcular puntos en tiempo real
   const calculateExercisePoints = () => {
     if (!didExercise) return 0
-    if (exerciseMinutes >= MIN_EXERCISE_MINUTES) return 100
-    return Math.round((exerciseMinutes / MIN_EXERCISE_MINUTES) * 100)
+    if (exerciseMinutes >= MIN_EXERCISE_MINUTES) return MOVEMENT_EXERCISE_FULL_POINTS
+    return Math.round((exerciseMinutes / MIN_EXERCISE_MINUTES) * MOVEMENT_EXERCISE_FULL_POINTS)
   }
 
   const calculateWaterPoints = () => {
-    return Math.round((waterGlasses / MAX_WATER_GLASSES) * 100)
+    return Math.round((waterGlasses / MAX_WATER_GLASSES) * MOVEMENT_HYDRATION_FULL_POINTS)
   }
 
   const calculateWalkPoints = () => {
-    return walkAfterLunch && walkMinutes >= MIN_WALK_AFTER_LUNCH_MINUTES ? 50 : 0
+    return walkAfterLunch && walkMinutes >= MIN_WALK_AFTER_LUNCH_MINUTES ? MOVEMENT_WALK_POINTS : 0
   }
 
   const exercisePoints = calculateExercisePoints()
@@ -170,7 +173,7 @@ export default function MovementModule() {
                     max="300"
                     {...register('exercise_minutes')}
                   />
-                  <Hint>Meta: 20 minutos para puntaje completo</Hint>
+                  <Hint>Meta: {MIN_EXERCISE_MINUTES} minutos para puntaje completo</Hint>
                   <ProgressBarContainer>
                     <ProgressBar
                       $progress={Math.min((exerciseMinutes / MIN_EXERCISE_MINUTES) * 100, 100)}
@@ -245,7 +248,7 @@ export default function MovementModule() {
               <ToggleCard $isActive={field.value}>
                 <ToggleLabel>
                   ¿Caminaste después del almuerzo?
-                  {walkAfterLunch && walkMinutes >= MIN_WALK_AFTER_LUNCH_MINUTES && <Badge>+50 pts</Badge>}
+                  {walkAfterLunch && walkMinutes >= MIN_WALK_AFTER_LUNCH_MINUTES && <Badge>+{MOVEMENT_WALK_POINTS} pts</Badge>}
                 </ToggleLabel>
                 <ToggleSwitch
                   type="button"

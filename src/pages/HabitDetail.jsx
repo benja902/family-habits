@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import AppHeader from '../components/layout/AppHeader';
 import PageContainer from '../components/layout/PageContainer';
 import SleepModule from '../components/habits/SleepModule';
+import PhoneUseModule from '../components/habits/PhoneUseModule';
 import MovementModule from '../components/habits/MovementModule';
 // Agrega esta línea junto a los otros imports de módulos
 import FoodModule from '../components/habits/FoodModule'
@@ -78,12 +79,23 @@ export default function HabitDetail() {
   // Mapa de módulos disponibles
   const HABIT_MODULES = {
     sleep: <SleepModule />,
+    'phone-use': <PhoneUseModule />,
     movement: <MovementModule />,
     food: <FoodModule />, // <-- ¡Le quitamos los // del principio!
     study: <StudyModule />,
     cleaning: <CleaningModule />,
     coexistence: <CoexistenceModule />,
     household: <HouseholdModule />
+  };
+
+  const HABIT_TITLES = {
+    ...HABIT_LABELS_FULL,
+    'phone-use': 'Rutina del celular',
+  };
+
+  const HABIT_PAGE_COLORS = {
+    ...HABIT_COLORS,
+    'phone-use': HABIT_COLORS.sleep,
   };
 
   // Si el módulo no existe, mostrar EmptyState
@@ -126,12 +138,12 @@ export default function HabitDetail() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <AppHeader
-        title={HABIT_LABELS_FULL[habitId]}
-        showBack={true}
-        color={HABIT_COLORS[habitId]}
-        onBack={() => navigate('/dashboard')}
-      />
+        <AppHeader
+          title={HABIT_TITLES[habitId]}
+          showBack={true}
+          color={HABIT_PAGE_COLORS[habitId]}
+          onBack={() => navigate('/dashboard')}
+        />
       <PageContainer noPadding={false}>
         {HABIT_MODULES[habitId]}
       </PageContainer>

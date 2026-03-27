@@ -46,7 +46,7 @@ export default function QuickChecklist({
       label: '📱 Rutina del celular',
       isCompleted: sleepRecord?.device_delivered_at != null,
       color: '#6366F1', // sleep
-      route: '/habits/sleep'
+      route: '/habits/phone-use'
     },
     {
       id: 'study',

@@ -316,12 +316,23 @@ const TransitionText = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+const MorningHabitCard = styled.div`
+  background: ${({ $isActive, theme }) => $isActive ? `${theme.colors.success}15` : theme.colors.surface};
+  border: 2px solid ${({ $isActive, theme }) => $isActive ? theme.colors.success : theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  padding: ${({ theme }) => theme.spacing.md};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
 // ==================== COMPONENTE ====================
 
 export default function SleepModule() {
   const [showManualDeviceTime, setShowManualDeviceTime] = useState(false);
   const [showManualWakeTime, setShowManualWakeTime] = useState(false);
-  const { sleepRecord, isLoading, hasRecord, saveSleep, isSaving } = useSleepModule();
+  const { sleepRecord, cleaningRecord, isLoading, hasRecord, saveSleep, isSaving } = useSleepModule();
   const {
     control,
     handleSubmit,
@@ -332,8 +343,9 @@ export default function SleepModule() {
     clearErrors,
     formState: { errors },
   } = useForm({
-    defaultValues: {
-      device_delivered: false,
+      defaultValues: {
+        bed_made: false,
+        device_delivered: false,
       device_delivered_at: '',
       device_delivered_at_source: null,
       device_in_bathroom: false,
@@ -348,23 +360,22 @@ export default function SleepModule() {
 
   // Inicializar formulario con datos existentes
   useEffect(() => {
-    if (sleepRecord) {
-      reset({
-        device_delivered: sleepRecord.device_delivered || false,
-        device_delivered_at: sleepRecord.device_delivered_at || '',
-        device_delivered_at_source: sleepRecord.device_delivered_at_source || null,
-        device_in_bathroom: sleepRecord.device_in_bathroom || false,
-        device_in_bed: sleepRecord.device_in_bed || false,
-        sleep_time: sleepRecord.sleep_time || '',
-        slept_by_11: sleepRecord.slept_by_11 || false,
-        wake_time: sleepRecord.wake_time || '',
-        wake_time_source: sleepRecord.wake_time_source || null,
-        notes: sleepRecord.notes || '',
-      });
-      setShowManualDeviceTime(!sleepRecord.device_delivered_at_source || sleepRecord.device_delivered_at_source === 'manual');
-      setShowManualWakeTime(!sleepRecord.wake_time_source || sleepRecord.wake_time_source === 'manual');
-    }
-  }, [sleepRecord, reset]);
+    reset({
+      bed_made: cleaningRecord?.bed_made || false,
+      device_delivered: sleepRecord?.device_delivered || false,
+      device_delivered_at: sleepRecord?.device_delivered_at || '',
+      device_delivered_at_source: sleepRecord?.device_delivered_at_source || null,
+      device_in_bathroom: sleepRecord?.device_in_bathroom || false,
+      device_in_bed: sleepRecord?.device_in_bed || false,
+      sleep_time: sleepRecord?.sleep_time || '',
+      slept_by_11: sleepRecord?.slept_by_11 || false,
+      wake_time: sleepRecord?.wake_time || '',
+      wake_time_source: sleepRecord?.wake_time_source || null,
+      notes: sleepRecord?.notes || '',
+    });
+    setShowManualDeviceTime(!sleepRecord?.device_delivered_at_source || sleepRecord.device_delivered_at_source === 'manual');
+    setShowManualWakeTime(!sleepRecord?.wake_time_source || sleepRecord.wake_time_source === 'manual');
+  }, [cleaningRecord, sleepRecord, reset]);
 
   // Observar cambios en el formulario para calcular puntos
   const formValues = watch();
@@ -372,8 +383,13 @@ export default function SleepModule() {
 
   // Calcular puntos en tiempo real
   const calculatePoints = () => {
+    let morningPoints = 0;
     let devicePoints = 0;
     let sleepPoints = 0;
+
+    if (formValues.bed_made) {
+      morningPoints += 15;
+    }
 
     // 1. Entrega de celular
     if (formValues.device_delivered && formValues.device_delivered_at) {
@@ -400,7 +416,7 @@ export default function SleepModule() {
       sleepPoints -= 15;
     }
 
-    return { devicePoints, sleepPoints, total: devicePoints + sleepPoints };
+    return { morningPoints, devicePoints, sleepPoints, total: morningPoints + devicePoints + sleepPoints };
   };
 
   const points = calculatePoints();
@@ -598,6 +614,27 @@ export default function SleepModule() {
         <SectionDescription>
           Aquí registras cómo empezó tu día: levantarte a tiempo y tu primer bloque de rutina.
         </SectionDescription>
+
+        <Controller
+          name="bed_made"
+          control={control}
+          render={({ field }) => (
+            <MorningHabitCard $isActive={field.value}>
+              <ToggleLabel>¿Tendiste la cama antes de empezar el día?</ToggleLabel>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {field.value && <Badge $color={theme.colors.success}>+15 pts</Badge>}
+                <Switch>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={field.onChange}
+                  />
+                  <span className="slider"></span>
+                </Switch>
+              </div>
+            </MorningHabitCard>
+          )}
+        />
 
         {/* Campo 1: Hora en que te levantaste */}
         <FieldWrapper>
@@ -905,6 +942,7 @@ export default function SleepModule() {
         {/* ==================== RESUMEN DE PUNTOS (sticky) ==================== */}
         <PointsSummaryCard
           pointsSummary={[
+            { label: 'Mañana', points: points.morningPoints, color: '#22C55E' },
             { label: 'Dispositivos', points: points.devicePoints, color: '#6366F1' },
             { label: 'Sueño', points: points.sleepPoints, color: '#6366F1' },
           ]}

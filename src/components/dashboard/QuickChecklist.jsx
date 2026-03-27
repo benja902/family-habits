@@ -24,8 +24,8 @@ export default function QuickChecklist({
       id: 'bed',
       label: '🛏️ Cama tendida',
       isCompleted: cleaningRecord?.bed_made || false,
-      color: '#EAB308', // cleaning
-      route: '/habits/cleaning'
+      color: '#6366F1', // sleep / morning routine
+      route: '/habits/sleep'
     },
     {
       id: 'water',

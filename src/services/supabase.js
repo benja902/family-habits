@@ -751,6 +751,48 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
   }
 }
 
+export async function saveMorningRoutineBed(userId, date, bedMade) {
+  try {
+    const existingRecord = await getCleaningRecord(userId, date)
+
+    await deletePointTransactionsByCategory(userId, date, 'morning_routine')
+
+    let pointsEarned = 0
+    if (bedMade) {
+      pointsEarned = CLEANING_BED_POINTS
+      await addPointTransaction(
+        userId,
+        date,
+        CLEANING_BED_POINTS,
+        'Tendió la cama',
+        'morning_routine',
+        'bed_made'
+      )
+    }
+
+    const savedRecord = await upsertCleaningRecord(userId, date, {
+      ...(existingRecord || {}),
+      user_id: userId,
+      date,
+      bed_made: !!bedMade,
+      room_clean: existingRecord?.room_clean || false,
+      space_ordered: existingRecord?.space_ordered || false,
+      notes: existingRecord?.notes || null,
+      points_earned:
+        (bedMade ? CLEANING_BED_POINTS : 0) +
+        ((existingRecord?.room_clean || existingRecord?.space_ordered) ? CLEANING_ROOM_POINTS : 0),
+    })
+
+    return {
+      pointsEarned,
+      savedRecord,
+    }
+  } catch (error) {
+    console.error('Error al guardar cama desde rutina de mañana:', error)
+    throw error
+  }
+}
+
 export async function saveFoodHydration(userId, date, waterGlasses) {
   try {
     const hydrationValue = Number(waterGlasses) || 0
@@ -991,16 +1033,11 @@ export const upsertCleaningRecord = async (userId, date, data) => {
 export const calculateAndSaveCleaningPoints = async (userId, date, formData) => {
   // PRIMERA LÍNEA OBLIGATORIA (Regla 4)
   await deletePointTransactionsByCategory(userId, date, 'cleaning')
+  const existingRecord = await getCleaningRecord(userId, date)
 
   let total = 0
 
-  // 1. Cama tendida
-  if (formData.bed_made) {
-    await addPointTransaction(userId, date, CLEANING_BED_POINTS, 'Tendió la cama', 'cleaning', 'bed_made')
-    total += CLEANING_BED_POINTS
-  }
-
-  // 2. Cuarto ordenado
+  // 1. Cuarto ordenado
   if (formData.room_clean || formData.space_ordered) {
     await addPointTransaction(
       userId,
@@ -1015,7 +1052,7 @@ export const calculateAndSaveCleaningPoints = async (userId, date, formData) => 
 
   // Guardar en tabla
   const savedRecord = await upsertCleaningRecord(userId, date, {
-    bed_made: formData.bed_made || false,
+    bed_made: existingRecord?.bed_made || false,
     room_clean: formData.room_clean || false,
     space_ordered: formData.space_ordered || false,
     notes: formData.notes || null,

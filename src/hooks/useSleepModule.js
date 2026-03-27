@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getSleepRecord, calculateAndSaveSleepPoints } from '../services/supabase';
+import { getSleepRecord, getCleaningRecord, calculateAndSaveSleepPoints, saveMorningRoutineBed } from '../services/supabase';
 import useAuthStore from '../stores/useAuthStore';
 import { getTodayString } from '../utils/dates.utils';
 import { toast } from 'sonner';
@@ -28,12 +28,32 @@ export default function useSleepModule() {
     enabled: !!userId,
   });
 
+  const { data: cleaningRecord } = useQuery({
+    queryKey: ['cleaningRecord', userId, today],
+    queryFn: () => getCleaningRecord(userId, today),
+    enabled: !!userId,
+  });
+
   // Determinar si ya existe un registro guardado
-  const hasRecord = !!sleepRecord;
+  const hasRecord = !!sleepRecord || !!cleaningRecord?.bed_made;
 
   // Mutación para guardar el registro de descanso
   const mutation = useMutation({
-    mutationFn: (formData) => calculateAndSaveSleepPoints(userId, today, formData),
+    mutationFn: async (formData) => {
+      const { bed_made, ...sleepData } = formData;
+
+      const [sleepResult, bedResult] = await Promise.all([
+        calculateAndSaveSleepPoints(userId, today, sleepData),
+        saveMorningRoutineBed(userId, today, !!bed_made),
+      ]);
+
+      return {
+        pointsEarned: sleepResult.pointsEarned + bedResult.pointsEarned,
+        transactions: sleepResult.transactions,
+        sleepRecord: sleepResult.record,
+        cleaningRecord: bedResult.savedRecord,
+      };
+    },
     onSuccess: async (result) => {
       const { pointsEarned, transactions } = result;
 
@@ -64,6 +84,7 @@ export default function useSleepModule() {
       ]);
 
       queryClient.invalidateQueries({ queryKey: ['sleepRecord'] });
+      queryClient.invalidateQueries({ queryKey: ['cleaningRecord'] });
       queryClient.invalidateQueries({ queryKey: ['pointTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['ranking'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' });
@@ -78,6 +99,7 @@ export default function useSleepModule() {
   return {
     // Estado de la query
     sleepRecord,
+    cleaningRecord,
     isLoading,
     isError,
 

@@ -2,12 +2,11 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsHouseHeartFill, BsStars, BsCheckCircleFill } from 'react-icons/bs'
+import { BsStars, BsCheckCircleFill } from 'react-icons/bs'
 import useCleaningModule from '../../hooks/useCleaningModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
 import {
-  CLEANING_BED_POINTS,
   CLEANING_ROOM_POINTS,
 } from '../../constants/habits.constants'
 
@@ -18,7 +17,6 @@ export default function CleaningModule() {
 
   const { register, handleSubmit, watch, reset, setValue } = useForm({
     defaultValues: {
-      bed_made: false,
       room_clean: false,
       space_ordered: false,
       notes: '',
@@ -28,7 +26,6 @@ export default function CleaningModule() {
   useEffect(() => {
     if (cleaningRecord) {
       reset({
-        bed_made: cleaningRecord.bed_made || false,
         room_clean: cleaningRecord.room_clean || false,
         space_ordered: cleaningRecord.space_ordered || false,
         notes: cleaningRecord.notes || '',
@@ -37,11 +34,10 @@ export default function CleaningModule() {
   }, [cleaningRecord, reset])
 
   const formValues = watch()
-  const bedMade = formValues.bed_made
   const roomClean = formValues.room_clean
   const spaceOrdered = formValues.space_ordered
   
-  const allCompleted = bedMade && roomClean && spaceOrdered
+  const allCompleted = roomClean && spaceOrdered
 
   const onSubmit = (data) => {
     const cleanData = {
@@ -69,27 +65,11 @@ export default function CleaningModule() {
 
       <Form onSubmit={handleSubmit(onSubmit)}>
         
-        {/* Card 1: Cama */}
-        <LargeToggleCard
-          $isOn={bedMade}
-          onClick={() => setValue('bed_made', !bedMade)}
-          whileTap={{ scale: 0.97 }}
-          animate={{ scale: bedMade ? [1, 1.03, 0.98, 1] : 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <IconWrapper $isOn={bedMade}><BsHouseHeartFill /></IconWrapper>
-          <TextContent>
-            <CardTitle>Tendí mi cama</CardTitle>
-          </TextContent>
-          <RightAction>
-            {bedMade && <Badge>+{CLEANING_BED_POINTS} pts</Badge>}
-            <ToggleSwitch $isOn={bedMade}>
-              <ToggleThumb $isOn={bedMade} />
-            </ToggleSwitch>
-          </RightAction>
-        </LargeToggleCard>
+        <TransitionNote>
+          La cama ahora se registra en la rutina de mañana. Aquí dejas solo el orden del cuarto.
+        </TransitionNote>
 
-        {/* Card 2: Cuarto */}
+        {/* Card 1: Cuarto */}
         <LargeToggleCard
           $isOn={roomClean}
           onClick={() => setValue('room_clean', !roomClean)}
@@ -109,7 +89,7 @@ export default function CleaningModule() {
           </RightAction>
         </LargeToggleCard>
 
-        {/* Card 3: Espacio ordenado */}
+        {/* Card 2: Espacio ordenado */}
         <LargeToggleCard
           $isOn={spaceOrdered}
           onClick={() => setValue('space_ordered', !spaceOrdered)}
@@ -137,7 +117,7 @@ export default function CleaningModule() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              ¡Perfecto! 🌟 Tienes todo en orden
+              ¡Perfecto! 🌟 Tu cuarto quedó en orden
             </MotivationalMessage>
           )}
         </AnimatePresence>
@@ -152,11 +132,9 @@ export default function CleaningModule() {
         {/* Área Inferior Estándar */}
         <PointsSummaryCard
           pointsSummary={[
-            { label: 'Cama tendida', points: bedMade ? CLEANING_BED_POINTS : 0, color: MODULE_COLOR },
             { label: 'Cuarto ordenado', points: (roomClean || spaceOrdered) ? CLEANING_ROOM_POINTS : 0, color: MODULE_COLOR },
           ]}
           totalPoints={
-            (bedMade ? CLEANING_BED_POINTS : 0) +
             ((roomClean || spaceOrdered) ? CLEANING_ROOM_POINTS : 0)
           }
           accentColor={MODULE_COLOR}
@@ -264,6 +242,11 @@ const MotivationalMessage = styled(motion.p)`
   font-weight: 800;
   font-size: 18px;
   margin: 8px 0;
+`
+const TransitionNote = styled.p`
+  margin: 0;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `
 const Textarea = styled.textarea`
   width: 100%;

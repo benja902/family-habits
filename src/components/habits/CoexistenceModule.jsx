@@ -6,9 +6,17 @@ import { BsPeopleFill, BsDash, BsPlus, BsStarFill, BsShieldFillCheck, BsExclamat
 import useCoexistenceModule from '../../hooks/useCoexistenceModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
+import {
+  COEXISTENCE_NO_OTHERS_THINGS_POINTS,
+  COEXISTENCE_RESPECT_SCORE_POINTS,
+  COEXISTENCE_RULES_POINTS,
+  COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY,
+  COEXISTENCE_TV_OVERTIME_PENALTY,
+  COEXISTENCE_TV_WITHIN_LIMIT_POINTS,
+  MAX_TV_MINUTES,
+} from '../../constants/habits.constants'
 
 const MODULE_COLOR = '#EC4899' // Rosa
-const MAX_TV_MINUTES = 120
 
 export default function CoexistenceModule() {
   const { coexistenceRecord, isLoading, hasRecord, saveCoexistence, isSaving } = useCoexistenceModule()
@@ -43,17 +51,21 @@ export default function CoexistenceModule() {
       case 1: return 'Estuvo difícil hoy'
       case 2: return 'Podría mejorar'
       case 3: return 'Regular'
-      case 4: return 'Bien 👍 +10 pts'
-      case 5: return '¡Excelente! 🌟 +20 pts'
+      case 4: return `Bien 👍 +${COEXISTENCE_RESPECT_SCORE_POINTS[4]} pts`
+      case 5: return `¡Excelente! 🌟 +${COEXISTENCE_RESPECT_SCORE_POINTS[5]} pts`
       default: return ''
     }
   }
 
   const calculatePoints = () => {
-    let rulesPts = formValues.respected_rules ? 60 : 0
-    let thingsPts = formValues.took_others_things ? -20 : 40
-    let tvPts = formValues.tv_minutes <= MAX_TV_MINUTES ? 30 : 0
-    let scorePts = formValues.respect_score === 5 ? 20 : formValues.respect_score === 4 ? 10 : 0
+    let rulesPts = formValues.respected_rules ? COEXISTENCE_RULES_POINTS : 0
+    let thingsPts = formValues.took_others_things
+      ? COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY
+      : COEXISTENCE_NO_OTHERS_THINGS_POINTS
+    let tvPts = formValues.tv_minutes <= MAX_TV_MINUTES
+      ? COEXISTENCE_TV_WITHIN_LIMIT_POINTS
+      : COEXISTENCE_TV_OVERTIME_PENALTY
+    let scorePts = COEXISTENCE_RESPECT_SCORE_POINTS[formValues.respect_score] || 0
     
     return { 
       rulesPts, 
@@ -108,7 +120,7 @@ export default function CoexistenceModule() {
           <ToggleInfo>
             <BsShieldFillCheck size={24} color={formValues.respected_rules ? MODULE_COLOR : '#9CA3AF'} />            <ToggleLabel>¿Respetaste las normas hoy?</ToggleLabel>
           </ToggleInfo>
-          {formValues.respected_rules && <Badge $color={MODULE_COLOR}>+60 pts</Badge>}
+          {formValues.respected_rules && <Badge $color={MODULE_COLOR}>+{COEXISTENCE_RULES_POINTS} pts</Badge>}
         </ToggleCard>
 
         <ToggleCard 
@@ -126,7 +138,7 @@ export default function CoexistenceModule() {
                 <BsExclamationTriangleFill size={24} color={formValues.took_others_things ? '#F97316' : '#9CA3AF'} />
                 <ToggleLabel>¿Tomaste cosas de otros sin permiso?</ToggleLabel>
               </ToggleInfo>
-              {formValues.took_others_things && <Badge $color="#EF4444">-20 pts</Badge>}
+              {formValues.took_others_things && <Badge $color="#EF4444">{COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY} pts</Badge>}
             </div>
             {formValues.took_others_things && <Hint>Ser honesto aquí también suma</Hint>}
           </div>
@@ -154,8 +166,8 @@ export default function CoexistenceModule() {
           
           <ProgressText $isOver={formValues.tv_minutes > MAX_TV_MINUTES}>
             {formValues.tv_minutes <= MAX_TV_MINUTES 
-              ? `${formValues.tv_minutes} / 120 min · +30 pts` 
-              : 'Límite superado · sin bonus'}
+              ? `${formValues.tv_minutes} / ${MAX_TV_MINUTES} min · +${COEXISTENCE_TV_WITHIN_LIMIT_POINTS} pts` 
+              : `Límite superado · ${COEXISTENCE_TV_OVERTIME_PENALTY} pts`}
           </ProgressText>
 
           {formValues.tv_minutes > MAX_TV_MINUTES && (

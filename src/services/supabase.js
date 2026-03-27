@@ -11,6 +11,12 @@ import {
   CLEANING_BED_POINTS,
   CLEANING_ROOM_POINTS,
   CLEANING_SPACE_POINTS,
+  COEXISTENCE_NO_OTHERS_THINGS_POINTS,
+  COEXISTENCE_RESPECT_SCORE_POINTS,
+  COEXISTENCE_RULES_POINTS,
+  COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY,
+  COEXISTENCE_TV_OVERTIME_PENALTY,
+  COEXISTENCE_TV_WITHIN_LIMIT_POINTS,
   DEVICE_CURFEW,
   FOOD_EXTRA_CARBS_PENALTY,
   FOOD_NO_TV_LUNCH_POINTS,
@@ -551,7 +557,7 @@ export async function getCompletedHabitsToday(userId, date) {
       food: !!(foodData.data && foodData.data.length > 0),
       study: !!studyData.data,
       cleaning: !!cleaningData.data,
-      coexistence: !!(coexistenceData.data && coexistenceData.data.points_earned > 0),
+      coexistence: !!coexistenceData.data,
       household: !!(householdData.data && householdData.data.length > 0),
     };
   } catch (error) {
@@ -1030,20 +1036,33 @@ export const calculateAndSaveCoexistencePoints = async (userId, date, formData) 
 
   // 2. Respetó las normas (+60 pts)
   if (formData.respected_rules) {
-    await addPointTransaction(userId, date, 60, 'Respetó las normas del día', 'coexistence', 'respected_rules')
-    total += 60
+    await addPointTransaction(userId, date, COEXISTENCE_RULES_POINTS, 'Respetó las normas del día', 'coexistence', 'respected_rules')
+    total += COEXISTENCE_RULES_POINTS
   }
 
-  // 3. No tomó cosas ajenas (+40 pts si es false)
+  // 3. Tomó o no tomó cosas ajenas
   if (formData.took_others_things === false) {
-    await addPointTransaction(userId, date, 40, 'No tomó cosas ajenas', 'coexistence', 'no_others_things')
-    total += 40
+    await addPointTransaction(userId, date, COEXISTENCE_NO_OTHERS_THINGS_POINTS, 'No tomó cosas ajenas', 'coexistence', 'no_others_things')
+    total += COEXISTENCE_NO_OTHERS_THINGS_POINTS
+  } else {
+    await addPointTransaction(userId, date, COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY, 'Tomó cosas ajenas', 'coexistence', 'took_others_things')
+    total += COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY
   }
 
-  // 4. Penalización por TV (asumimos límite de 120 min)
-  if (formData.tv_minutes > 120) {
-    await addPointTransaction(userId, date, -30, 'Excedió tiempo de TV (penalización)', 'coexistence', 'tv_overtime')
-    total -= 30
+  // 4. TV dentro o fuera del límite
+  if (formData.tv_minutes > MAX_TV_MINUTES) {
+    await addPointTransaction(userId, date, COEXISTENCE_TV_OVERTIME_PENALTY, 'Excedió tiempo de TV', 'coexistence', 'tv_overtime')
+    total += COEXISTENCE_TV_OVERTIME_PENALTY
+  } else {
+    await addPointTransaction(userId, date, COEXISTENCE_TV_WITHIN_LIMIT_POINTS, 'Mantuvo el tiempo de TV dentro del límite', 'coexistence', 'tv_within_limit')
+    total += COEXISTENCE_TV_WITHIN_LIMIT_POINTS
+  }
+
+  // 5. Autoevaluación de convivencia
+  const respectScorePoints = COEXISTENCE_RESPECT_SCORE_POINTS[formData.respect_score] || 0
+  if (respectScorePoints > 0) {
+    await addPointTransaction(userId, date, respectScorePoints, `Autoevaluación de convivencia: ${formData.respect_score}`, 'coexistence', 'respect_score')
+    total += respectScorePoints
   }
 
   // Guardar en la tabla

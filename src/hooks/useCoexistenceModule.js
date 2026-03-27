@@ -40,7 +40,7 @@ export default function useCoexistenceModule() {
   return {
     coexistenceRecord: query.data || null,
     isLoading: query.isLoading,
-    hasRecord: !!query.data && query.data.points_earned > 0,
+    hasRecord: !!query.data,
     saveCoexistence: mutation.mutate,
     isSaving: mutation.isPending
   }

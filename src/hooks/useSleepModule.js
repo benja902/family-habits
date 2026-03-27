@@ -1,6 +1,6 @@
 /**
- * Hook para el módulo de descanso y dispositivos
- * Maneja el estado y lógica de guardado del registro de sueño
+ * Hook transicional para rutina de mañana, PhoneUse y noche
+ * Mantiene el guardado sobre sleep_records mientras se reorganiza el flujo
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

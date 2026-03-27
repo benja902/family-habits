@@ -43,7 +43,7 @@ export default function QuickChecklist({
     },
     {
       id: 'devices',
-      label: '📱 Entregó dispositivos',
+      label: '📱 Rutina del celular',
       isCompleted: sleepRecord?.device_delivered_at != null,
       color: '#6366F1', // sleep
       route: '/habits/sleep'

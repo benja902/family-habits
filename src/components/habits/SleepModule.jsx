@@ -596,7 +596,7 @@ export default function SleepModule() {
             exit={{ opacity: 0, y: -20 }}
           >
             <BsCheckCircleFill />
-            Ya registraste tu rutina de hoy
+            Ya registraste tu rutina y celular de hoy
           </Banner>
         )}
       </AnimatePresence>
@@ -605,7 +605,7 @@ export default function SleepModule() {
         <TransitionBanner>
           <TransitionTitle>Transición de módulo</TransitionTitle>
           <TransitionText>
-            Por ahora este módulo sigue guardándose como <strong>sleep</strong>, pero ya está organizado como rutina de mañana, uso del celular y rutina de noche.
+            Por ahora este módulo sigue guardándose como <strong>sleep</strong>, pero ya está organizado como rutina de mañana, <strong>PhoneUse</strong> y rutina de noche.
           </TransitionText>
         </TransitionBanner>
 
@@ -717,7 +717,7 @@ export default function SleepModule() {
         {/* ==================== SECCIÓN 2: CELULAR ==================== */}
         <SectionTitle>📱 Uso del celular</SectionTitle>
         <SectionDescription>
-          Esta sección junta lo que después se convertirá en el módulo de uso del celular.
+          Esta sección ya funciona como transición al futuro módulo de PhoneUse.
         </SectionDescription>
 
         {/* Campo 1: ¿Entregaste tu celular? */}
@@ -943,8 +943,8 @@ export default function SleepModule() {
         <PointsSummaryCard
           pointsSummary={[
             { label: 'Mañana', points: points.morningPoints, color: '#22C55E' },
-            { label: 'Dispositivos', points: points.devicePoints, color: '#6366F1' },
-            { label: 'Sueño', points: points.sleepPoints, color: '#6366F1' },
+            { label: 'PhoneUse', points: points.devicePoints, color: '#6366F1' },
+            { label: 'Noche', points: points.sleepPoints, color: '#6366F1' },
           ]}
           totalPoints={points.total}
           accentColor="#6366F1"
@@ -955,7 +955,7 @@ export default function SleepModule() {
       <ModuleSaveButton
         onSave={handleSubmit(onSubmit)}
         isSaving={isSaving}
-        label="Guardar rutina"
+        label="Guardar rutina y celular"
         color="#6366F1"
         icon={<BsMoonStarsFill />}
       />

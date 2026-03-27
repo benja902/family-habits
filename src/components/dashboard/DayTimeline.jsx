@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { BsCheckCircleFill, BsCircleFill, BsClock } from 'react-icons/bs'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
+import { DEVICE_CURFEW, SLEEP_TARGET, WAKE_TARGET } from '../../constants/habits.constants'
 
 dayjs.extend(customParseFormat)
 
@@ -64,8 +65,8 @@ export default function DayTimeline({
   const timelineEvents = [
     {
       id: 'wake',
-      time: '06:30',
-      title: 'Levantarse',
+      time: WAKE_TARGET,
+      title: 'Rutina de mañana',
       isCompleted: hasValue(sleepRecord?.wake_time),
       color: '#6366F1'
     },
@@ -113,15 +114,15 @@ export default function DayTimeline({
     },
     {
       id: 'devices',
-      time: '22:00',
-      title: 'Entregar dispositivos',
+      time: DEVICE_CURFEW,
+      title: 'Rutina del celular',
       isCompleted: hasValue(sleepRecord?.device_delivered_at),
       color: '#6366F1'
     },
     {
       id: 'sleep',
-      time: '23:00',
-      title: 'Dormir',
+      time: SLEEP_TARGET,
+      title: 'Rutina de noche',
       isCompleted: sleepRecord?.slept_by_11 === true || sleepRecord?.asleep_at_11 === true,
       color: '#6366F1'
     }

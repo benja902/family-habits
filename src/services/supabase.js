@@ -14,6 +14,7 @@ import {
   COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY,
   DEVICE_CURFEW,
   FOOD_NO_TV_LUNCH_POINTS,
+  FOOD_HYDRATION_FULL_POINTS,
   FOOD_TV_LUNCH_PENALTY,
   HOUSEHOLD_TASK_POINTS,
   MAX_TV_MINUTES,
@@ -674,6 +675,7 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
   try {
     // REGLA 4: Borrar transacciones anteriores de 'movement' para evitar duplicados
     await deletePointTransactionsByCategory(userId, date, 'movement');
+    const existingRecord = await getMovementRecord(userId, date)
 
     let totalPoints = 0;
 
@@ -734,7 +736,9 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
 
     // Guardar el registro con los puntos calculados
     await upsertMovementRecord(userId, date, {
+      ...(existingRecord || {}),
       ...formData,
+      water_glasses: existingRecord?.water_glasses || 0,
       points_earned: totalPoints,
     });
 
@@ -744,6 +748,43 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
   } catch (error) {
     console.error('Error al calcular y guardar puntos de movimiento:', error);
     throw error;
+  }
+}
+
+export async function saveFoodHydration(userId, date, waterGlasses) {
+  try {
+    const hydrationValue = Number(waterGlasses) || 0
+    const existingRecord = await getMovementRecord(userId, date)
+
+    await deletePointTransactionsByCategory(userId, date, 'food_hydration')
+
+    let pointsEarned = 0
+    if (hydrationValue > 0) {
+      pointsEarned = calculateProportional(hydrationValue, MAX_WATER_GLASSES, FOOD_HYDRATION_FULL_POINTS)
+      await addPointTransaction(
+        userId,
+        date,
+        pointsEarned,
+        'Hidratación del día',
+        'food_hydration',
+        'water_glasses'
+      )
+    }
+
+    const savedRecord = await upsertMovementRecord(userId, date, {
+      ...(existingRecord || {}),
+      user_id: userId,
+      date,
+      water_glasses: hydrationValue,
+    })
+
+    return {
+      pointsEarned,
+      savedRecord,
+    }
+  } catch (error) {
+    console.error('Error al guardar hidratación desde alimentación:', error)
+    throw error
   }
 }
 

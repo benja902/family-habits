@@ -96,6 +96,7 @@ export const FOOD_VARIETY_POINTS = 0;
 export const FOOD_SALAD_POINTS = 0;
 export const FOOD_NO_TV_LUNCH_POINTS = 20;
 export const FOOD_TV_LUNCH_PENALTY = -35;
+export const FOOD_HYDRATION_FULL_POINTS = 35;
 export const FOOD_EXTRA_CARBS_PENALTY = 0;
 export const FOOD_QUALITY_POINTS = {
   excelente: 0,

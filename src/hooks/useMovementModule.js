@@ -36,9 +36,6 @@ export default function useMovementModule() {
 
       const points = result?.pointsEarned ?? 0
       let message = '¡+' + points + ' pts! Movimiento registrado 💪'
-      if (variables.water_glasses >= 8) {
-        message += ' · ¡Meta de agua cumplida! 💧'
-      }
       toast.success(message)
 
       navigate('/dashboard')

@@ -31,8 +31,8 @@ export default function QuickChecklist({
       id: 'water',
       label: '💧 8 vasos de agua',
       isCompleted: (movementRecord?.water_glasses || 0) >= 8,
-      color: '#22C55E', // movement
-      route: '/habits/movement'
+      color: '#F97316', // food
+      route: '/habits/food'
     },
     {
       id: 'exercise',

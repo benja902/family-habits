@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsEggFried, BsCheckCircleFill, BsDash, BsPlus } from 'react-icons/bs'
+import { BsCupFill, BsEggFried, BsCheckCircleFill, BsDash, BsPlus } from 'react-icons/bs'
 import useFoodModule from '../../hooks/useFoodModule'
 import {
+  FOOD_HYDRATION_FULL_POINTS,
   FOOD_NO_TV_LUNCH_POINTS,
   FOOD_TV_LUNCH_PENALTY,
+  MAX_WATER_GLASSES,
 } from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
@@ -15,7 +17,27 @@ const MODULE_COLOR = '#F97316'
 
 export default function FoodModule() {
   const [activeTab, setActiveTab] = useState('desayuno')
-  const { mealRecords, isLoading, MEAL_TYPES, MEAL_LABELS, saveMeal, isSavingMeal } = useFoodModule()
+  const {
+    mealRecords,
+    hydrationRecord,
+    isLoading,
+    isLoadingHydration,
+    MEAL_TYPES,
+    MEAL_LABELS,
+    saveMeal,
+    saveHydration,
+    isSavingHydration,
+    isSavingMeal,
+  } = useFoodModule()
+
+  const {
+    watch: watchHydration,
+    setValue: setHydrationValue,
+  } = useForm({
+    defaultValues: {
+      water_glasses: 0,
+    },
+  })
 
   const { register, handleSubmit, watch, control, reset, setValue } = useForm({
     defaultValues: {
@@ -64,7 +86,12 @@ export default function FoodModule() {
     }
   }, [activeTab, currentRecord, reset]) // <-- Aquí está la magia: dependemos de currentRecord
 
+  useEffect(() => {
+    setHydrationValue('water_glasses', hydrationRecord?.water_glasses || 0)
+  }, [hydrationRecord, setHydrationValue])
+
   const formValues = watch()
+  const waterGlasses = watchHydration('water_glasses')
 
   // Calcular puntos en tiempo real para el resumen
   const calculatePoints = () => {
@@ -76,6 +103,7 @@ export default function FoodModule() {
   }
 
   const points = calculatePoints()
+  const hydrationPoints = Math.round((waterGlasses / MAX_WATER_GLASSES) * FOOD_HYDRATION_FULL_POINTS)
 
   const onSubmit = (data) => {
     if (!data.did_eat) return
@@ -91,10 +119,49 @@ export default function FoodModule() {
     saveMeal(activeTab, cleanData)
   }
 
-  if (isLoading) return <LoadingText>Cargando información...</LoadingText>
+  const handleSaveHydration = () => {
+    saveHydration(waterGlasses)
+  }
+
+  if (isLoading || isLoadingHydration) return <LoadingText>Cargando información...</LoadingText>
 
   return (
-    <Container>
+      <Container>
+      <HydrationCard>
+        <SectionTitle>💧 Hidratación</SectionTitle>
+        <Hint style={{ marginTop: 0 }}>La hidratación ya se registra desde alimentación en esta transición.</Hint>
+        <GlassesContainer>
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((glass) => (
+            <GlassButton
+              key={glass}
+              type="button"
+              onClick={() => setHydrationValue('water_glasses', glass)}
+              whileTap={{ scale: 0.85 }}
+            >
+              <BsCupFill
+                size={32}
+                color={waterGlasses >= glass ? '#3B82F6' : '#E2E8F0'}
+              />
+            </GlassButton>
+          ))}
+        </GlassesContainer>
+        <HydrationSummary>
+          <HydrationText $isComplete={waterGlasses >= MAX_WATER_GLASSES}>
+            {waterGlasses >= MAX_WATER_GLASSES
+              ? `¡Meta cumplida! +${FOOD_HYDRATION_FULL_POINTS} pts`
+              : `${waterGlasses} / ${MAX_WATER_GLASSES} vasos`}
+          </HydrationText>
+          <HydrationPoints>{hydrationPoints} pts actuales</HydrationPoints>
+        </HydrationSummary>
+        <InlineSaveButton
+          type="button"
+          onClick={handleSaveHydration}
+          disabled={isSavingHydration}
+        >
+          {isSavingHydration ? 'Guardando agua...' : 'Guardar hidratación'}
+        </InlineSaveButton>
+      </HydrationCard>
+
       {/* Tabs / Pills Horizontales */}
       <TabsContainer>
         {MEAL_TYPES.map(tab => (
@@ -266,6 +333,14 @@ export default function FoodModule() {
 
 const Container = styled.div`
   padding-bottom: 80px;
+`
+const HydrationCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `
 const TabsContainer = styled.div`
   display: flex;
@@ -449,6 +524,55 @@ const CounterValue = styled.span`
   width: 20px;
   text-align: center;
   color: ${({ theme }) => theme.colors.textPrimary};
+`
+const GlassesContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+`
+const GlassButton = styled(motion.button)`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+`
+const HydrationSummary = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+`
+const HydrationText = styled.p`
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: ${({ $isComplete, theme }) => ($isComplete ? '#22C55E' : theme.colors.textPrimary)};
+`
+const HydrationPoints = styled.p`
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`
+const InlineSaveButton = styled.button`
+  margin-top: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: ${MODULE_COLOR};
+  color: white;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
 `
 const FooterSpacer = styled.div` height: 60px; `
 const LoadingText = styled.p` text-align: center; padding: 40px; color: ${({ theme }) => theme.colors.textSecondary}; `

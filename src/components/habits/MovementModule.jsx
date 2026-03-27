@@ -2,14 +2,11 @@ import { useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsCupFill } from 'react-icons/bs'
 import useMovementModule from '../../hooks/useMovementModule'
 import {
-  MAX_WATER_GLASSES,
   MIN_EXERCISE_MINUTES,
   MIN_WALK_AFTER_LUNCH_MINUTES,
   MOVEMENT_EXERCISE_FULL_POINTS,
-  MOVEMENT_HYDRATION_FULL_POINTS,
   MOVEMENT_WALK_POINTS,
 } from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
@@ -23,15 +20,14 @@ export default function MovementModule() {
   const { movementRecord, isLoading, hasRecord, saveMovement, isSaving } = useMovementModule()
 
   const { register, handleSubmit, watch, control, reset } = useForm({
-    defaultValues: {
-      did_exercise: false,
-      exercise_type: '',
-      exercise_minutes: 0,
-      exercise_notes: '',
-      water_glasses: 0,
-      walk_after_lunch: false,
-      walk_minutes: 0,
-    },
+      defaultValues: {
+        did_exercise: false,
+        exercise_type: '',
+        exercise_minutes: 0,
+        exercise_notes: '',
+        walk_after_lunch: false,
+        walk_minutes: 0,
+      },
   })
 
   // Cargar valores iniciales desde movementRecord
@@ -42,7 +38,6 @@ export default function MovementModule() {
         exercise_type: movementRecord.exercise_type || '',
         exercise_minutes: movementRecord.exercise_minutes || 0,
         exercise_notes: movementRecord.exercise_notes || '',
-        water_glasses: movementRecord.water_glasses || 0,
         walk_after_lunch: movementRecord.walk_after_lunch || false,
         walk_minutes: movementRecord.walk_minutes || 0,
       })
@@ -52,7 +47,6 @@ export default function MovementModule() {
   // Watch para resumen en tiempo real
   const didExercise = watch('did_exercise')
   const exerciseMinutes = watch('exercise_minutes')
-  const waterGlasses = watch('water_glasses')
   const walkAfterLunch = watch('walk_after_lunch')
   const walkMinutes = watch('walk_minutes')
 
@@ -63,18 +57,13 @@ export default function MovementModule() {
     return Math.round((exerciseMinutes / MIN_EXERCISE_MINUTES) * MOVEMENT_EXERCISE_FULL_POINTS)
   }
 
-  const calculateWaterPoints = () => {
-    return Math.round((waterGlasses / MAX_WATER_GLASSES) * MOVEMENT_HYDRATION_FULL_POINTS)
-  }
-
   const calculateWalkPoints = () => {
     return walkAfterLunch && walkMinutes >= MIN_WALK_AFTER_LUNCH_MINUTES ? MOVEMENT_WALK_POINTS : 0
   }
 
   const exercisePoints = calculateExercisePoints()
-  const waterPoints = calculateWaterPoints()
   const walkPoints = calculateWalkPoints()
-  const totalPoints = exercisePoints + waterPoints + walkPoints
+  const totalPoints = exercisePoints + walkPoints
 
   const onSubmit = (data) => {
     const cleanData = {
@@ -82,7 +71,6 @@ export default function MovementModule() {
       exercise_type: data.exercise_type || null,
       exercise_notes: data.exercise_notes || null,
       exercise_minutes: Number(data.exercise_minutes) || 0,
-      water_glasses: Number(data.water_glasses) || 0,
       walk_minutes: Number(data.walk_minutes) || 0,
     }
     saveMovement(cleanData)
@@ -201,43 +189,7 @@ export default function MovementModule() {
           </AnimatePresence>
         </Section>
 
-        {/* SECCIÓN 2: Hidratación */}
-        <Section>
-          <SectionTitle>💧 Hidratación</SectionTitle>
-
-          <FormGroup>
-            <Controller
-              name="water_glasses"
-              control={control}
-              render={({ field }) => (
-                <>
-                  <GlassesContainer>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((glass) => (
-                      <GlassButton
-                        key={glass}
-                        type="button"
-                        onClick={() => field.onChange(glass)}
-                        whileTap={{ scale: 0.85 }}
-                      >
-                        <BsCupFill
-                          size={32}
-                          color={field.value >= glass ? '#3B82F6' : '#E2E8F0'}
-                        />
-                      </GlassButton>
-                    ))}
-                  </GlassesContainer>
-                  <WaterText $isComplete={field.value >= 8}>
-                    {field.value >= 8
-                      ? '¡Meta cumplida! 💧'
-                      : `${field.value} / ${MAX_WATER_GLASSES} vasos`}
-                  </WaterText>
-                </>
-              )}
-            />
-          </FormGroup>
-        </Section>
-
-        {/* SECCIÓN 3: Movimiento */}
+        {/* SECCIÓN 2: Movimiento */}
         <Section>
           <SectionTitle>🚶 Movimiento</SectionTitle>
 
@@ -291,7 +243,6 @@ export default function MovementModule() {
         <PointsSummaryCard
           pointsSummary={[
             { label: 'Ejercicio', points: exercisePoints, color: '#22C55E' },
-            { label: 'Agua', points: waterPoints, color: '#3B82F6' },
             { label: 'Caminata', points: walkPoints, color: '#22C55E' },
           ]}
           totalPoints={totalPoints}
@@ -534,28 +485,6 @@ const Textarea = styled.textarea`
   &::placeholder {
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`
-
-const GlassesContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-`
-
-const GlassButton = styled(motion.button)`
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-`
-
-const WaterText = styled.p`
-  text-align: center;
-  font-size: 16px;
-  font-weight: 600;
-  color: ${({ $isComplete }) => ($isComplete ? '#22C55E' : '#64748B')};
 `
 
 const FooterSpacer = styled.div`

@@ -10,6 +10,7 @@ import AppHeader from '../components/layout/AppHeader';
 import PageContainer from '../components/layout/PageContainer';
 import SleepModule from '../components/habits/SleepModule';
 import PhoneUseModule from '../components/habits/PhoneUseModule';
+import NightRoutineModule from '../components/habits/NightRoutineModule';
 import MovementModule from '../components/habits/MovementModule';
 // Agrega esta línea junto a los otros imports de módulos
 import FoodModule from '../components/habits/FoodModule'
@@ -80,6 +81,7 @@ export default function HabitDetail() {
   const HABIT_MODULES = {
     sleep: <SleepModule />,
     'phone-use': <PhoneUseModule />,
+    'night-routine': <NightRoutineModule />,
     movement: <MovementModule />,
     food: <FoodModule />, // <-- ¡Le quitamos los // del principio!
     study: <StudyModule />,
@@ -91,11 +93,13 @@ export default function HabitDetail() {
   const HABIT_TITLES = {
     ...HABIT_LABELS_FULL,
     'phone-use': 'Rutina del celular',
+    'night-routine': 'Rutina de noche',
   };
 
   const HABIT_PAGE_COLORS = {
     ...HABIT_COLORS,
     'phone-use': HABIT_COLORS.sleep,
+    'night-routine': HABIT_COLORS.sleep,
   };
 
   // Si el módulo no existe, mostrar EmptyState

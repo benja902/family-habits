@@ -288,6 +288,34 @@ const SummaryChip = styled.div`
   color: ${({ $color }) => $color};
 `;
 
+const SectionDescription = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin: -4px 0 ${({ theme }) => theme.spacing.sm};
+`;
+
+const TransitionBanner = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  padding: ${({ theme }) => theme.spacing.md};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.xs};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+`;
+
+const TransitionTitle = styled.div`
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const TransitionText = styled.div`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
 // ==================== COMPONENTE ====================
 
 export default function SleepModule() {
@@ -552,14 +580,108 @@ export default function SleepModule() {
             exit={{ opacity: 0, y: -20 }}
           >
             <BsCheckCircleFill />
-            Ya registraste tu descanso hoy
+            Ya registraste tu rutina de hoy
           </Banner>
         )}
       </AnimatePresence>
 
       <FormContent onSubmit={handleSubmit(onSubmit)}>
-        {/* ==================== SECCIÓN 1: DISPOSITIVOS ==================== */}
-        <SectionTitle>📱 Dispositivos</SectionTitle>
+        <TransitionBanner>
+          <TransitionTitle>Transición de módulo</TransitionTitle>
+          <TransitionText>
+            Por ahora este módulo sigue guardándose como <strong>sleep</strong>, pero ya está organizado como rutina de mañana, uso del celular y rutina de noche.
+          </TransitionText>
+        </TransitionBanner>
+
+        {/* ==================== SECCIÓN 1: MAÑANA ==================== */}
+        <SectionTitle>🌅 Rutina de mañana</SectionTitle>
+        <SectionDescription>
+          Aquí registras cómo empezó tu día: levantarte a tiempo y tu primer bloque de rutina.
+        </SectionDescription>
+
+        {/* Campo 1: Hora en que te levantaste */}
+        <FieldWrapper>
+          <Label>Hora en que te levantaste</Label>
+          <ActionRow>
+            <ActionButton
+              type="button"
+              $active={isWakeCurrentMode && !showManualWakeTime}
+              $activeColor={theme.colors.success}
+              onClick={() => setCurrentTimeForField('wake_time', 'wake_time_source')}
+            >
+              <BsArrowClockwise />
+              Registrar hora de ahora
+            </ActionButton>
+            <ActionButton
+              type="button"
+              $active={showManualWakeTime}
+              $activeColor={theme.colors.warning}
+              onClick={() => toggleManualTimeInput('wake_time')}
+            >
+              <BsPencilSquare />
+              {showManualWakeTime ? 'Cancelar entrada manual' : 'Escribir hora manual'}
+            </ActionButton>
+          </ActionRow>
+          <Controller
+            name="wake_time"
+            control={control}
+            render={({ field }) => (
+              <>
+                {showManualWakeTime && (
+                  <TimeInputRow>
+                    <TimeInput
+                      type="time"
+                      min={currentTime}
+                      max={currentTime}
+                      value={field.value || ''}
+                      onChange={(event) => handleManualTimeChange(
+                        'wake_time',
+                        'wake_time_source',
+                        event.target.value,
+                        'Debe coincidir con la hora actual.'
+                      )}
+                    />
+                    {field.value && field.value <= WAKE_TARGET && (
+                      <Indicator $color={theme.colors.success}>
+                        <BsCheckCircleFill />
+                      </Indicator>
+                    )}
+                  </TimeInputRow>
+                )}
+                {wakeTimeFeedback && (
+                  <SummaryChips>
+                    <SummaryChip $color={theme.colors.textSecondary}>
+                      {wakeTimeFeedback.mode}
+                    </SummaryChip>
+                    <SummaryChip $color={wakeTimeFeedback.color}>
+                      {wakeTimeFeedback.status}
+                    </SummaryChip>
+                    {wakeTimeFeedback.points && (
+                      <SummaryChip $color={wakeTimeFeedback.color}>
+                        {wakeTimeFeedback.points}
+                      </SummaryChip>
+                    )}
+                  </SummaryChips>
+                )}
+                {errors.wake_time && <ErrorText>{errors.wake_time.message}</ErrorText>}
+                <Hint>
+                  <BsClockFill /> Meta: hasta las {WAKE_TARGET}
+                </Hint>
+                {showManualWakeTime && !errors.wake_time && (
+                  <Hint>
+                    Debe ser la hora exacta de ahora.
+                  </Hint>
+                )}
+              </>
+            )}
+          />
+        </FieldWrapper>
+
+        {/* ==================== SECCIÓN 2: CELULAR ==================== */}
+        <SectionTitle>📱 Uso del celular</SectionTitle>
+        <SectionDescription>
+          Esta sección junta lo que después se convertirá en el módulo de uso del celular.
+        </SectionDescription>
 
         {/* Campo 1: ¿Entregaste tu celular? */}
         <Controller
@@ -725,8 +847,11 @@ export default function SleepModule() {
           )}
         />
 
-        {/* ==================== SECCIÓN 2: SUEÑO ==================== */}
-        <SectionTitle>😴 Sueño</SectionTitle>
+        {/* ==================== SECCIÓN 3: NOCHE ==================== */}
+        <SectionTitle>🌙 Rutina de noche</SectionTitle>
+        <SectionDescription>
+          Aquí dejas lo relacionado con tu hora de dormir y el cierre del día.
+        </SectionDescription>
 
         {/* Campo 4: Hora en que te dormiste */}
         <FieldWrapper>
@@ -760,84 +885,6 @@ export default function SleepModule() {
           )}
         />
 
-        {/* Campo 6: Hora en que te levantaste */}
-        <FieldWrapper>
-          <Label>Hora en que te levantaste</Label>
-          <ActionRow>
-            <ActionButton
-              type="button"
-              $active={isWakeCurrentMode && !showManualWakeTime}
-              $activeColor={theme.colors.success}
-              onClick={() => setCurrentTimeForField('wake_time', 'wake_time_source')}
-            >
-              <BsArrowClockwise />
-              Registrar hora de ahora
-            </ActionButton>
-            <ActionButton
-              type="button"
-              $active={showManualWakeTime}
-              $activeColor={theme.colors.warning}
-              onClick={() => toggleManualTimeInput('wake_time')}
-            >
-              <BsPencilSquare />
-              {showManualWakeTime ? 'Cancelar entrada manual' : 'Escribir hora manual'}
-            </ActionButton>
-          </ActionRow>
-          <Controller
-            name="wake_time"
-            control={control}
-            render={({ field }) => (
-              <>
-                {showManualWakeTime && (
-                  <TimeInputRow>
-                    <TimeInput
-                      type="time"
-                      min={currentTime}
-                      max={currentTime}
-                      value={field.value || ''}
-                      onChange={(event) => handleManualTimeChange(
-                        'wake_time',
-                        'wake_time_source',
-                        event.target.value,
-                        'Debe coincidir con la hora actual.'
-                      )}
-                    />
-                    {field.value && field.value <= WAKE_TARGET && (
-                      <Indicator $color={theme.colors.success}>
-                        <BsCheckCircleFill />
-                      </Indicator>
-                    )}
-                  </TimeInputRow>
-                )}
-                {wakeTimeFeedback && (
-                  <SummaryChips>
-                    <SummaryChip $color={theme.colors.textSecondary}>
-                      {wakeTimeFeedback.mode}
-                    </SummaryChip>
-                    <SummaryChip $color={wakeTimeFeedback.color}>
-                      {wakeTimeFeedback.status}
-                    </SummaryChip>
-                    {wakeTimeFeedback.points && (
-                      <SummaryChip $color={wakeTimeFeedback.color}>
-                        {wakeTimeFeedback.points}
-                      </SummaryChip>
-                    )}
-                  </SummaryChips>
-                )}
-                {errors.wake_time && <ErrorText>{errors.wake_time.message}</ErrorText>}
-                <Hint>
-                  <BsClockFill /> Meta: hasta las {WAKE_TARGET}
-                </Hint>
-                {showManualWakeTime && !errors.wake_time && (
-                  <Hint>
-                    Debe ser la hora exacta de ahora.
-                  </Hint>
-                )}
-              </>
-            )}
-          />
-        </FieldWrapper>
-
         {/* ==================== SECCIÓN 3: NOTAS ==================== */}
         <SectionTitle>📝 Notas</SectionTitle>
 
@@ -870,7 +917,7 @@ export default function SleepModule() {
       <ModuleSaveButton
         onSave={handleSubmit(onSubmit)}
         isSaving={isSaving}
-        label="Guardar descanso"
+        label="Guardar rutina"
         color="#6366F1"
         icon={<BsMoonStarsFill />}
       />

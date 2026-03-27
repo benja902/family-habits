@@ -16,7 +16,7 @@ export const HABIT_KEYS = [
 
 // Nombres cortos en español (para cards y navegación)
 export const HABIT_LABELS = {
-  sleep: 'Descanso',
+  sleep: 'Rutina',
   movement: 'Movimiento',
   food: 'Alimentación',
   study: 'Estudio',
@@ -27,7 +27,7 @@ export const HABIT_LABELS = {
 
 // Nombres completos en español (para headers de módulos)
 export const HABIT_LABELS_FULL = {
-  sleep: 'Descanso y dispositivos',
+  sleep: 'Rutina, celular y noche',
   movement: 'Movimiento y salud física',
   food: 'Alimentación',
   study: 'Estudio y crecimiento',

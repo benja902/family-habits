@@ -44,16 +44,16 @@ export default function useSleepModule() {
       // Construir mensaje de toast
       let message;
       if (pointsEarned > 0) {
-        message = `¡+${pointsEarned} pts! Descanso registrado 🌙`;
+        message = `¡+${pointsEarned} pts! Rutina registrada`;
       } else if (pointsEarned === 0) {
-        message = 'Descanso registrado 🌙';
+        message = 'Rutina registrada';
       } else {
-        message = `Descanso registrado. ${penaltyTotal} pts en penalizaciones`;
+        message = `Rutina registrada. ${penaltyTotal} pts en ajustes`;
       }
 
       // Si hay puntos positivos pero también penalizaciones, incluirlas
       if (pointsEarned > 0 && penaltyTotal < 0) {
-        message = `¡+${pointsEarned + Math.abs(penaltyTotal)} pts! Descanso registrado 🌙 (${penaltyTotal} pts en penalizaciones)`;
+        message = `¡+${pointsEarned + Math.abs(penaltyTotal)} pts! Rutina registrada (${penaltyTotal} pts en ajustes)`;
       }
 
       toast.success(message);

@@ -1,9 +1,13 @@
 /**
- * Constantes de los 7 ámbitos de hábitos del Panel Familiar.
- * Define keys, labels, íconos, colores y metas para cada categoría.
+ * Constantes de hábitos del Panel Familiar.
+ *
+ * Importante:
+ * - `HABIT_KEYS` conserva el modelo legacy interno.
+ * - `MAIN_FLOW_HABIT_KEYS` representa el flujo principal visible actual.
  */
 
-// Array con los 7 keys de ámbitos en orden
+// Keys legacy internas. Se mantienen por compatibilidad mientras siga existiendo
+// persistencia y lógica transicional basada en `sleep`.
 export const HABIT_KEYS = [
   'sleep',
   'movement',
@@ -11,6 +15,19 @@ export const HABIT_KEYS = [
   'study',
   'cleaning',
   'coexistence',
+  'household',
+];
+
+// Keys del flujo principal visible actual en el dashboard.
+export const MAIN_FLOW_HABIT_KEYS = [
+  'morning-routine',
+  'movement',
+  'food',
+  'study',
+  'cleaning',
+  'phone-use',
+  'coexistence',
+  'night-routine',
   'household',
 ];
 
@@ -101,7 +118,7 @@ export const COEXISTENCE_RESPECT_SCORE_POINTS = {
   4: 0,
   5: 0,
 };
-export const HOUSEHOLD_TASK_POINTS = 80;
+export const HOUSEHOLD_TASK_POINTS = 30;
 
 export const FOOD_ON_TIME_POINTS = 0;
 export const FOOD_VARIETY_POINTS = 0;

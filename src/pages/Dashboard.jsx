@@ -27,6 +27,7 @@ import useMovementModule from '../hooks/useMovementModule';
 import useStudyModule from '../hooks/useStudyModule';
 import useCleaningModule from '../hooks/useCleaningModule';
 import useHouseholdModule from '../hooks/useHouseholdModule';
+import { MAIN_FLOW_HABIT_KEYS } from '../constants/habits.constants';
 
 // Mensajes motivacionales por estado del día
 const MOTIVATIONAL_MESSAGES = {
@@ -36,18 +37,6 @@ const MOTIVATIONAL_MESSAGES = {
   'bien': '¡Muy bien! Ya casi llegas.',
   'excelente': '¡Día perfecto! 🎉',
 };
-
-const MAIN_FLOW_HABIT_KEYS = [
-  'morning-routine',
-  'movement',
-  'food',
-  'study',
-  'cleaning',
-  'phone-use',
-  'coexistence',
-  'night-routine',
-  'household',
-];
 
 const Dashboard = () => {
   const navigate = useNavigate();

@@ -1,19 +1,42 @@
 import React from 'react'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
-import { BsGiftFill, BsTvFill, BsFilm, BsCupHotFill, BsStarFill } from 'react-icons/bs'
+import {
+  BsCashCoin,
+  BsController,
+  BsCupHotFill,
+  BsEmojiHeartEyesFill,
+  BsFilm,
+  BsGiftFill,
+  BsMoonStarsFill,
+  BsShop,
+  BsStarFill,
+  BsTvFill,
+} from 'react-icons/bs'
 
 // Asignamos un ícono automático dependiendo del tipo de premio
 const REWARD_ICONS = {
-  dinero: BsGiftFill,
+  dinero: BsCashCoin,
   tv_extra: BsTvFill,
   elegir_pelicula: BsFilm,
   elegir_comida: BsCupHotFill,
   especial: BsStarFill
 }
 
+function resolveRewardIcon(reward) {
+  const normalizedName = (reward?.name || '').toLowerCase()
+
+  if (normalizedName.includes('videojuego')) return BsController
+  if (normalizedName.includes('siesta') || normalizedName.includes('dormir')) return BsMoonStarsFill
+  if (normalizedName.includes('animal')) return BsEmojiHeartEyesFill
+  if (normalizedName.includes('compra')) return BsShop
+  if (normalizedName.includes('yogurt') || normalizedName.includes('adoquin')) return BsGiftFill
+
+  return REWARD_ICONS[reward?.type] || BsStarFill
+}
+
 export function RewardCard({ reward, onRedeem, userPoints = 0, isRedeeming }) {
-  const Icon = REWARD_ICONS[reward.type] || BsStarFill
+  const Icon = resolveRewardIcon(reward)
   const canAfford = userPoints >= reward.points_required
 
   return (

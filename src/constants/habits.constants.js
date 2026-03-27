@@ -67,3 +67,15 @@ export const WAKE_TARGET = '06:30';
 export const MIN_EXERCISE_MINUTES = 20;
 export const MIN_WALK_AFTER_LUNCH_MINUTES = 1;
 export const MIN_STUDY_MINUTES = 30;
+
+export const FOOD_ON_TIME_POINTS = 30;
+export const FOOD_VARIETY_POINTS = 20;
+export const FOOD_SALAD_POINTS = 30;
+export const FOOD_NO_TV_LUNCH_POINTS = 30;
+export const FOOD_EXTRA_CARBS_PENALTY = -25;
+export const FOOD_QUALITY_POINTS = {
+  excelente: 20,
+  buena: 0,
+  regular: -10,
+  mala: -20,
+};

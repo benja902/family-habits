@@ -4,6 +4,14 @@ import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BsEggFried, BsCheckCircleFill, BsDash, BsPlus } from 'react-icons/bs'
 import useFoodModule from '../../hooks/useFoodModule'
+import {
+  FOOD_EXTRA_CARBS_PENALTY,
+  FOOD_NO_TV_LUNCH_POINTS,
+  FOOD_ON_TIME_POINTS,
+  FOOD_QUALITY_POINTS,
+  FOOD_SALAD_POINTS,
+  FOOD_VARIETY_POINTS,
+} from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
 
@@ -64,16 +72,12 @@ export default function FoodModule() {
 
   // Calcular puntos en tiempo real para el resumen
   const calculatePoints = () => {
-    let ptsOnTime = formValues.ate_on_time ? 30 : 0
-    let ptsVariety = formValues.variety ? 20 : 0
-    let ptsSalad = (isAlmuerzo && formValues.had_salad) ? 30 : 0
-    let ptsTv = (isAlmuerzo && formValues.watched_tv === false) ? 30 : 0
-    let ptsCarbs = formValues.carb_count >= 2 ? -25 : 0
-    
-    let ptsQuality = 0
-    if (formValues.quality === 'excelente') ptsQuality = 20
-    if (formValues.quality === 'regular') ptsQuality = -10
-    if (formValues.quality === 'mala') ptsQuality = -20
+    const ptsOnTime = formValues.ate_on_time ? FOOD_ON_TIME_POINTS : 0
+    const ptsVariety = formValues.variety ? FOOD_VARIETY_POINTS : 0
+    const ptsSalad = (isAlmuerzo && formValues.had_salad) ? FOOD_SALAD_POINTS : 0
+    const ptsTv = (isAlmuerzo && formValues.watched_tv === false) ? FOOD_NO_TV_LUNCH_POINTS : 0
+    const ptsCarbs = formValues.carb_count >= 2 ? FOOD_EXTRA_CARBS_PENALTY : 0
+    const ptsQuality = formValues.quality ? (FOOD_QUALITY_POINTS[formValues.quality] ?? 0) : 0
 
     const total = Math.max(0, ptsOnTime + ptsVariety + ptsSalad + ptsTv + ptsCarbs + ptsQuality)
 
@@ -157,7 +161,7 @@ export default function FoodModule() {
                       <Input type="time" {...register('meal_time')} />
                     </Card>
                     <ToggleCard $isActive={formValues.ate_on_time} $color="#22C55E" style={{ flex: 1, margin: 0 }}>
-                      <ToggleLabel>¿A tiempo? {formValues.ate_on_time && <Badge $color="#22C55E">+30</Badge>}</ToggleLabel>
+                      <ToggleLabel>¿A tiempo? {formValues.ate_on_time && <Badge $color="#22C55E">+{FOOD_ON_TIME_POINTS}</Badge>}</ToggleLabel>
                       <ToggleSwitch type="button" $isActive={formValues.ate_on_time} $color="#22C55E" onClick={() => setValue('ate_on_time', !formValues.ate_on_time)}>
                         <ToggleThumb $isActive={formValues.ate_on_time} />
                       </ToggleSwitch>
@@ -194,7 +198,7 @@ export default function FoodModule() {
                   {/* Campo 5 y 6: Variedad y Carbohidratos */}
                   <Card>
                     <ToggleRow style={{ marginBottom: 16 }}>
-                      <ToggleLabel>Buena variedad {formValues.variety && <Badge $color="#22C55E">+20</Badge>}</ToggleLabel>
+                      <ToggleLabel>Buena variedad {formValues.variety && <Badge $color="#22C55E">+{FOOD_VARIETY_POINTS}</Badge>}</ToggleLabel>
                       <ToggleSwitch type="button" $isActive={formValues.variety} $color="#22C55E" onClick={() => setValue('variety', !formValues.variety)}>
                         <ToggleThumb $isActive={formValues.variety} />
                       </ToggleSwitch>
@@ -203,7 +207,7 @@ export default function FoodModule() {
                     <Row style={{ alignItems: 'center', justifyContent: 'space-between' }}>
                       <ToggleLabel>
                         Carbohidratos 
-                        {formValues.carb_count >= 2 && <Badge $color="#EF4444">-25 pts</Badge>}
+                        {formValues.carb_count >= 2 && <Badge $color="#EF4444">{FOOD_EXTRA_CARBS_PENALTY} pts</Badge>}
                       </ToggleLabel>
                       <CounterContainer>
                         <CounterButton type="button" onClick={() => setValue('carb_count', Math.max(0, formValues.carb_count - 1))}><BsDash /></CounterButton>
@@ -219,7 +223,7 @@ export default function FoodModule() {
                     <>
                       <SectionTitle>🥗 Especial Almuerzo</SectionTitle>
                       <ToggleCard $isActive={formValues.had_salad} $color="#22C55E">
-                        <ToggleLabel>¿Incluiste ensalada? {formValues.had_salad && <Badge $color="#22C55E">+30 pts</Badge>}</ToggleLabel>
+                        <ToggleLabel>¿Incluiste ensalada? {formValues.had_salad && <Badge $color="#22C55E">+{FOOD_SALAD_POINTS} pts</Badge>}</ToggleLabel>
                         <ToggleSwitch type="button" $isActive={formValues.had_salad} $color="#22C55E" onClick={() => setValue('had_salad', !formValues.had_salad)}>
                           <ToggleThumb $isActive={formValues.had_salad} />
                         </ToggleSwitch>
@@ -229,7 +233,7 @@ export default function FoodModule() {
                         <ToggleLabel>
                           ¿Viste TV durante el almuerzo?
                           <br/><Hint style={{ margin: 0 }}>Sin TV = +30 pts</Hint>
-                          {formValues.watched_tv ? <Badge $color="#EF4444">-30 pts</Badge> : <Badge $color="#22C55E">+30 pts</Badge>}
+                          {formValues.watched_tv ? <Badge $color="#EF4444">-{FOOD_NO_TV_LUNCH_POINTS} pts</Badge> : <Badge $color="#22C55E">+{FOOD_NO_TV_LUNCH_POINTS} pts</Badge>}
                         </ToggleLabel>
                         <ToggleSwitch type="button" $isActive={formValues.watched_tv} $color="#EF4444" onClick={() => setValue('watched_tv', !formValues.watched_tv)}>
                           <ToggleThumb $isActive={formValues.watched_tv} />

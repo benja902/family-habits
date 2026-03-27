@@ -9,6 +9,12 @@ import { applyPunctuality, calculateProportional } from '../utils/points.utils';
 import { isBeforeCurrentTime, isFutureTime } from '../utils/dates.utils';
 import {
   DEVICE_CURFEW,
+  FOOD_EXTRA_CARBS_PENALTY,
+  FOOD_NO_TV_LUNCH_POINTS,
+  FOOD_ON_TIME_POINTS,
+  FOOD_QUALITY_POINTS,
+  FOOD_SALAD_POINTS,
+  FOOD_VARIETY_POINTS,
   MAX_TV_MINUTES,
   MAX_WATER_GLASSES,
   MIN_EXERCISE_MINUTES,
@@ -499,7 +505,6 @@ export async function getCompletedHabitsToday(userId, date) {
         .select('points_earned')
         .eq('user_id', userId)
         .eq('date', date)
-        .gt('points_earned', 0)
         .limit(1),
       // Study
       supabase
@@ -771,41 +776,37 @@ export const calculateAndSaveMealPoints = async (userId, date, mealType, formDat
 
   // 1. Comió a tiempo
   if (formData.ate_on_time) {
-    await addPointTransaction(userId, date, 30, 'Comió a tiempo', categoryKey, 'meal_on_time')
-    totalPoints += 30
+    await addPointTransaction(userId, date, FOOD_ON_TIME_POINTS, 'Comió a tiempo', categoryKey, 'meal_on_time')
+    totalPoints += FOOD_ON_TIME_POINTS
   }
 
   // 2. Ensalada (solo almuerzo)
   if (mealType === 'almuerzo' && formData.had_salad) {
-    await addPointTransaction(userId, date, 30, 'Incluyó ensalada', categoryKey, 'had_salad')
-    totalPoints += 30
+    await addPointTransaction(userId, date, FOOD_SALAD_POINTS, 'Incluyó ensalada', categoryKey, 'had_salad')
+    totalPoints += FOOD_SALAD_POINTS
   }
 
   // 3. Variedad
   if (formData.variety) {
-    await addPointTransaction(userId, date, 20, 'Buena variedad', categoryKey, 'good_variety')
-    totalPoints += 20
+    await addPointTransaction(userId, date, FOOD_VARIETY_POINTS, 'Buena variedad', categoryKey, 'good_variety')
+    totalPoints += FOOD_VARIETY_POINTS
   }
 
   // 4. Sin TV (solo almuerzo)
   if (mealType === 'almuerzo' && formData.watched_tv === false) {
-    await addPointTransaction(userId, date, 30, 'Sin TV en el almuerzo', categoryKey, 'no_tv_lunch')
-    totalPoints += 30
+    await addPointTransaction(userId, date, FOOD_NO_TV_LUNCH_POINTS, 'Sin TV en el almuerzo', categoryKey, 'no_tv_lunch')
+    totalPoints += FOOD_NO_TV_LUNCH_POINTS
   }
 
   // 5. Carbohidratos (Penalización)
   if (formData.carb_count >= 2) {
-    await addPointTransaction(userId, date, -25, 'Doble carbohidrato', categoryKey, 'extra_carbs')
-    totalPoints -= 25
+    await addPointTransaction(userId, date, FOOD_EXTRA_CARBS_PENALTY, 'Doble carbohidrato', categoryKey, 'extra_carbs')
+    totalPoints += FOOD_EXTRA_CARBS_PENALTY
   }
 
   // 6. Calidad
   if (formData.quality) {
-    let qualityPts = 0
-    if (formData.quality === 'excelente') qualityPts = 20
-    if (formData.quality === 'buena') qualityPts = 0
-    if (formData.quality === 'regular') qualityPts = -10
-    if (formData.quality === 'mala') qualityPts = -20
+    const qualityPts = FOOD_QUALITY_POINTS[formData.quality] ?? 0
 
     if (qualityPts !== 0) {
       await addPointTransaction(userId, date, qualityPts, `Calidad de comida: ${formData.quality}`, categoryKey)

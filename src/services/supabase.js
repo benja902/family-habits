@@ -24,6 +24,7 @@ import {
   FOOD_QUALITY_POINTS,
   FOOD_SALAD_POINTS,
   FOOD_VARIETY_POINTS,
+  HOUSEHOLD_TASK_POINTS,
   MAX_TV_MINUTES,
   MAX_WATER_GLASSES,
   MIN_EXERCISE_MINUTES,
@@ -547,7 +548,6 @@ export async function getCompletedHabitsToday(userId, date) {
         .select('points_earned')
         .eq('user_id', userId)
         .eq('date', date)
-        .gt('points_earned', 0)
         .limit(1),
     ]);
 
@@ -1121,12 +1121,12 @@ export const calculateAndSaveHouseholdPoints = async (userId, date, taskCompleti
   for (const [taskId, isCompleted] of Object.entries(taskCompletionsData)) {
     let pts = 0
     if (isCompleted) {
-      pts = 80 // La regla dice 80 fijos por tarea completada
-      totalPts += 80
+      pts = HOUSEHOLD_TASK_POINTS
+      totalPts += HOUSEHOLD_TASK_POINTS
       await addPointTransaction(
         userId, 
         date, 
-        80, 
+        HOUSEHOLD_TASK_POINTS, 
         'Completó tarea asignada del hogar', 
         'household', 
         'task_completed'

@@ -6,6 +6,7 @@ import { BsCheck2Square, BsHouseDoorFill, BsClockHistory } from 'react-icons/bs'
 import useHouseholdModule from '../../hooks/useHouseholdModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
+import { HOUSEHOLD_TASK_POINTS } from '../../constants/habits.constants'
 const MODULE_COLOR = '#14B8A6' // Amarillo oscuro / Marrón (theme.HABIT_COLORS.household)
 
 export default function HouseholdModule() {
@@ -39,7 +40,7 @@ export default function HouseholdModule() {
   // Generar resumen dinámico de puntos
   const pointsSummary = assignments.map(asg => ({
     label: asg.household_tasks.name,
-    points: formValues[asg.task_id] ? 80 : 0,
+    points: formValues[asg.task_id] ? HOUSEHOLD_TASK_POINTS : 0,
     color: MODULE_COLOR
   }))
 
@@ -97,7 +98,7 @@ export default function HouseholdModule() {
                 </MetaInfo>
               </TextContent>
               <RightAction>
-                {isCompleted && <Badge>+80 pts</Badge>}
+                {isCompleted && <Badge>+{HOUSEHOLD_TASK_POINTS} pts</Badge>}
                 <ToggleSwitch $isOn={isCompleted}>
                   <ToggleThumb $isOn={isCompleted} />
                 </ToggleSwitch>

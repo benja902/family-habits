@@ -38,13 +38,13 @@ export default function useHouseholdModule() {
     }
   })
 
-  // Detectar si tiene al menos una tarea completada
-  const hasCompletedAny = query.data?.completions?.some(c => c.completed) || false
+  // Detectar si ya existe un registro guardado para hoy, incluso si ninguna tarea quedó completada
+  const hasSavedAny = (query.data?.completions?.length || 0) > 0
 
   return {
     householdData: query.data || { assignments: [], completions: [] },
     isLoading: query.isLoading,
-    hasRecord: hasCompletedAny,
+    hasRecord: hasSavedAny,
     saveHousehold: mutation.mutate,
     isSaving: mutation.isPending
   }

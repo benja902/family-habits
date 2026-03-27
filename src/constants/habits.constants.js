@@ -86,6 +86,7 @@ export const COEXISTENCE_RESPECT_SCORE_POINTS = {
   4: 10,
   5: 20,
 };
+export const HOUSEHOLD_TASK_POINTS = 80;
 
 export const FOOD_ON_TIME_POINTS = 30;
 export const FOOD_VARIETY_POINTS = 20;

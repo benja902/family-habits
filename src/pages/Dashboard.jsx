@@ -46,6 +46,7 @@ const MAIN_FLOW_HABIT_KEYS = [
   'phone-use',
   'coexistence',
   'night-routine',
+  'household',
 ];
 
 const Dashboard = () => {
@@ -65,7 +66,7 @@ const Dashboard = () => {
   useDailyRecord();
 
   // Cargar hábitos completados del día
-  const { completedHabits } = useCompletedHabits();
+  const { completedHabits, completedCount } = useCompletedHabits();
 
   // Cargar datos de módulos para pasar a QuickChecklist y DayTimeline
   const { sleepRecord } = useSleepModule();
@@ -86,26 +87,6 @@ const Dashboard = () => {
 
   const greeting = getGreeting();
   const headerTitle = `${greeting}, ${currentUser?.name}`;
-
-  const mainFlowCompletedHabits = {
-    'morning-routine': !!sleepRecord?.wake_time || !!cleaningRecord?.bed_made,
-    movement: !!completedHabits.movement,
-    food: !!completedHabits.food,
-    study: !!completedHabits.study,
-    cleaning: !!completedHabits.cleaning,
-    'phone-use': !!(
-      sleepRecord?.device_delivered ||
-      sleepRecord?.device_delivered_at ||
-      sleepRecord?.device_in_bathroom ||
-      sleepRecord?.device_in_bed
-    ),
-    coexistence: !!completedHabits.coexistence,
-    'night-routine': !!(sleepRecord?.sleep_time || sleepRecord?.slept_by_11),
-  };
-
-  const mainFlowCompletedCount = MAIN_FLOW_HABIT_KEYS.filter(
-    (habitKey) => mainFlowCompletedHabits[habitKey]
-  ).length;
 
   const LogoutButton = () => (
     <motion.button
@@ -170,7 +151,7 @@ const Dashboard = () => {
           {MOTIVATIONAL_MESSAGES[dayStatus] || '¡A por ello!'}
         </MotivationalText>
         <ProgressText>
-          {mainFlowCompletedCount} de {MAIN_FLOW_HABIT_KEYS.length} hábitos completados
+          {completedCount} de {MAIN_FLOW_HABIT_KEYS.length} hábitos completados
         </ProgressText>
       </Hero>
       {/* 👇 ALERTA DINÁMICA DE CASTIGOS 👇 */}
@@ -195,7 +176,7 @@ const Dashboard = () => {
             <HabitCategoryCard
               key={habitKey}
               habitKey={habitKey}
-              isCompleted={mainFlowCompletedHabits[habitKey]}
+              isCompleted={completedHabits[habitKey]}
               onClick={() => handleHabitClick(habitKey)}
             />
           ))}

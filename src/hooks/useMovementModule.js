@@ -21,8 +21,11 @@ export default function useMovementModule() {
     enabled: !!currentUser?.id,
   })
 
-  // Determinar si ya hay un registro guardado
-  const hasRecord = !!movementRecord
+  // Solo cuenta como registrado si realmente marcó ejercicio o caminata.
+  const hasRecord = !!(
+    movementRecord?.did_exercise ||
+    movementRecord?.walk_after_lunch
+  )
 
   // Mutation para guardar el registro
   const mutation = useMutation({

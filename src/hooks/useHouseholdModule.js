@@ -38,8 +38,8 @@ export default function useHouseholdModule() {
     }
   })
 
-  // Detectar si ya existe un registro guardado para hoy, incluso si ninguna tarea quedó completada
-  const hasSavedAny = (query.data?.completions?.length || 0) > 0
+  // Solo cuenta como registrado si al menos una tarea quedó realmente completada.
+  const hasSavedAny = (query.data?.completions || []).some((completion) => completion.completed)
 
   return {
     householdData: query.data || { assignments: [], completions: [] },

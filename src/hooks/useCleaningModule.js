@@ -41,7 +41,7 @@ export default function useCleaningModule() {
   return {
     cleaningRecord: query.data || null,
     isLoading: query.isLoading,
-    hasRecord: !!query.data,
+    hasRecord: !!(query.data?.room_clean || query.data?.space_ordered),
     saveCleaning: mutation.mutate,
     isSaving: mutation.isPending
   }

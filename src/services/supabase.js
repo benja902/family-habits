@@ -540,7 +540,7 @@ export async function getCompletedHabitsToday(userId, date) {
       // Movement
       supabase
         .from('movement_records')
-        .select('points_earned')
+        .select('did_exercise, walk_after_lunch')
         .eq('user_id', userId)
         .eq('date', date)
         .maybeSingle(),
@@ -554,14 +554,14 @@ export async function getCompletedHabitsToday(userId, date) {
       // Study
       supabase
         .from('study_records')
-        .select('points_earned')
+        .select('did_study, clean_space')
         .eq('user_id', userId)
         .eq('date', date)
         .maybeSingle(),
       // Cleaning
       supabase
         .from('cleaning_records')
-        .select('points_earned')
+        .select('room_clean, space_ordered')
         .eq('user_id', userId)
         .eq('date', date)
         .maybeSingle(),
@@ -575,18 +575,19 @@ export async function getCompletedHabitsToday(userId, date) {
       // Household
       supabase
         .from('household_task_completions')
-        .select('points_earned')
+        .select('completed')
         .eq('user_id', userId)
         .eq('date', date)
+        .eq('completed', true)
         .limit(1),
     ]);
 
     return {
       sleep: !!sleepData.data,
-      movement: !!movementData.data,
+      movement: !!(movementData.data && (movementData.data.did_exercise || movementData.data.walk_after_lunch)),
       food: !!(foodData.data && foodData.data.length > 0),
-      study: !!studyData.data,
-      cleaning: !!cleaningData.data,
+      study: !!(studyData.data && (studyData.data.did_study || studyData.data.clean_space)),
+      cleaning: !!(cleaningData.data && (cleaningData.data.room_clean || cleaningData.data.space_ordered)),
       coexistence: !!coexistenceData.data,
       household: !!(householdData.data && householdData.data.length > 0),
     };
@@ -599,10 +600,8 @@ export async function getCompletedHabitsToday(userId, date) {
 /**
  * Actualiza el porcentaje de completitud en daily_records
  */
-export async function updateCompletionPct(userId, date, completedCount) {
+export async function updateCompletionPct(userId, date, completionPct) {
   try {
-    const completionPct = Math.round((completedCount / 7) * 100);
-
     const { error } = await supabase
       .from('daily_records')
       .update({
@@ -615,6 +614,207 @@ export async function updateCompletionPct(userId, date, completedCount) {
     if (error) throw error;
   } catch (error) {
     console.error('Error al actualizar completion_pct:', error);
+    throw error;
+  }
+}
+
+async function replacePointTransactionsForCategory(userId, date, category, transactions) {
+  const { error: deleteError } = await supabase
+    .from('point_transactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('date', date)
+    .eq('category', category);
+
+  if (deleteError) throw deleteError;
+
+  if (!transactions.length) {
+    return [];
+  }
+
+  const { data, error: insertError } = await supabase
+    .from('point_transactions')
+    .insert(transactions)
+    .select();
+
+  if (insertError) throw insertError;
+
+  return data || [];
+}
+
+export async function saveMorningRoutineProgress(userId, date, formData) {
+  try {
+    const wakeTime = formData.wake_time || null;
+    const wakeTimeSource = wakeTime ? formData.wake_time_source || null : null;
+    const wakePoints = wakeTime
+      ? (wakeTime <= WAKE_TARGET ? 25 : -15)
+      : 0;
+
+    const { error: upsertError, data: savedRecord } = await supabase
+      .from('sleep_records')
+      .upsert({
+        user_id: userId,
+        date,
+        wake_time: wakeTime,
+        wake_time_source: wakeTimeSource,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,date' })
+      .select()
+      .single();
+
+    if (upsertError) throw upsertError;
+
+    const transactions = await replacePointTransactionsForCategory(
+      userId,
+      date,
+      'morning_routine_wake',
+      wakePoints !== 0
+        ? [{
+            user_id: userId,
+            date,
+            amount: wakePoints,
+            reason: wakePoints > 0 ? 'Se levantó a tiempo' : 'Se levantó tarde',
+            category: 'morning_routine_wake',
+            action_key: 'wake_time',
+          }]
+        : []
+    );
+
+    return {
+      pointsEarned: wakePoints,
+      transactions,
+      record: savedRecord,
+    };
+  } catch (error) {
+    console.error('Error guardando rutina de mañana:', error);
+    throw error;
+  }
+}
+
+export async function savePhoneUseProgress(userId, date, formData) {
+  try {
+    const deviceDelivered = !!formData.device_delivered;
+    const deviceDeliveredAt = formData.device_delivered_at || null;
+    const deviceDeliveredAtSource = deviceDeliveredAt
+      ? formData.device_delivered_at_source || null
+      : null;
+    const deviceInBathroom = !!formData.device_in_bathroom;
+    const deviceInBed = !!formData.device_in_bed;
+
+    const { error: upsertError, data: savedRecord } = await supabase
+      .from('sleep_records')
+      .upsert({
+        user_id: userId,
+        date,
+        device_delivered: deviceDelivered,
+        device_delivered_at: deviceDeliveredAt,
+        device_delivered_at_source: deviceDeliveredAtSource,
+        device_in_bathroom: deviceInBathroom,
+        device_in_bed: deviceInBed,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,date' })
+      .select()
+      .single();
+
+    if (upsertError) throw upsertError;
+
+    const transactionsToInsert = [];
+
+    if (deviceDelivered && deviceDeliveredAt) {
+      const deliveryPoints = deviceDeliveredAt <= DEVICE_CURFEW ? 20 : -10;
+      transactionsToInsert.push({
+        user_id: userId,
+        date,
+        amount: deliveryPoints,
+        reason: deliveryPoints > 0 ? 'Entregó el celular a tiempo' : 'Entregó el celular tarde',
+        category: 'phone_use',
+        action_key: 'device_delivery',
+      });
+    }
+
+    if (deviceInBathroom) {
+      transactionsToInsert.push({
+        user_id: userId,
+        date,
+        amount: -25,
+        reason: 'Usó el celular en el baño',
+        category: 'phone_use',
+        action_key: 'device_in_bathroom',
+      });
+    }
+
+    if (deviceInBed) {
+      transactionsToInsert.push({
+        user_id: userId,
+        date,
+        amount: -25,
+        reason: 'Usó el celular en la cama',
+        category: 'phone_use',
+        action_key: 'device_in_bed',
+      });
+    }
+
+    const transactions = await replacePointTransactionsForCategory(
+      userId,
+      date,
+      'phone_use',
+      transactionsToInsert
+    );
+
+    return {
+      pointsEarned: transactionsToInsert.reduce((sum, transaction) => sum + transaction.amount, 0),
+      transactions,
+      record: savedRecord,
+    };
+  } catch (error) {
+    console.error('Error guardando rutina del celular:', error);
+    throw error;
+  }
+}
+
+export async function saveNightRoutineProgress(userId, date, formData) {
+  try {
+    const sleepTime = formData.sleep_time || null;
+    const sleptBy11 = !!formData.slept_by_11;
+    const nightPoints = sleptBy11 ? 25 : (sleepTime ? -35 : 0);
+
+    const { error: upsertError, data: savedRecord } = await supabase
+      .from('sleep_records')
+      .upsert({
+        user_id: userId,
+        date,
+        sleep_time: sleepTime,
+        slept_by_11: sleptBy11,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,date' })
+      .select()
+      .single();
+
+    if (upsertError) throw upsertError;
+
+    const transactions = await replacePointTransactionsForCategory(
+      userId,
+      date,
+      'night_routine',
+      nightPoints !== 0
+        ? [{
+            user_id: userId,
+            date,
+            amount: nightPoints,
+            reason: nightPoints > 0 ? 'Se acostó a tiempo' : 'Se acostó tarde',
+            category: 'night_routine',
+            action_key: 'sleep_time',
+          }]
+        : []
+    );
+
+    return {
+      pointsEarned: nightPoints,
+      transactions,
+      record: savedRecord,
+    };
+  } catch (error) {
+    console.error('Error guardando rutina de noche:', error);
     throw error;
   }
 }

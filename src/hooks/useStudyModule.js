@@ -41,7 +41,7 @@ export default function useStudyModule() {
   return {
     studyRecord: query.data || null,
     isLoading: query.isLoading,
-    hasRecord: !!query.data,
+    hasRecord: !!(query.data?.did_study || query.data?.clean_space),
     saveStudy: mutation.mutate,
     isSaving: mutation.isPending
   }

@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  calculateAndSaveSleepPoints,
   getCleaningRecord,
   getSleepRecord,
+  saveMorningRoutineProgress,
   saveMorningRoutineBed,
 } from '../services/supabase';
 import useAuthStore from '../stores/useAuthStore';
@@ -41,20 +41,8 @@ export default function useMorningRoutineModule() {
 
   const mutation = useMutation({
     mutationFn: async (formData) => {
-      const existing = sleepRecord || {};
       const [sleepResult, bedResult] = await Promise.all([
-        calculateAndSaveSleepPoints(userId, today, {
-          device_delivered: existing.device_delivered || false,
-          device_delivered_at: existing.device_delivered_at || null,
-          device_delivered_at_source: existing.device_delivered_at_source || null,
-          device_in_bathroom: existing.device_in_bathroom || false,
-          device_in_bed: existing.device_in_bed || false,
-          sleep_time: existing.sleep_time || null,
-          slept_by_11: existing.slept_by_11 || false,
-          wake_time: formData.wake_time || null,
-          wake_time_source: formData.wake_time ? formData.wake_time_source || 'manual' : null,
-          notes: existing.notes || null,
-        }),
+        saveMorningRoutineProgress(userId, today, formData),
         saveMorningRoutineBed(userId, today, !!formData.bed_made),
       ]);
 

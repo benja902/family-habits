@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { calculateAndSaveSleepPoints, getSleepRecord } from '../services/supabase';
+import { getSleepRecord, savePhoneUseProgress } from '../services/supabase';
 import useAuthStore from '../stores/useAuthStore';
 import { getTodayString } from '../utils/dates.utils';
 import { toast } from 'sonner';
@@ -30,26 +30,7 @@ export default function usePhoneUseModule() {
   );
 
   const mutation = useMutation({
-    mutationFn: async (formData) => {
-      const existing = sleepRecord || {};
-
-      const mergedData = {
-        device_delivered: !!formData.device_delivered,
-        device_delivered_at: formData.device_delivered_at || null,
-        device_delivered_at_source: formData.device_delivered_at
-          ? formData.device_delivered_at_source || 'manual'
-          : null,
-        device_in_bathroom: !!formData.device_in_bathroom,
-        device_in_bed: !!formData.device_in_bed,
-        sleep_time: existing.sleep_time || null,
-        slept_by_11: existing.slept_by_11 || false,
-        wake_time: existing.wake_time || null,
-        wake_time_source: existing.wake_time_source || null,
-        notes: existing.notes || null,
-      };
-
-      return calculateAndSaveSleepPoints(userId, today, mergedData);
-    },
+    mutationFn: (formData) => savePhoneUseProgress(userId, today, formData),
     onSuccess: async (result) => {
       const pointsEarned = result?.pointsEarned ?? 0;
       const transactions = result?.transactions || [];

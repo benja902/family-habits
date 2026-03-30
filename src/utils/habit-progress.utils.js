@@ -82,15 +82,8 @@ export const getCleaningStatus = (cleaningRecord) => {
   }
 }
 
-export const getPhoneUseStatus = (sleepRecord) => {
-  const hasPhoneRecord = !!(
-    sleepRecord?.device_delivered ||
-    sleepRecord?.device_delivered_at ||
-    sleepRecord?.device_in_bathroom ||
-    sleepRecord?.device_in_bed
-  )
-
-  if (!hasPhoneRecord) {
+export const getPhoneUseStatus = (sleepRecord, hasSavedPhoneUse = false) => {
+  if (!hasSavedPhoneUse) {
     return buildProgressMeta({
       completedSteps: 0,
       totalSteps: 3,

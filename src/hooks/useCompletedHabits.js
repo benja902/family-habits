@@ -7,6 +7,7 @@ import {
   getHouseholdData,
   getMealRecords,
   getMovementRecord,
+  getPointTransactionsByCategory,
   getSleepRecord,
   getStudyRecord,
   updateCompletionPct,
@@ -92,6 +93,12 @@ export default function useCompletedHabits() {
     enabled: !!currentUser?.id,
   })
 
+  const phoneUseTransactionsQuery = useQuery({
+    queryKey: ['phoneUseTransactions', currentUser?.id, today],
+    queryFn: () => getPointTransactionsByCategory(currentUser?.id, today, 'phone_use'),
+    enabled: !!currentUser?.id,
+  })
+
   const sleepRecord = sleepRecordQuery.data ?? null
   const cleaningRecord = cleaningRecordQuery.data ?? null
   const movementRecord = movementRecordQuery.data ?? null
@@ -99,13 +106,14 @@ export default function useCompletedHabits() {
   const studyRecord = studyRecordQuery.data ?? null
   const householdRecord = householdRecordQuery.data ?? { assignments: [], completions: [] }
   const coexistenceRecord = coexistenceRecordQuery.data ?? null
+  const hasPhoneUseRecord = (phoneUseTransactionsQuery.data?.length || 0) > 0
   const foodStatus = getFoodStatus(mealRecords, movementRecord)
   const morningStatus = getMorningRoutineStatus(sleepRecord, cleaningRecord)
   const movementStatus = getMovementStatus(movementRecord)
   const studyStatus = getStudyStatus(studyRecord)
   const householdStatus = getHouseholdStatus(householdRecord)
   const cleaningStatus = getCleaningStatus(cleaningRecord)
-  const phoneUseStatus = getPhoneUseStatus(sleepRecord)
+  const phoneUseStatus = getPhoneUseStatus(sleepRecord, hasPhoneUseRecord)
   const coexistenceStatus = getCoexistenceStatus(coexistenceRecord)
   const nightRoutineStatus = getNightRoutineStatus(sleepRecord)
 
@@ -146,7 +154,8 @@ export default function useCompletedHabits() {
       !mealRecordsQuery.isLoading &&
       !studyRecordQuery.isLoading &&
       !householdRecordQuery.isLoading &&
-      !coexistenceRecordQuery.isLoading
+      !coexistenceRecordQuery.isLoading &&
+      !phoneUseTransactionsQuery.isLoading
     ) {
       const pct = Math.round(totalProgress / totalHabits)
       setCompletionPct(pct)
@@ -161,6 +170,7 @@ export default function useCompletedHabits() {
     studyRecordQuery.isLoading,
     householdRecordQuery.isLoading,
     coexistenceRecordQuery.isLoading,
+    phoneUseTransactionsQuery.isLoading,
     totalProgress,
     totalHabits,
     setCompletionPct,
@@ -178,7 +188,8 @@ export default function useCompletedHabits() {
       mealRecordsQuery.isLoading ||
       studyRecordQuery.isLoading ||
       householdRecordQuery.isLoading ||
-      coexistenceRecordQuery.isLoading,
+      coexistenceRecordQuery.isLoading ||
+      phoneUseTransactionsQuery.isLoading,
     completedCount,
   }
 }

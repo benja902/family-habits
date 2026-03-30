@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getSleepRecord, savePhoneUseProgress } from '../services/supabase';
+import { getPointTransactionsByCategory, getSleepRecord, savePhoneUseProgress } from '../services/supabase';
 import useAuthStore from '../stores/useAuthStore';
 import { getTodayString } from '../utils/dates.utils';
 import { toast } from 'sonner';
@@ -22,12 +22,13 @@ export default function usePhoneUseModule() {
     enabled: !!userId,
   });
 
-  const hasRecord = !!(
-    sleepRecord?.device_delivered ||
-    sleepRecord?.device_delivered_at ||
-    sleepRecord?.device_in_bathroom ||
-    sleepRecord?.device_in_bed
-  );
+  const { data: phoneUseTransactions } = useQuery({
+    queryKey: ['phoneUseTransactions', userId, today],
+    queryFn: () => getPointTransactionsByCategory(userId, today, 'phone_use'),
+    enabled: !!userId,
+  });
+
+  const hasRecord = (phoneUseTransactions?.length || 0) > 0;
 
   const mutation = useMutation({
     mutationFn: (formData) => savePhoneUseProgress(userId, today, formData),

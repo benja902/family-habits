@@ -4,6 +4,7 @@
  */
 
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { BsBoxArrowRight, BsShieldLockFill, BsExclamationTriangleFill } from 'react-icons/bs';
@@ -15,7 +16,8 @@ import HabitCategoryCard from '../components/habits/HabitCategoryCard';
 import QuickChecklist from '../components/dashboard/QuickChecklist';
 import DayTimeline from '../components/dashboard/DayTimeline';
 import { theme } from '../styles/theme';
-import { getGreeting } from '../utils/dates.utils';
+import { getGreeting, getTodayString } from '../utils/dates.utils';
+import { getPointTransactionsByCategory } from '../services/supabase';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useDayStore } from '../stores/useDayStore';
 import useDailyRecord from '../hooks/useDailyRecord';
@@ -57,6 +59,7 @@ const Dashboard = () => {
   const dayPoints = useDayStore((state) => state.dayPoints);
   const completionPct = useDayStore((state) => state.completionPct);
   const dayStatus = useDayStore((state) => state.dayStatus);
+  const today = getTodayString();
 
   // Cargar datos de castigos para la alerta
   const { punishments } = usePunishments();
@@ -77,13 +80,19 @@ const Dashboard = () => {
   const { cleaningRecord } = useCleaningModule();
   const { householdData, hasRecord: hasHouseholdRecord } = useHouseholdModule();
   const { coexistenceRecord } = useCoexistenceModule();
+  const { data: phoneUseTransactions } = useQuery({
+    queryKey: ['phoneUseTransactions', currentUser?.id, today],
+    queryFn: () => getPointTransactionsByCategory(currentUser?.id, today, 'phone_use'),
+    enabled: !!currentUser?.id,
+  })
+  const hasPhoneUseRecord = (phoneUseTransactions?.length || 0) > 0
   const foodStatus = getFoodStatus(mealRecords, hydrationRecord);
   const morningStatus = getMorningRoutineStatus(sleepRecord, cleaningRecord)
   const movementStatus = getMovementStatus(movementRecord)
   const studyStatus = getStudyStatus(studyRecord)
   const householdStatus = getHouseholdStatus(householdData)
   const cleaningStatus = getCleaningStatus(cleaningRecord)
-  const phoneUseStatus = getPhoneUseStatus(sleepRecord)
+  const phoneUseStatus = getPhoneUseStatus(sleepRecord, hasPhoneUseRecord)
   const coexistenceStatus = getCoexistenceStatus(coexistenceRecord)
   const nightRoutineStatus = getNightRoutineStatus(sleepRecord)
   const progressCardMeta = {

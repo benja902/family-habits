@@ -297,6 +297,24 @@ export async function getPointTransactionsByDate(userId, date) {
   }
 }
 
+export async function getPointTransactionsByCategory(userId, date, category) {
+  try {
+    const { data, error } = await supabase
+      .from('point_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', date)
+      .eq('category', category)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error al obtener transacciones por categoría:', error)
+    throw error
+  }
+}
+
 // ==================== DESCANSO Y DISPOSITIVOS ====================
 
 /**

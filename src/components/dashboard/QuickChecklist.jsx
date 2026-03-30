@@ -10,13 +10,15 @@ import { useNavigate } from 'react-router-dom'
  */
 export default function QuickChecklist({
   sleepRecord,
-  mealRecords,
   movementRecord,
   studyRecord,
   cleaningRecord,
+  householdData,
   hasHouseholdRecord
 }) {
   const navigate = useNavigate()
+  const householdAssignments = householdData?.assignments || []
+  const householdCompleted = householdAssignments.length === 0 || hasHouseholdRecord
 
   // 7 items del checklist según CLAUDE.md PROMPT 3-4-1
   const checklist = [
@@ -65,7 +67,7 @@ export default function QuickChecklist({
     {
       id: 'household',
       label: '🏠 Tareas del hogar',
-      isCompleted: hasHouseholdRecord,
+      isCompleted: householdCompleted,
       color: '#14B8A6', // household
       route: '/habits/household'
     }

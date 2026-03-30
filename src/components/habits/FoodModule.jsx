@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsCupFill, BsEggFried } from 'react-icons/bs'
+import { BsCupFill, BsEggFried, BsDropletHalf } from 'react-icons/bs'
 import useFoodModule from '../../hooks/useFoodModule'
 import {
   FOOD_HYDRATION_FULL_POINTS,
@@ -35,10 +35,10 @@ export default function FoodModule() {
     },
   })
 
-  const { register, handleSubmit, watch, control, reset, setValue } = useForm({
+  const { register, handleSubmit, watch, reset, setValue } = useForm({
       defaultValues: {
         food_description: '',
-        watched_tv: false,
+        no_tv_lunch: true,
       },
   })
   const activeTab = 'almuerzo'
@@ -52,12 +52,12 @@ export default function FoodModule() {
     if (currentRecord) {
       reset({
         food_description: currentRecord.food_description || '',
-        watched_tv: currentRecord.watched_tv || false,
+        no_tv_lunch: !currentRecord.watched_tv,
       })
     } else {
       reset({
         food_description: '',
-        watched_tv: false,
+        no_tv_lunch: true,
       })
     }
   }, [activeTab, currentRecord, reset]) // <-- Aquí está la magia: dependemos de currentRecord
@@ -72,7 +72,7 @@ export default function FoodModule() {
   // Calcular puntos en tiempo real para el resumen
   const calculatePoints = () => {
     const ptsTv = isAlmuerzo
-      ? (formValues.watched_tv ? FOOD_TV_LUNCH_PENALTY : FOOD_NO_TV_LUNCH_POINTS)
+      ? (formValues.no_tv_lunch ? FOOD_NO_TV_LUNCH_POINTS : FOOD_TV_LUNCH_PENALTY)
       : 0
 
     return { ptsTv, total: ptsTv }
@@ -80,8 +80,9 @@ export default function FoodModule() {
 
   const points = calculatePoints()
   const hydrationPoints = Math.round((waterGlasses / MAX_WATER_GLASSES) * FOOD_HYDRATION_FULL_POINTS)
+  const hasHydrationChanges = waterGlasses !== (hydrationRecord?.water_glasses || 0)
 
-  const onSubmit = (data) => {
+  const onSaveMeal = (data) => {
     const cleanData = {
       did_eat: true,
       meal_time: currentRecord?.meal_time || null,
@@ -91,14 +92,25 @@ export default function FoodModule() {
       variety: currentRecord?.variety || false,
       carb_count: Number(currentRecord?.carb_count) || 0,
       had_salad: currentRecord?.had_salad || false,
-      watched_tv: !!data.watched_tv,
+      watched_tv: !data.no_tv_lunch,
     }
     
     saveFoodModule({
+      mode: 'meal',
       mealType: activeTab,
       mealData: cleanData,
       waterGlasses,
       shouldSaveMeal: true,
+      shouldSaveHydration: false,
+    })
+  }
+
+  const onSaveHydration = () => {
+    saveFoodModule({
+      mode: 'hydration',
+      waterGlasses,
+      shouldSaveMeal: false,
+      shouldSaveHydration: true,
     })
   }
 
@@ -132,6 +144,17 @@ export default function FoodModule() {
           </HydrationText>
           <HydrationPoints>{hydrationPoints} pts actuales</HydrationPoints>
         </HydrationSummary>
+        <HydrationActions>
+          <HydrationSaveButton
+            type="button"
+            onClick={onSaveHydration}
+            disabled={!hasHydrationChanges || isSavingFoodModule}
+            whileTap={{ scale: (!hasHydrationChanges || isSavingFoodModule) ? 1 : 0.97 }}
+          >
+            <BsDropletHalf />
+            Guardar hidratación
+          </HydrationSaveButton>
+        </HydrationActions>
       </HydrationCard>
 
       <AnimatePresence mode="wait">
@@ -146,7 +169,7 @@ export default function FoodModule() {
             <Banner>✓ Ya registraste {MEAL_LABELS[activeTab].toLowerCase()} hoy — puedes editar</Banner>
           )}
 
-          <Form onSubmit={handleSubmit(onSubmit)}>
+          <Form onSubmit={handleSubmit(onSaveMeal)}>
             <DetailsContainer
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -163,23 +186,28 @@ export default function FoodModule() {
                 />
               </Card>
 
-              <ToggleCard $isActive={formValues.watched_tv} $color="#EF4444">
+              <ToggleCard
+                $isActive={formValues.no_tv_lunch}
+                $color={formValues.no_tv_lunch ? '#22C55E' : '#EF4444'}
+              >
                 <ToggleLabel>
-                  ¿Viste TV durante el almuerzo?
-                  <br /><Hint style={{ margin: 0 }}>Sin TV = +{FOOD_NO_TV_LUNCH_POINTS} pts</Hint>
-                  {formValues.watched_tv ? (
-                    <Badge $color="#EF4444">{FOOD_TV_LUNCH_PENALTY} pts</Badge>
-                  ) : (
+                  Almorcé sin TV
+                  <br /><Hint style={{ margin: 0 }}>
+                    Si hubo TV durante el almuerzo, apaga este switch.
+                  </Hint>
+                  {formValues.no_tv_lunch ? (
                     <Badge $color="#22C55E">+{FOOD_NO_TV_LUNCH_POINTS} pts</Badge>
+                  ) : (
+                    <Badge $color="#EF4444">{FOOD_TV_LUNCH_PENALTY} pts</Badge>
                   )}
                 </ToggleLabel>
                 <ToggleSwitch
                   type="button"
-                  $isActive={formValues.watched_tv}
-                  $color="#EF4444"
-                  onClick={() => setValue('watched_tv', !formValues.watched_tv)}
+                  $isActive={formValues.no_tv_lunch}
+                  $color={formValues.no_tv_lunch ? '#22C55E' : '#EF4444'}
+                  onClick={() => setValue('no_tv_lunch', !formValues.no_tv_lunch)}
                 >
-                  <ToggleThumb $isActive={formValues.watched_tv} />
+                  <ToggleThumb $isActive={formValues.no_tv_lunch} />
                 </ToggleSwitch>
               </ToggleCard>
 
@@ -193,8 +221,8 @@ export default function FoodModule() {
                   points: hydrationPoints,
                   color: '#3B82F6',
                 },
-                ...(isAlmuerzo
-                  ? [{ label: 'TV en almuerzo', points: points.ptsTv, color: points.ptsTv >= 0 ? '#22C55E' : '#EF4444' }]
+                ...(hasSavedRecord || formValues.food_description || !formValues.no_tv_lunch
+                  ? [{ label: 'Almuerzo sin TV', points: points.ptsTv, color: points.ptsTv >= 0 ? '#22C55E' : '#EF4444' }]
                   : []),
               ]}
               totalPoints={hydrationPoints + points.total}
@@ -205,9 +233,9 @@ export default function FoodModule() {
       </AnimatePresence>
 
       <ModuleSaveButton
-        onSave={handleSubmit(onSubmit)}
+        onSave={handleSubmit(onSaveMeal)}
         isSaving={isSavingFoodModule}
-        label="Guardar alimentación"
+        label="Guardar almuerzo"
         color={MODULE_COLOR}
         icon={<BsEggFried />}
       />
@@ -351,6 +379,29 @@ const HydrationPoints = styled.p`
   font-size: 13px;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textSecondary};
+`
+const HydrationActions = styled.div`
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+`
+const HydrationSaveButton = styled(motion.button)`
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `
 const FooterSpacer = styled.div` height: 60px; `
 const LoadingText = styled.p` text-align: center; padding: 40px; color: ${({ theme }) => theme.colors.textSecondary}; `

@@ -27,7 +27,19 @@ import useMovementModule from '../hooks/useMovementModule';
 import useStudyModule from '../hooks/useStudyModule';
 import useCleaningModule from '../hooks/useCleaningModule';
 import useHouseholdModule from '../hooks/useHouseholdModule';
+import useCoexistenceModule from '../hooks/useCoexistenceModule';
 import { MAIN_FLOW_HABIT_KEYS } from '../constants/habits.constants';
+import { getFoodStatus } from '../utils/food-status.utils';
+import {
+  getCleaningStatus,
+  getCoexistenceStatus,
+  getHouseholdStatus,
+  getMorningRoutineStatus,
+  getMovementStatus,
+  getNightRoutineStatus,
+  getPhoneUseStatus,
+  getStudyStatus,
+} from '../utils/habit-progress.utils';
 
 // Mensajes motivacionales por estado del día
 const MOTIVATIONAL_MESSAGES = {
@@ -59,11 +71,32 @@ const Dashboard = () => {
 
   // Cargar datos de módulos para pasar a QuickChecklist y DayTimeline
   const { sleepRecord } = useSleepModule();
-  const { mealRecords } = useFoodModule();
+  const { mealRecords, hydrationRecord } = useFoodModule();
   const { movementRecord } = useMovementModule();
   const { studyRecord } = useStudyModule();
   const { cleaningRecord } = useCleaningModule();
-  const { hasRecord: hasHouseholdRecord } = useHouseholdModule();
+  const { householdData, hasRecord: hasHouseholdRecord } = useHouseholdModule();
+  const { coexistenceRecord } = useCoexistenceModule();
+  const foodStatus = getFoodStatus(mealRecords, hydrationRecord);
+  const morningStatus = getMorningRoutineStatus(sleepRecord, cleaningRecord)
+  const movementStatus = getMovementStatus(movementRecord)
+  const studyStatus = getStudyStatus(studyRecord)
+  const householdStatus = getHouseholdStatus(householdData)
+  const cleaningStatus = getCleaningStatus(cleaningRecord)
+  const phoneUseStatus = getPhoneUseStatus(sleepRecord)
+  const coexistenceStatus = getCoexistenceStatus(coexistenceRecord)
+  const nightRoutineStatus = getNightRoutineStatus(sleepRecord)
+  const progressCardMeta = {
+    'morning-routine': morningStatus,
+    movement: movementStatus,
+    food: foodStatus,
+    study: studyStatus,
+    cleaning: cleaningStatus,
+    'phone-use': phoneUseStatus,
+    coexistence: coexistenceStatus,
+    'night-routine': nightRoutineStatus,
+    household: householdStatus,
+  }
 
   const handleLogout = () => {
     logout();
@@ -77,7 +110,7 @@ const Dashboard = () => {
   const greeting = getGreeting();
   const headerTitle = `${greeting}, ${currentUser?.name}`;
 
-  const LogoutButton = () => (
+  const logoutButton = (
     <motion.button
       onClick={handleLogout}
       whileTap={{ scale: 0.9 }}
@@ -92,9 +125,9 @@ const Dashboard = () => {
     >
       <BsBoxArrowRight size={20} />
     </motion.button>
-  );
-  // Botón exclusivo para Benjamín (Admin)
-  const AdminButton = () => (
+  )
+
+  const adminButton = (
     <motion.button
       onClick={() => navigate('/admin')}
       whileTap={{ scale: 0.9 }}
@@ -110,21 +143,19 @@ const Dashboard = () => {
     >
       <BsShieldLockFill size={20} />
     </motion.button>
-  );
+  )
 
-  // Agrupamos los botones de la cabecera
-  const HeaderActions = () => (
+  const headerActions = (
     <div style={{ display: 'flex', alignItems: 'center' }}>
-      {/* Solo se muestra si el rol es exactamente 'admin' */}
-      {currentUser?.role === 'admin' && <AdminButton />}
-      <LogoutButton />
+      {currentUser?.role === 'admin' && adminButton}
+      {logoutButton}
     </div>
-  );
+  )
   return (
     <PageContainer>
       <AppHeader
         title={headerTitle}
-        rightAction={<HeaderActions />}
+        rightAction={headerActions}
       />
 
       {/* Hero Section */}
@@ -161,14 +192,22 @@ const Dashboard = () => {
       <HabitsSection>
         <SectionTitle>Mis hábitos de hoy</SectionTitle>
           <HabitsGrid>
-          {MAIN_FLOW_HABIT_KEYS.map((habitKey) => (
+          {MAIN_FLOW_HABIT_KEYS.map((habitKey) => {
+            const progressMeta = progressCardMeta[habitKey]
+
+            return (
             <HabitCategoryCard
               key={habitKey}
               habitKey={habitKey}
-              isCompleted={completedHabits[habitKey]}
+              isCompleted={progressMeta ? progressMeta.isCompleted : completedHabits[habitKey]}
+              isInProgress={progressMeta ? progressMeta.isInProgress : false}
+              statusLabel={progressMeta ? progressMeta.label || progressMeta.statusLabel : undefined}
+              progressPct={progressMeta ? progressMeta.progressPct : undefined}
+              progressLabel={progressMeta ? progressMeta.progressLabel : undefined}
               onClick={() => handleHabitClick(habitKey)}
             />
-          ))}
+            )
+          })}
         </HabitsGrid>
       </HabitsSection>
       {/* 👇 AGREGA ESTE BLOQUE AQUÍ 👇 */}
@@ -176,16 +215,22 @@ const Dashboard = () => {
         <QuickChecklist
           sleepRecord={sleepRecord}
           mealRecords={mealRecords}
+          hydrationRecord={hydrationRecord}
           movementRecord={movementRecord}
           studyRecord={studyRecord}
           cleaningRecord={cleaningRecord}
+          householdData={householdData}
           hasHouseholdRecord={hasHouseholdRecord}
         />
         <DayTimeline
           sleepRecord={sleepRecord}
           mealRecords={mealRecords}
+          hydrationRecord={hydrationRecord}
           movementRecord={movementRecord}
           studyRecord={studyRecord}
+          cleaningRecord={cleaningRecord}
+          coexistenceRecord={coexistenceRecord}
+          householdData={householdData}
         />
       </div>
     </PageContainer>

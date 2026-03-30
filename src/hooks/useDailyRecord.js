@@ -7,7 +7,7 @@ import { getTodayString } from '../utils/dates.utils'
 
 export default function useDailyRecord() {
   const currentUser = useAuthStore((state) => state.currentUser)
-  const { setDayPoints, setCompletionPct } = useDayStore()
+  const { setDayPoints } = useDayStore()
   const today = getTodayString()
 
   const query = useQuery({
@@ -20,13 +20,14 @@ export default function useDailyRecord() {
 
   useEffect(() => {
     if (query.data) {
-      setDayPoints(query.data.total_points ?? 0)      // ← esto ya actualiza dayStatus
-      setCompletionPct(query.data.completion_pct ?? 0)
+      // Los puntos del día sí vienen de daily_records.
+      // El completionPct se calcula en vivo desde useCompletedHabits
+      // para no pisar el progreso parcial con un valor viejo de la BD.
+      setDayPoints(query.data.total_points ?? 0)
     } else {
       setDayPoints(0)
-      setCompletionPct(0)
     }
-  }, [query.data])
+  }, [query.data, setDayPoints])
 
 
   return {

@@ -11,7 +11,13 @@ import {
   BsPencilSquare,
 } from 'react-icons/bs';
 import { theme } from '../../styles/theme';
-import { DEVICE_CURFEW } from '../../constants/habits.constants';
+import {
+  DEVICE_CURFEW,
+  PHONE_BATHROOM_PENALTY,
+  PHONE_BED_PENALTY,
+  PHONE_NO_BATHROOM_POINTS,
+  PHONE_NO_BED_POINTS,
+} from '../../constants/habits.constants';
 import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../utils/dates.utils';
 import usePhoneUseModule from '../../hooks/usePhoneUseModule';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
@@ -37,8 +43,8 @@ export default function PhoneUseModule() {
       device_delivered: false,
       device_delivered_at: '',
       device_delivered_at_source: null,
-      device_in_bathroom: false,
-      device_in_bed: false,
+      no_device_in_bathroom: true,
+      no_device_in_bed: true,
     },
   });
 
@@ -47,8 +53,8 @@ export default function PhoneUseModule() {
       device_delivered: sleepRecord?.device_delivered || false,
       device_delivered_at: sleepRecord?.device_delivered_at || '',
       device_delivered_at_source: sleepRecord?.device_delivered_at_source || null,
-      device_in_bathroom: sleepRecord?.device_in_bathroom || false,
-      device_in_bed: sleepRecord?.device_in_bed || false,
+      no_device_in_bathroom: !sleepRecord?.device_in_bathroom,
+      no_device_in_bed: !sleepRecord?.device_in_bed,
     });
     setShowManualDeviceTime(
       !sleepRecord?.device_delivered_at_source || sleepRecord.device_delivered_at_source === 'manual'
@@ -65,12 +71,16 @@ export default function PhoneUseModule() {
       devicePoints += formValues.device_delivered_at <= DEVICE_CURFEW ? 20 : -10;
     }
 
-    if (formValues.device_in_bathroom) {
-      devicePoints -= 25;
+    if (formValues.no_device_in_bathroom) {
+      devicePoints += PHONE_NO_BATHROOM_POINTS;
+    } else {
+      devicePoints += PHONE_BATHROOM_PENALTY;
     }
 
-    if (formValues.device_in_bed) {
-      devicePoints -= 25;
+    if (formValues.no_device_in_bed) {
+      devicePoints += PHONE_NO_BED_POINTS;
+    } else {
+      devicePoints += PHONE_BED_PENALTY;
     }
 
     return {
@@ -173,6 +183,8 @@ export default function PhoneUseModule() {
 
     savePhoneUse({
       ...data,
+      device_in_bathroom: !data.no_device_in_bathroom,
+      device_in_bed: !data.no_device_in_bed,
       device_delivered_at: data.device_delivered_at || null,
       device_delivered_at_source: data.device_delivered_at
         ? data.device_delivered_at_source || 'manual'
@@ -324,12 +336,14 @@ export default function PhoneUseModule() {
         />
 
         <Controller
-          name="device_in_bathroom"
+          name="no_device_in_bathroom"
           control={control}
           render={({ field }) => (
-            <ToggleCard $bgColor={`${theme.colors.danger}15`}>
+            <ToggleCard $bgColor={field.value ? `${theme.colors.success}12` : `${theme.colors.danger}15`}>
               <ToggleRow>
-                <ToggleLabel>¿Usaste el celular en el baño?</ToggleLabel>
+                <ToggleLabel>
+                  No usé el celular en el baño
+                </ToggleLabel>
                 <Switch>
                   <input
                     type="checkbox"
@@ -339,18 +353,24 @@ export default function PhoneUseModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.danger}>-25 pts</Badge>}
+              {field.value ? (
+                <Badge $color={theme.colors.success}>+{PHONE_NO_BATHROOM_POINTS} pts</Badge>
+              ) : (
+                <Badge $color={theme.colors.danger}>{PHONE_BATHROOM_PENALTY} pts</Badge>
+              )}
             </ToggleCard>
           )}
         />
 
         <Controller
-          name="device_in_bed"
+          name="no_device_in_bed"
           control={control}
           render={({ field }) => (
-            <ToggleCard $bgColor={`${theme.colors.danger}15`}>
+            <ToggleCard $bgColor={field.value ? `${theme.colors.success}12` : `${theme.colors.danger}15`}>
               <ToggleRow>
-                <ToggleLabel>¿Usaste el celular en la cama?</ToggleLabel>
+                <ToggleLabel>
+                  No usé el celular en la cama
+                </ToggleLabel>
                 <Switch>
                   <input
                     type="checkbox"
@@ -360,7 +380,11 @@ export default function PhoneUseModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.danger}>-25 pts</Badge>}
+              {field.value ? (
+                <Badge $color={theme.colors.success}>+{PHONE_NO_BED_POINTS} pts</Badge>
+              ) : (
+                <Badge $color={theme.colors.danger}>{PHONE_BED_PENALTY} pts</Badge>
+              )}
             </ToggleCard>
           )}
         />

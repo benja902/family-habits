@@ -20,7 +20,7 @@ export default function useRewards() {
   });
 
   const redeemMutation = useMutation({
-    mutationFn: ({ rewardId, type }) => redeemReward(currentUser?.id, rewardId, type),
+    mutationFn: ({ rewardId }) => redeemReward(currentUser?.id, rewardId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['redemptions', currentUser?.id], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' });

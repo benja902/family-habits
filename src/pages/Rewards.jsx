@@ -22,7 +22,6 @@ export default function Rewards() {
   const handleRedeem = (reward) => {
     redeemReward({
       rewardId: reward.id,
-      type: reward.type
     })
   }
 

@@ -17,7 +17,15 @@ import {
 } from 'react-icons/bs';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
-import { DEVICE_CURFEW, SLEEP_TARGET, WAKE_TARGET } from '../../constants/habits.constants';
+import {
+  DEVICE_CURFEW,
+  PHONE_BATHROOM_PENALTY,
+  PHONE_BED_PENALTY,
+  PHONE_NO_BATHROOM_POINTS,
+  PHONE_NO_BED_POINTS,
+  SLEEP_TARGET,
+  WAKE_TARGET,
+} from '../../constants/habits.constants';
 import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../utils/dates.utils';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
@@ -398,10 +406,14 @@ export default function SleepModule() {
 
     // 2. Penalizaciones de dispositivos
     if (formValues.device_in_bathroom) {
-      devicePoints -= 25;
+      devicePoints += PHONE_BATHROOM_PENALTY;
+    } else {
+      devicePoints += PHONE_NO_BATHROOM_POINTS;
     }
     if (formValues.device_in_bed) {
-      devicePoints -= 25;
+      devicePoints += PHONE_BED_PENALTY;
+    } else {
+      devicePoints += PHONE_NO_BED_POINTS;
     }
 
     // 3. Rutina de noche
@@ -857,7 +869,11 @@ export default function SleepModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.danger}>-25 pts</Badge>}
+              {field.value ? (
+                <Badge $color={theme.colors.danger}>{PHONE_BATHROOM_PENALTY} pts</Badge>
+              ) : (
+                <Badge $color={theme.colors.success}>+{PHONE_NO_BATHROOM_POINTS} pts</Badge>
+              )}
             </ToggleCard>
           )}
         />
@@ -879,7 +895,11 @@ export default function SleepModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.danger}>-25 pts</Badge>}
+              {field.value ? (
+                <Badge $color={theme.colors.danger}>{PHONE_BED_PENALTY} pts</Badge>
+              ) : (
+                <Badge $color={theme.colors.success}>+{PHONE_NO_BED_POINTS} pts</Badge>
+              )}
             </ToggleCard>
           )}
         />

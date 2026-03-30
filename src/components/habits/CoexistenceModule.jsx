@@ -18,25 +18,25 @@ export default function CoexistenceModule() {
   
   const { register, handleSubmit, watch, reset, setValue } = useForm({
     defaultValues: {
-      took_others_things: false,
+      did_not_take_others_things: true,
       incidents: '',
     },
   })
 
   useEffect(() => {
     reset({
-      took_others_things: coexistenceRecord?.took_others_things || false,
+      did_not_take_others_things: !coexistenceRecord?.took_others_things,
       incidents: coexistenceRecord?.incidents || '',
     })
   }, [coexistenceRecord, reset])
 
   const formValues = watch()
-  const showIncidents = formValues.took_others_things === true
+  const showIncidents = formValues.did_not_take_others_things === false
 
   const calculatePoints = () => {
-    let thingsPts = formValues.took_others_things
-      ? COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY
-      : COEXISTENCE_NO_OTHERS_THINGS_POINTS
+    let thingsPts = formValues.did_not_take_others_things
+      ? COEXISTENCE_NO_OTHERS_THINGS_POINTS
+      : COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY
     
     return { 
       thingsPts, 
@@ -50,7 +50,7 @@ export default function CoexistenceModule() {
     const cleanData = {
       incidents: data.incidents || null,
       respected_rules: coexistenceRecord?.respected_rules ?? true,
-      took_others_things: !!data.took_others_things,
+      took_others_things: !data.did_not_take_others_things,
       tv_minutes: coexistenceRecord?.tv_minutes || 0,
       respect_score: coexistenceRecord?.respect_score || 3,
       notes: coexistenceRecord?.notes || null,
@@ -83,21 +83,29 @@ export default function CoexistenceModule() {
         <ToggleCard 
           as={motion.div}
           whileTap={{ scale: 0.98 }}
-          $isActive={formValues.took_others_things} 
-          $activeColor="#EF4444"
-          $activeBg="#EF444414"
-          style={{ borderColor: formValues.took_others_things ? '#EF4444' : undefined }}
-          onClick={() => setValue('took_others_things', !formValues.took_others_things)}
+          $isActive={formValues.did_not_take_others_things} 
+          $activeColor={formValues.did_not_take_others_things ? MODULE_COLOR : '#EF4444'}
+          $activeBg={formValues.did_not_take_others_things ? '#EC489914' : '#EF444414'}
+          style={{ borderColor: formValues.did_not_take_others_things ? MODULE_COLOR : '#EF4444' }}
+          onClick={() => setValue('did_not_take_others_things', !formValues.did_not_take_others_things)}
         >
           <div style={{ width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <ToggleInfo>
-                <BsExclamationTriangleFill size={24} color={formValues.took_others_things ? '#F97316' : '#9CA3AF'} />
-                <ToggleLabel>¿Tomaste cosas de otros sin permiso?</ToggleLabel>
+                <BsExclamationTriangleFill size={24} color={formValues.did_not_take_others_things ? MODULE_COLOR : '#F97316'} />
+                <ToggleLabel>No tomé cosas de otros sin permiso</ToggleLabel>
               </ToggleInfo>
-              {formValues.took_others_things && <Badge $color="#EF4444">{COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY} pts</Badge>}
+              {formValues.did_not_take_others_things ? (
+                <Badge $color={MODULE_COLOR}>+{COEXISTENCE_NO_OTHERS_THINGS_POINTS} pts</Badge>
+              ) : (
+                <Badge $color="#EF4444">{COEXISTENCE_TOOK_OTHERS_THINGS_PENALTY} pts</Badge>
+              )}
             </div>
-            {formValues.took_others_things && <Hint>Si pasó, regístralo tal como fue.</Hint>}
+            {formValues.did_not_take_others_things ? (
+              <Hint>Déjalo activado si respetaste las cosas ajenas.</Hint>
+            ) : (
+              <Hint>Si pasó, regístralo tal como fue.</Hint>
+            )}
           </div>
         </ToggleCard>
 
@@ -125,7 +133,7 @@ export default function CoexistenceModule() {
         {/* RESUMEN DE PUNTOS */}
         <PointsSummaryCard
           pointsSummary={[
-            { label: 'Sin tomar', points: points.thingsPts, color: formValues.took_others_things ? '#EF4444' : MODULE_COLOR },
+            { label: 'Respeto por lo ajeno', points: points.thingsPts, color: formValues.did_not_take_others_things ? MODULE_COLOR : '#EF4444' },
           ]}
           totalPoints={points.total}
           accentColor={MODULE_COLOR}

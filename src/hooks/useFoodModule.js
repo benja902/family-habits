@@ -37,9 +37,20 @@ export default function useFoodModule() {
   }
 
   const foodMutation = useMutation({
-    mutationFn: async ({ mealType = 'almuerzo', mealData, waterGlasses, shouldSaveMeal }) => {
-      const hydrationResult = await saveFoodHydration(currentUser.id, date, waterGlasses)
+    mutationFn: async ({
+      mealType = 'almuerzo',
+      mealData,
+      waterGlasses,
+      shouldSaveMeal,
+      shouldSaveHydration = true,
+      mode = 'meal',
+    }) => {
+      let hydrationResult = null
       let mealResult = null
+
+      if (shouldSaveHydration) {
+        hydrationResult = await saveFoodHydration(currentUser.id, date, waterGlasses)
+      }
 
       if (shouldSaveMeal) {
         mealResult = await calculateAndSaveMealPoints(currentUser.id, date, mealType, mealData)
@@ -52,6 +63,7 @@ export default function useFoodModule() {
           (hydrationResult?.pointsEarned || 0) +
           (mealResult?.pointsEarned || 0),
         shouldSaveMeal,
+        mode,
       }
     },
     onSuccess: (result) => {
@@ -63,12 +75,20 @@ export default function useFoodModule() {
       queryClient.invalidateQueries({ queryKey: ['ranking'], refetchType: 'all' })
       queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' })
 
-      const glasses = result.hydrationResult?.savedRecord?.water_glasses || 0
-      const message = result.shouldSaveMeal
-        ? `¡+${result.totalPointsEarned} pts! Alimentación registrada · ${glasses}/8 vasos`
-        : `¡+${result.totalPointsEarned} pts! Hidratación registrada · ${glasses}/8 vasos`
+      const glasses =
+        result.hydrationResult?.savedRecord?.water_glasses ??
+        hydrationQuery.data?.water_glasses ??
+        0
+      const message = result.mode === 'hydration'
+        ? `¡+${result.totalPointsEarned} pts! Hidratación registrada · ${glasses}/8 vasos`
+        : result.shouldSaveHydration
+          ? `¡+${result.totalPointsEarned} pts! Almuerzo guardado · ${glasses}/8 vasos`
+          : `¡+${result.totalPointsEarned} pts! Almuerzo guardado`
       toast.success(message)
-      navigate('/dashboard')
+
+      if (result.mode !== 'hydration') {
+        navigate('/dashboard')
+      }
     },
     onError: handleError,
   })

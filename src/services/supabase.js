@@ -6,6 +6,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { calculateProportional } from '../utils/points.utils';
+import { FOOD_MIN_GLASSES_FOR_COMPLETION } from '../utils/food-status.utils';
 import { isBeforeCurrentTime, isFutureTime } from '../utils/dates.utils';
 import {
   CLEANING_BED_POINTS,
@@ -25,6 +26,10 @@ import {
   MOVEMENT_EXERCISE_FULL_POINTS,
   MOVEMENT_HYDRATION_FULL_POINTS,
   MOVEMENT_WALK_POINTS,
+  PHONE_BATHROOM_PENALTY,
+  PHONE_BED_PENALTY,
+  PHONE_NO_BATHROOM_POINTS,
+  PHONE_NO_BED_POINTS,
   SLEEP_TARGET,
   STUDY_CLEAN_SPACE_POINTS,
   STUDY_FULL_POINTS,
@@ -413,13 +418,25 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
 
     // 2. Celular en el baño
     if (formData.device_in_bathroom) {
-      totalPoints -= 25;
+      totalPoints += PHONE_BATHROOM_PENALTY;
 
       const transaction = await addPointTransaction(
         userId,
         date,
-        -25,
+        PHONE_BATHROOM_PENALTY,
         'Usó dispositivo en el baño',
+        'sleep',
+        'device_in_bathroom'
+      );
+      transactions.push(transaction);
+    } else {
+      totalPoints += PHONE_NO_BATHROOM_POINTS;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        PHONE_NO_BATHROOM_POINTS,
+        'No usó dispositivo en el baño',
         'sleep',
         'device_in_bathroom'
       );
@@ -428,13 +445,25 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
 
     // 3. Celular en la cama
     if (formData.device_in_bed) {
-      totalPoints -= 25;
+      totalPoints += PHONE_BED_PENALTY;
 
       const transaction = await addPointTransaction(
         userId,
         date,
-        -25,
+        PHONE_BED_PENALTY,
         'Usó dispositivo en la cama',
+        'sleep',
+        'device_in_bed'
+      );
+      transactions.push(transaction);
+    } else {
+      totalPoints += PHONE_NO_BED_POINTS;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        PHONE_NO_BED_POINTS,
+        'No usó dispositivo en la cama',
         'sleep',
         'device_in_bed'
       );
@@ -540,16 +569,17 @@ export async function getCompletedHabitsToday(userId, date) {
       // Movement
       supabase
         .from('movement_records')
-        .select('did_exercise, walk_after_lunch')
+        .select('did_exercise, walk_after_lunch, water_glasses')
         .eq('user_id', userId)
         .eq('date', date)
         .maybeSingle(),
       // Food - buscar al menos una comida con points_earned > 0
       supabase
         .from('meal_records')
-        .select('points_earned')
+        .select('meal_type')
         .eq('user_id', userId)
         .eq('date', date)
+        .eq('meal_type', 'almuerzo')
         .limit(1),
       // Study
       supabase
@@ -585,7 +615,11 @@ export async function getCompletedHabitsToday(userId, date) {
     return {
       sleep: !!sleepData.data,
       movement: !!(movementData.data && (movementData.data.did_exercise || movementData.data.walk_after_lunch)),
-      food: !!(foodData.data && foodData.data.length > 0),
+      food: !!(
+        foodData.data &&
+        foodData.data.length > 0 &&
+        (movementData.data?.water_glasses || 0) >= FOOD_MIN_GLASSES_FOR_COMPLETION
+      ),
       study: !!(studyData.data && (studyData.data.did_study || studyData.data.clean_space)),
       cleaning: !!(cleaningData.data && (cleaningData.data.room_clean || cleaningData.data.space_ordered)),
       coexistence: !!coexistenceData.data,
@@ -736,8 +770,17 @@ export async function savePhoneUseProgress(userId, date, formData) {
       transactionsToInsert.push({
         user_id: userId,
         date,
-        amount: -25,
+        amount: PHONE_BATHROOM_PENALTY,
         reason: 'Usó el celular en el baño',
+        category: 'phone_use',
+        action_key: 'device_in_bathroom',
+      });
+    } else {
+      transactionsToInsert.push({
+        user_id: userId,
+        date,
+        amount: PHONE_NO_BATHROOM_POINTS,
+        reason: 'No usó el celular en el baño',
         category: 'phone_use',
         action_key: 'device_in_bathroom',
       });
@@ -747,8 +790,17 @@ export async function savePhoneUseProgress(userId, date, formData) {
       transactionsToInsert.push({
         user_id: userId,
         date,
-        amount: -25,
+        amount: PHONE_BED_PENALTY,
         reason: 'Usó el celular en la cama',
+        category: 'phone_use',
+        action_key: 'device_in_bed',
+      });
+    } else {
+      transactionsToInsert.push({
+        user_id: userId,
+        date,
+        amount: PHONE_NO_BED_POINTS,
+        reason: 'No usó el celular en la cama',
         category: 'phone_use',
         action_key: 'device_in_bed',
       });
@@ -1561,9 +1613,11 @@ export async function getUserRedemptions(userId) {
 /**
  * Registra el canje de un premio por parte del usuario
  */
-export async function redeemReward(userId, rewardId, type) {
+export async function redeemReward(userId, rewardId) {
   try {
-    // Todos los canjes requieren aprobación del admin.
+    // Por ahora todos los canjes requieren aprobación del admin.
+    // Si en el futuro vuelve la entrega automática para ciertos tipos
+    // de premio, este es el punto donde debe reintroducirse esa lógica.
     const initialStatus = 'pendiente';
 
     const { data, error } = await supabase

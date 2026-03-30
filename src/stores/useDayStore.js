@@ -5,20 +5,12 @@
  */
 
 import { create } from 'zustand';
+import { getDayStatus } from '../utils/points.utils';
 
 // Función auxiliar para obtener la fecha de hoy en formato YYYY-MM-DD
 const getTodayDate = () => {
   const now = new Date();
   return now.toISOString().split('T')[0];
-};
-
-// Función auxiliar para calcular el estado del día según los puntos
-const calculateDayStatus = (points) => {
-  if (points === 0) return 'sin iniciar';
-  if (points <= 300) return 'crítico';
-  if (points <= 600) return 'regular';
-  if (points <= 900) return 'bien';
-  return 'excelente';
 };
 
 export const useDayStore = create((set) => ({
@@ -32,7 +24,7 @@ export const useDayStore = create((set) => ({
   setDayPoints: (points) =>
     set({
       dayPoints: points,
-      dayStatus: calculateDayStatus(points),
+      dayStatus: getDayStatus(points),
     }),
 
   setCompletionPct: (pct) =>

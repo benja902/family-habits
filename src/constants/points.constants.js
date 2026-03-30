@@ -6,15 +6,17 @@
 // Equivalencias de puntos a soles peruanos
 export const POINTS_PER_SOL = 500; // 500 pts = S/ 1.00
 export const SOL_PER_1000_POINTS = 2.0; // 1000 pts = S/ 2.00
-export const MAX_POINTS_PER_DAY = 1000;
+// Escala ajustada al sistema actual de hábitos:
+// la mayoría de días completos cae alrededor de 300-350 pts.
+export const MAX_POINTS_PER_DAY = 350;
 
 // Umbrales de puntaje para el estado del día
 export const DAY_STATUS_THRESHOLDS = {
   sinIniciar: 0,
   crítico: 1,
-  regular: 301,
-  bien: 601,
-  excelente: 901,
+  regular: 100,
+  bien: 200,
+  excelente: 300,
 };
 
 // Etiquetas en español para cada estado del día

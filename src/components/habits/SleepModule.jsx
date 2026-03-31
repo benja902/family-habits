@@ -353,13 +353,14 @@ export default function SleepModule() {
   } = useForm({
       defaultValues: {
         bed_made: false,
+        prayed_after_waking: false,
         device_delivered: false,
       device_delivered_at: '',
       device_delivered_at_source: null,
       device_in_bathroom: false,
       device_in_bed: false,
       sleep_time: '',
-      slept_by_11: false,
+      prayed_before_sleep: false,
       wake_time: '',
       wake_time_source: null,
       notes: '',
@@ -370,13 +371,14 @@ export default function SleepModule() {
   useEffect(() => {
     reset({
       bed_made: cleaningRecord?.bed_made || false,
+      prayed_after_waking: sleepRecord?.prayed_after_waking || false,
       device_delivered: sleepRecord?.device_delivered || false,
       device_delivered_at: sleepRecord?.device_delivered_at || '',
       device_delivered_at_source: sleepRecord?.device_delivered_at_source || null,
       device_in_bathroom: sleepRecord?.device_in_bathroom || false,
       device_in_bed: sleepRecord?.device_in_bed || false,
       sleep_time: sleepRecord?.sleep_time || '',
-      slept_by_11: sleepRecord?.slept_by_11 || false,
+      prayed_before_sleep: sleepRecord?.prayed_before_sleep || false,
       wake_time: sleepRecord?.wake_time || '',
       wake_time_source: sleepRecord?.wake_time_source || null,
       notes: sleepRecord?.notes || '',
@@ -399,6 +401,8 @@ export default function SleepModule() {
       morningPoints += 15;
     }
 
+    morningPoints += formValues.prayed_after_waking ? 10 : -5;
+
     // 1. Entrega de celular
     if (formValues.device_delivered && formValues.device_delivered_at) {
       devicePoints += formValues.device_delivered_at <= DEVICE_CURFEW ? 20 : -10;
@@ -417,9 +421,7 @@ export default function SleepModule() {
     }
 
     // 3. Rutina de noche
-    if (formValues.slept_by_11) {
-      sleepPoints += 25;
-    }
+    sleepPoints += formValues.prayed_before_sleep ? 10 : -5;
 
     // 4. Rutina de mañana
     if (formValues.wake_time && formValues.wake_time <= WAKE_TARGET) {
@@ -624,7 +626,7 @@ export default function SleepModule() {
         {/* ==================== SECCIÓN 1: MAÑANA ==================== */}
         <SectionTitle>🌅 Rutina de mañana</SectionTitle>
         <SectionDescription>
-          Aquí registras cómo empezó tu día: levantarte a tiempo y tu primer bloque de rutina.
+          Aquí registras cómo empezó tu día: levantarte a tiempo, tender la cama y orar al despertar.
         </SectionDescription>
 
         <Controller
@@ -640,6 +642,29 @@ export default function SleepModule() {
                     type="checkbox"
                     checked={field.value}
                     onChange={field.onChange}
+                  />
+                  <span className="slider"></span>
+                </Switch>
+              </div>
+            </MorningHabitCard>
+          )}
+        />
+
+        <Controller
+          name="prayed_after_waking"
+          control={control}
+          render={({ field }) => (
+            <MorningHabitCard $isActive={field.value}>
+              <ToggleLabel>¿Oraste al menos 5 minutos al despertar?</ToggleLabel>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Badge $color={field.value ? theme.colors.success : theme.colors.danger}>
+                  {field.value ? '+10 pts' : '-5 pts'}
+                </Badge>
+                <Switch>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={(event) => field.onChange(event.target.checked)}
                   />
                   <span className="slider"></span>
                 </Switch>
@@ -907,7 +932,7 @@ export default function SleepModule() {
         {/* ==================== SECCIÓN 3: NOCHE ==================== */}
         <SectionTitle>🌙 Rutina de noche</SectionTitle>
         <SectionDescription>
-          Aquí dejas lo relacionado con tu hora de dormir y el cierre del día.
+          Aquí dejas lo relacionado con tu hora de dormir, la oración antes de dormir y el cierre del día.
         </SectionDescription>
 
         {/* Campo 4: Hora en que te dormiste */}
@@ -920,14 +945,14 @@ export default function SleepModule() {
           />
         </FieldWrapper>
 
-        {/* Campo 5: ¿Te acostaste a tiempo? */}
+        {/* Campo 5: ¿Oraste antes de dormir? */}
         <Controller
-          name="slept_by_11"
+          name="prayed_before_sleep"
           control={control}
           render={({ field }) => (
             <ToggleCard $bgColor={`${theme.colors.success}15`}>
               <ToggleRow>
-                <ToggleLabel>¿Te acostaste antes de las {SLEEP_TARGET}?</ToggleLabel>
+                <ToggleLabel>¿Oraste 5 minutos antes de dormir?</ToggleLabel>
                 <Switch>
                   <input
                     type="checkbox"
@@ -937,7 +962,9 @@ export default function SleepModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value && <Badge $color={theme.colors.success}>+25 pts</Badge>}
+              <Badge $color={field.value ? theme.colors.success : theme.colors.danger}>
+                {field.value ? '+10 pts' : '-5 pts'}
+              </Badge>
             </ToggleCard>
           )}
         />

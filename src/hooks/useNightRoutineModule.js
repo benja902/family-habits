@@ -22,7 +22,7 @@ export default function useNightRoutineModule() {
     enabled: !!userId,
   });
 
-  const hasRecord = !!(sleepRecord?.sleep_time || sleepRecord?.slept_by_11);
+  const hasRecord = !!(sleepRecord?.sleep_time || sleepRecord?.prayed_before_sleep);
 
   const mutation = useMutation({
     mutationFn: (formData) => saveNightRoutineProgress(userId, today, formData),

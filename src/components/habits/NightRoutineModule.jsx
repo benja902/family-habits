@@ -34,7 +34,7 @@ export default function NightRoutineModule() {
   } = useForm({
     defaultValues: {
       sleep_time: '',
-      slept_by_11: false,
+      prayed_before_sleep: true,
       sleep_time_source: null,
     },
   });
@@ -42,7 +42,7 @@ export default function NightRoutineModule() {
   useEffect(() => {
     reset({
       sleep_time: sleepRecord?.sleep_time || '',
-      slept_by_11: sleepRecord?.slept_by_11 || false,
+      prayed_before_sleep: sleepRecord?.prayed_before_sleep ?? true,
       sleep_time_source: null,
     });
     setShowManualSleepTime(!!sleepRecord?.sleep_time);
@@ -53,17 +53,14 @@ export default function NightRoutineModule() {
   const isSleepCurrentMode = formValues.sleep_time_source === 'current_time' && !!formValues.sleep_time;
 
   const calculatePoints = () => {
-    let nightPoints = 0;
-
-    if (formValues.slept_by_11) {
-      nightPoints += 25;
-    } else if (formValues.sleep_time) {
-      nightPoints -= 35;
-    }
+    const sleepPoints = formValues.sleep_time
+      ? (formValues.sleep_time <= SLEEP_TARGET ? 25 : -35)
+      : 0;
+    const prayerPoints = formValues.prayed_before_sleep ? 10 : -5;
 
     return {
-      nightPoints,
-      total: nightPoints,
+      nightPoints: sleepPoints + prayerPoints,
+      total: sleepPoints + prayerPoints,
     };
   };
 
@@ -156,7 +153,7 @@ export default function NightRoutineModule() {
 
     saveNightRoutine({
       sleep_time: data.sleep_time || null,
-      slept_by_11: !!data.slept_by_11,
+      prayed_before_sleep: !!data.prayed_before_sleep,
     });
   };
 
@@ -188,7 +185,7 @@ export default function NightRoutineModule() {
       <FormContent onSubmit={handleSubmit(onSubmit)}>
         <SectionTitle>🌙 Rutina de noche</SectionTitle>
         <SectionDescription>
-          Aquí dejas tu hora de dormir y si lograste acostarte dentro del horario objetivo.
+          Aquí dejas tu hora de dormir y si oraste 5 minutos antes de dormir.
         </SectionDescription>
 
         <FieldWrapper>
@@ -263,12 +260,16 @@ export default function NightRoutineModule() {
         </FieldWrapper>
 
         <Controller
-          name="slept_by_11"
+          name="prayed_before_sleep"
           control={control}
           render={({ field }) => (
             <ToggleCard $bgColor={`${theme.colors.success}15`}>
               <ToggleRow>
-                <ToggleLabel>¿Te acostaste antes de las {SLEEP_TARGET}?</ToggleLabel>
+                <ToggleLabel>
+                  Oré 5 minutos antes de dormir
+                  <br />
+                  <Hint style={{ margin: 0 }}>Si no oraste, apaga este switch.</Hint>
+                </ToggleLabel>
                 <Switch>
                   <input
                     type="checkbox"
@@ -278,11 +279,9 @@ export default function NightRoutineModule() {
                   <span className="slider"></span>
                 </Switch>
               </ToggleRow>
-              {field.value ? (
-                <Badge $color={theme.colors.success}>+25 pts</Badge>
-              ) : (
-                formValues.sleep_time && <Badge $color={theme.colors.danger}>-35 pts</Badge>
-              )}
+              <Badge $color={field.value ? theme.colors.success : theme.colors.danger}>
+                {field.value ? '+10 pts' : '-5 pts'}
+              </Badge>
             </ToggleCard>
           )}
         />

@@ -542,6 +542,60 @@ export async function calculateAndSaveSleepPoints(userId, date, formData) {
         transactions.push(transaction);
     }
 
+    // 6. Oración al despertar
+    if (formData.prayed_after_waking) {
+      totalPoints += 10;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        10,
+        'Oró 5 minutos al despertar',
+        'sleep',
+        'prayed_after_waking'
+      );
+      transactions.push(transaction);
+    } else {
+      totalPoints -= 5;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        -5,
+        'No oró 5 minutos al despertar',
+        'sleep',
+        'prayed_after_waking'
+      );
+      transactions.push(transaction);
+    }
+
+    // 7. Oración antes de dormir
+    if (formData.prayed_before_sleep) {
+      totalPoints += 10;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        10,
+        'Oró 5 minutos antes de dormir',
+        'sleep',
+        'prayed_before_sleep'
+      );
+      transactions.push(transaction);
+    } else {
+      totalPoints -= 5;
+
+      const transaction = await addPointTransaction(
+        userId,
+        date,
+        -5,
+        'No oró 5 minutos antes de dormir',
+        'sleep',
+        'prayed_before_sleep'
+      );
+      transactions.push(transaction);
+    }
+
     // Guardar el registro con los puntos calculados
     const sleepRecord = await upsertSleepRecord(userId, date, {
       ...formData,
@@ -698,9 +752,11 @@ export async function saveMorningRoutineProgress(userId, date, formData) {
   try {
     const wakeTime = formData.wake_time || null;
     const wakeTimeSource = wakeTime ? formData.wake_time_source || null : null;
+    const prayedAfterWaking = !!formData.prayed_after_waking;
     const wakePoints = wakeTime
       ? (wakeTime <= WAKE_TARGET ? 25 : -15)
       : 0;
+    const prayerPoints = prayedAfterWaking ? 10 : -5;
 
     const { error: upsertError, data: savedRecord } = await supabase
       .from('sleep_records')
@@ -709,6 +765,7 @@ export async function saveMorningRoutineProgress(userId, date, formData) {
         date,
         wake_time: wakeTime,
         wake_time_source: wakeTimeSource,
+        prayed_after_waking: prayedAfterWaking,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,date' })
       .select()
@@ -716,24 +773,39 @@ export async function saveMorningRoutineProgress(userId, date, formData) {
 
     if (upsertError) throw upsertError;
 
+    const transactionsToInsert = [];
+
+    if (wakePoints !== 0) {
+      transactionsToInsert.push({
+        user_id: userId,
+        date,
+        amount: wakePoints,
+        reason: wakePoints > 0 ? 'Se levantó a tiempo' : 'Se levantó tarde',
+        category: 'morning_routine_wake',
+        action_key: 'wake_time',
+      });
+    }
+
+    transactionsToInsert.push({
+      user_id: userId,
+      date,
+      amount: prayerPoints,
+      reason: prayedAfterWaking
+        ? 'Oró 5 minutos al despertar'
+        : 'No oró 5 minutos al despertar',
+      category: 'morning_routine_wake',
+      action_key: 'prayed_after_waking',
+    });
+
     const transactions = await replacePointTransactionsForCategory(
       userId,
       date,
       'morning_routine_wake',
-      wakePoints !== 0
-        ? [{
-            user_id: userId,
-            date,
-            amount: wakePoints,
-            reason: wakePoints > 0 ? 'Se levantó a tiempo' : 'Se levantó tarde',
-            category: 'morning_routine_wake',
-            action_key: 'wake_time',
-          }]
-        : []
+      transactionsToInsert
     );
 
     return {
-      pointsEarned: wakePoints,
+      pointsEarned: wakePoints + prayerPoints,
       transactions,
       record: savedRecord,
     };
@@ -845,8 +917,12 @@ export async function savePhoneUseProgress(userId, date, formData) {
 export async function saveNightRoutineProgress(userId, date, formData) {
   try {
     const sleepTime = formData.sleep_time || null;
-    const sleptBy11 = !!formData.slept_by_11;
-    const nightPoints = sleptBy11 ? 25 : (sleepTime ? -35 : 0);
+    const prayedBeforeSleep = !!formData.prayed_before_sleep;
+    const sleptBy11 = !!(sleepTime && sleepTime <= SLEEP_TARGET);
+    const sleepPoints = sleepTime
+      ? (sleptBy11 ? 25 : -35)
+      : 0;
+    const prayerPoints = prayedBeforeSleep ? 10 : -5;
 
     const { error: upsertError, data: savedRecord } = await supabase
       .from('sleep_records')
@@ -855,6 +931,7 @@ export async function saveNightRoutineProgress(userId, date, formData) {
         date,
         sleep_time: sleepTime,
         slept_by_11: sleptBy11,
+        prayed_before_sleep: prayedBeforeSleep,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,date' })
       .select()
@@ -862,24 +939,39 @@ export async function saveNightRoutineProgress(userId, date, formData) {
 
     if (upsertError) throw upsertError;
 
+    const transactionsToInsert = []
+
+    if (sleepPoints !== 0) {
+      transactionsToInsert.push({
+        user_id: userId,
+        date,
+        amount: sleepPoints,
+        reason: sleptBy11 ? 'Se acostó a tiempo' : 'Se acostó tarde',
+        category: 'night_routine',
+        action_key: 'sleep_time',
+      })
+    }
+
+    transactionsToInsert.push({
+      user_id: userId,
+      date,
+      amount: prayerPoints,
+      reason: prayedBeforeSleep
+        ? 'Oró 5 minutos antes de dormir'
+        : 'No oró 5 minutos antes de dormir',
+      category: 'night_routine',
+      action_key: 'prayed_before_sleep',
+    })
+
     const transactions = await replacePointTransactionsForCategory(
       userId,
       date,
       'night_routine',
-      nightPoints !== 0
-        ? [{
-            user_id: userId,
-            date,
-            amount: nightPoints,
-            reason: nightPoints > 0 ? 'Se acostó a tiempo' : 'Se acostó tarde',
-            category: 'night_routine',
-            action_key: 'sleep_time',
-          }]
-        : []
+      transactionsToInsert
     );
 
     return {
-      pointsEarned: nightPoints,
+      pointsEarned: sleepPoints + prayerPoints,
       transactions,
       record: savedRecord,
     };

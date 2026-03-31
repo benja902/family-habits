@@ -35,6 +35,7 @@ export default function MorningRoutineModule() {
   } = useForm({
     defaultValues: {
       bed_made: false,
+      prayed_after_waking: true,
       wake_time: '',
       wake_time_source: null,
     },
@@ -43,6 +44,7 @@ export default function MorningRoutineModule() {
   useEffect(() => {
     reset({
       bed_made: cleaningRecord?.bed_made || false,
+      prayed_after_waking: sleepRecord?.prayed_after_waking ?? true,
       wake_time: sleepRecord?.wake_time || '',
       wake_time_source: sleepRecord?.wake_time_source || null,
     });
@@ -59,6 +61,8 @@ export default function MorningRoutineModule() {
     if (formValues.bed_made) {
       morningPoints += 15;
     }
+
+    morningPoints += formValues.prayed_after_waking ? 10 : -5;
 
     if (formValues.wake_time && formValues.wake_time <= WAKE_TARGET) {
       morningPoints += 25;
@@ -161,6 +165,7 @@ export default function MorningRoutineModule() {
 
     saveMorningRoutine({
       bed_made: !!data.bed_made,
+      prayed_after_waking: !!data.prayed_after_waking,
       wake_time: data.wake_time || null,
       wake_time_source: data.wake_time ? data.wake_time_source || 'manual' : null,
     });
@@ -194,7 +199,7 @@ export default function MorningRoutineModule() {
       <FormContent onSubmit={handleSubmit(onSubmit)}>
         <SectionTitle>🌅 Rutina de mañana</SectionTitle>
         <SectionDescription>
-          Aquí registras cómo empezó tu día: levantarte a tiempo y tender la cama.
+          Aquí registras cómo empezó tu día: tender la cama, levantarte a tiempo y orar al despertar.
         </SectionDescription>
 
         <MorningHabitCard $isActive={formValues.bed_made}>
@@ -211,6 +216,33 @@ export default function MorningRoutineModule() {
             </Switch>
           </div>
         </MorningHabitCard>
+
+        <Controller
+          name="prayed_after_waking"
+          control={control}
+          render={({ field }) => (
+            <MorningHabitCard $isActive={field.value}>
+              <ToggleLabel>
+                Oré al menos 5 minutos al despertar
+                <br />
+                <Hint style={{ margin: 0 }}>Si no oraste, apaga este switch.</Hint>
+              </ToggleLabel>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Badge $color={field.value ? theme.colors.success : theme.colors.danger}>
+                  {field.value ? '+10 pts' : '-5 pts'}
+                </Badge>
+                <Switch>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={(event) => field.onChange(event.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </Switch>
+              </div>
+            </MorningHabitCard>
+          )}
+        />
 
         <FieldWrapper>
           <Label>Hora en que te levantaste</Label>

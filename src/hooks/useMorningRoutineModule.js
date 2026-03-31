@@ -37,7 +37,7 @@ export default function useMorningRoutineModule() {
     enabled: !!userId,
   });
 
-  const hasRecord = !!(sleepRecord?.wake_time || cleaningRecord?.bed_made);
+  const hasRecord = !!(sleepRecord?.wake_time || sleepRecord?.prayed_after_waking || cleaningRecord?.bed_made);
 
   const mutation = useMutation({
     mutationFn: async (formData) => {

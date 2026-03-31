@@ -1,3 +1,5 @@
+import { SLEEP_TARGET } from '../constants/habits.constants'
+
 export const buildProgressMeta = ({
   completedSteps,
   totalSteps,
@@ -30,8 +32,11 @@ export const buildProgressMeta = ({
 
 export const getMorningRoutineStatus = (sleepRecord, cleaningRecord) =>
   buildProgressMeta({
-    completedSteps: (sleepRecord?.wake_time ? 1 : 0) + (cleaningRecord?.bed_made ? 1 : 0),
-    totalSteps: 2,
+    completedSteps:
+      (sleepRecord?.wake_time ? 1 : 0) +
+      (cleaningRecord?.bed_made ? 1 : 0) +
+      (sleepRecord?.prayed_after_waking ? 1 : 0),
+    totalSteps: 3,
   })
 
 export const getMovementStatus = (movementRecord) =>
@@ -101,8 +106,11 @@ export const getPhoneUseStatus = (sleepRecord, hasSavedPhoneUse = false) => {
 
 export const getNightRoutineStatus = (sleepRecord) =>
   buildProgressMeta({
-    completedSteps: (sleepRecord?.sleep_time ? 1 : 0) + (sleepRecord?.slept_by_11 ? 1 : 0),
-    totalSteps: 2,
+    completedSteps:
+      (sleepRecord?.sleep_time ? 1 : 0) +
+      (sleepRecord?.sleep_time && sleepRecord.sleep_time <= SLEEP_TARGET ? 1 : 0) +
+      (sleepRecord?.prayed_before_sleep ? 1 : 0),
+    totalSteps: 3,
   })
 
 export const getCoexistenceStatus = (coexistenceRecord) => {

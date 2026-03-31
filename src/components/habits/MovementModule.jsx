@@ -90,11 +90,6 @@ export default function MovementModule() {
         setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
       }
 
-      if (alarmAudioRef.current) {
-        alarmAudioRef.current.pause()
-        alarmAudioRef.current.currentTime = 0
-      }
-      setAlarmKind(null)
     }
   }, [movementRecord, reset])
 

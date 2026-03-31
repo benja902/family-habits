@@ -33,6 +33,7 @@ export default function MovementModule() {
   const [timerPhase, setTimerPhase] = useState('focus')
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(MOVEMENT_FOCUS_MINUTES * 60)
+  const [activeSessionEndsAt, setActiveSessionEndsAt] = useState(null)
   const [alarmKind, setAlarmKind] = useState(null)
   const alarmAudioRef = useRef(null)
   const lastSyncedSessionRef = useRef(null)
@@ -102,6 +103,7 @@ export default function MovementModule() {
         setTimerPhase(sessionPhase === 'break' ? 'break' : 'focus')
         setIsTimerRunning(true)
         setRemainingSeconds(secondsLeft)
+        setActiveSessionEndsAt(sessionEndsAt)
         localSessionRef.current = {
           active: true,
           phase: sessionPhase,
@@ -110,6 +112,7 @@ export default function MovementModule() {
       } else if (sessionPhase === 'break_ready') {
         setTimerPhase('break')
         setRemainingSeconds(MOVEMENT_ACTIVE_BREAK_MINUTES * 60)
+        setActiveSessionEndsAt(null)
         localSessionRef.current = {
           active: false,
           phase: 'break_ready',
@@ -118,6 +121,7 @@ export default function MovementModule() {
       } else {
         setTimerPhase('focus')
         setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+        setActiveSessionEndsAt(null)
         localSessionRef.current = {
           active: false,
           phase: sessionPhase,
@@ -155,73 +159,91 @@ export default function MovementModule() {
   ])
 
   useEffect(() => {
-    if (!isTimerRunning) return undefined
+    if (!isTimerRunning || !activeSessionEndsAt) return undefined
 
-    const intervalId = window.setInterval(() => {
-      setRemainingSeconds((current) => {
-        if (current <= 1) {
-          window.clearInterval(intervalId)
-          setIsTimerRunning(false)
+    const ringAlarm = () => {
+      if (!alarmAudioRef.current && typeof Audio !== 'undefined') {
+        alarmAudioRef.current = new Audio(ALARM_AUDIO_PATH)
+        alarmAudioRef.current.loop = true
+      }
 
-          if (timerPhase === 'focus') {
-            if (!alarmAudioRef.current && typeof Audio !== 'undefined') {
-              alarmAudioRef.current = new Audio(ALARM_AUDIO_PATH)
-              alarmAudioRef.current.loop = true
-            }
+      if (alarmAudioRef.current) {
+        alarmAudioRef.current.currentTime = 0
+        alarmAudioRef.current.play().catch(() => {})
+      }
+    }
 
-            if (alarmAudioRef.current) {
-              alarmAudioRef.current.currentTime = 0
-              alarmAudioRef.current.play().catch(() => {})
-            }
-            setAlarmKind('focus')
-            setTimerPhase('break')
-            localSessionRef.current = {
-              active: false,
-              phase: 'break_ready',
-              endsAt: null,
-            }
-            saveTimerSession({
-              sitting_breaks: Number(sittingBreaks) || 0,
-              sitting_session_phase: 'break_ready',
-              sitting_session_running: false,
-              sitting_session_ends_at: null,
-            }).catch(() => {})
-            return MOVEMENT_ACTIVE_BREAK_MINUTES * 60
-          }
+    const advanceTimer = () => {
+      const endsAtMs = new Date(activeSessionEndsAt).getTime()
+      if (Number.isNaN(endsAtMs)) {
+        setIsTimerRunning(false)
+        setActiveSessionEndsAt(null)
+        return
+      }
 
-          if (!alarmAudioRef.current && typeof Audio !== 'undefined') {
-            alarmAudioRef.current = new Audio(ALARM_AUDIO_PATH)
-            alarmAudioRef.current.loop = true
-          }
+      const secondsLeft = Math.max(Math.ceil((endsAtMs - Date.now()) / 1000), 0)
 
-          if (alarmAudioRef.current) {
-            alarmAudioRef.current.currentTime = 0
-            alarmAudioRef.current.play().catch(() => {})
-          }
-          setAlarmKind('break')
-          const nextRounds = (Number(sittingBreaks) || 0) + 1
-          setValue('sitting_breaks', nextRounds, { shouldDirty: true })
-          setTimerPhase('focus')
-          localSessionRef.current = {
-            active: false,
-            phase: 'idle',
-            endsAt: null,
-          }
-          saveTimerSession({
-            sitting_breaks: nextRounds,
-            sitting_session_phase: 'idle',
-            sitting_session_running: false,
-            sitting_session_ends_at: null,
-          }).catch(() => {})
-          return MOVEMENT_FOCUS_MINUTES * 60
+      if (secondsLeft > 0) {
+        setRemainingSeconds(secondsLeft)
+        return
+      }
+
+      setIsTimerRunning(false)
+      setActiveSessionEndsAt(null)
+
+      if (timerPhase === 'focus') {
+        ringAlarm()
+        setAlarmKind('focus')
+        setTimerPhase('break')
+        setRemainingSeconds(MOVEMENT_ACTIVE_BREAK_MINUTES * 60)
+        localSessionRef.current = {
+          active: false,
+          phase: 'break_ready',
+          endsAt: null,
         }
+        saveTimerSession({
+          sitting_breaks: Number(sittingBreaks) || 0,
+          sitting_session_phase: 'break_ready',
+          sitting_session_running: false,
+          sitting_session_ends_at: null,
+        }).catch(() => {})
+        return
+      }
 
-        return current - 1
-      })
-    }, 1000)
+      ringAlarm()
+      setAlarmKind('break')
+      const nextRounds = (Number(sittingBreaks) || 0) + 1
+      setValue('sitting_breaks', nextRounds, { shouldDirty: true })
+      setTimerPhase('focus')
+      setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+      localSessionRef.current = {
+        active: false,
+        phase: 'idle',
+        endsAt: null,
+      }
+      saveTimerSession({
+        sitting_breaks: nextRounds,
+        sitting_session_phase: 'idle',
+        sitting_session_running: false,
+        sitting_session_ends_at: null,
+      }).catch(() => {})
+    }
 
-    return () => window.clearInterval(intervalId)
-  }, [isTimerRunning, timerPhase, setValue, sittingBreaks])
+    const handleVisibilitySync = () => {
+      advanceTimer()
+    }
+
+    advanceTimer()
+    const intervalId = window.setInterval(advanceTimer, 1000)
+    window.addEventListener('focus', handleVisibilitySync)
+    document.addEventListener('visibilitychange', handleVisibilitySync)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', handleVisibilitySync)
+      document.removeEventListener('visibilitychange', handleVisibilitySync)
+    }
+  }, [activeSessionEndsAt, isTimerRunning, setValue, sittingBreaks, timerPhase])
 
   // Calcular puntos en tiempo real
   const calculateExercisePoints = () => {
@@ -273,12 +295,15 @@ export default function MovementModule() {
       sitting_session_ends_at: endsAt,
     }).catch(() => {})
     setIsTimerRunning(true)
+    setActiveSessionEndsAt(endsAt)
+    setRemainingSeconds(durationSeconds)
   }
 
   const handleResetTimer = () => {
     setIsTimerRunning(false)
     setTimerPhase('focus')
     setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+    setActiveSessionEndsAt(null)
     setValue('sitting_breaks', 0, { shouldDirty: true })
     if (alarmAudioRef.current) {
       alarmAudioRef.current.pause()

@@ -56,6 +56,7 @@ export default function usePhoneUseModule() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['dailyRecord'] }),
         queryClient.invalidateQueries({ queryKey: ['completedHabits'] }),
+        queryClient.invalidateQueries({ queryKey: ['phoneUseTransactions'] }),
       ]);
 
       queryClient.invalidateQueries({ queryKey: ['sleepRecord'] });

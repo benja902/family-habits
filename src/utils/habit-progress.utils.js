@@ -108,9 +108,8 @@ export const getNightRoutineStatus = (sleepRecord) =>
   buildProgressMeta({
     completedSteps:
       (sleepRecord?.sleep_time ? 1 : 0) +
-      (sleepRecord?.sleep_time && sleepRecord.sleep_time <= SLEEP_TARGET ? 1 : 0) +
       (sleepRecord?.prayed_before_sleep ? 1 : 0),
-    totalSteps: 3,
+    totalSteps: 2,
   })
 
 export const getCoexistenceStatus = (coexistenceRecord) => {

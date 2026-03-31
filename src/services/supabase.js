@@ -1104,14 +1104,14 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
       );
     }
 
-    // 4. Bloque de postura: 1 hora + 10 minutos
+    // 4. Bloque de postura: 1 hora + 15 minutos
     if ((Number(formData.sitting_breaks) || 0) > 0) {
       totalPoints += MOVEMENT_SITTING_BREAK_POINTS;
       await addPointTransaction(
         userId,
         date,
         MOVEMENT_SITTING_BREAK_POINTS,
-        'Completó 1 hora sin pausa seguida de 10 minutos de movimiento',
+        'Completó 1 hora sin pausa seguida de 15 minutos de movimiento',
         'movement',
         'sitting_break_cycle'
       );

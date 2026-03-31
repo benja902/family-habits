@@ -18,42 +18,7 @@ import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 
 
 const EXERCISE_TYPES = ['Caminata', 'Trote', 'Pesas', 'Yoga', 'Bici', 'Otro']
-
-function createAlarmBeep(audioContext, kind = 'focus') {
-  const oscillator = audioContext.createOscillator()
-  const gainNode = audioContext.createGain()
-
-  oscillator.type = 'square'
-  oscillator.frequency.value = kind === 'focus' ? 980 : 740
-  gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime)
-  gainNode.gain.exponentialRampToValueAtTime(0.22, audioContext.currentTime + 0.02)
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.45)
-
-  oscillator.connect(gainNode)
-  gainNode.connect(audioContext.destination)
-
-  oscillator.start()
-  oscillator.stop(audioContext.currentTime + 0.45)
-}
-
-function startLoopingAlarm(kind = 'focus') {
-  if (typeof window === 'undefined') return
-
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext
-  if (!AudioContextClass) return null
-
-  const audioContext = new AudioContextClass()
-
-  createAlarmBeep(audioContext, kind)
-  const intervalId = window.setInterval(() => {
-    createAlarmBeep(audioContext, kind)
-  }, 900)
-
-  return () => {
-    window.clearInterval(intervalId)
-    audioContext.close().catch(() => {})
-  }
-}
+const ALARM_AUDIO_PATH = '/sounds/alarma.mp3'
 
 export default function MovementModule() {
   const { movementRecord, isLoading, hasRecord, saveMovement, isSaving } = useMovementModule()
@@ -61,7 +26,7 @@ export default function MovementModule() {
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(MOVEMENT_FOCUS_MINUTES * 60)
   const [alarmKind, setAlarmKind] = useState(null)
-  const stopAlarmRef = useRef(null)
+  const alarmAudioRef = useRef(null)
 
   const { register, handleSubmit, watch, control, reset, setValue } = useForm({
       defaultValues: {
@@ -100,8 +65,10 @@ export default function MovementModule() {
       setIsTimerRunning(false)
       setTimerPhase('focus')
       setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
-      stopAlarmRef.current?.()
-      stopAlarmRef.current = null
+      if (alarmAudioRef.current) {
+        alarmAudioRef.current.pause()
+        alarmAudioRef.current.currentTime = 0
+      }
       setAlarmKind(null)
     }
   }, [movementRecord, reset])
@@ -116,15 +83,29 @@ export default function MovementModule() {
           setIsTimerRunning(false)
 
           if (timerPhase === 'focus') {
-            stopAlarmRef.current?.()
-            stopAlarmRef.current = startLoopingAlarm('focus')
+            if (!alarmAudioRef.current && typeof Audio !== 'undefined') {
+              alarmAudioRef.current = new Audio(ALARM_AUDIO_PATH)
+              alarmAudioRef.current.loop = true
+            }
+
+            if (alarmAudioRef.current) {
+              alarmAudioRef.current.currentTime = 0
+              alarmAudioRef.current.play().catch(() => {})
+            }
             setAlarmKind('focus')
             setTimerPhase('break')
             return MOVEMENT_ACTIVE_BREAK_MINUTES * 60
           }
 
-          stopAlarmRef.current?.()
-          stopAlarmRef.current = startLoopingAlarm('break')
+          if (!alarmAudioRef.current && typeof Audio !== 'undefined') {
+            alarmAudioRef.current = new Audio(ALARM_AUDIO_PATH)
+            alarmAudioRef.current.loop = true
+          }
+
+          if (alarmAudioRef.current) {
+            alarmAudioRef.current.currentTime = 0
+            alarmAudioRef.current.play().catch(() => {})
+          }
           setAlarmKind('break')
           setValue('sitting_breaks', (Number(sittingBreaks) || 0) + 1, { shouldDirty: true })
           setTimerPhase('focus')
@@ -176,21 +157,27 @@ export default function MovementModule() {
     setTimerPhase('focus')
     setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
     setValue('sitting_breaks', 0, { shouldDirty: true })
-    stopAlarmRef.current?.()
-    stopAlarmRef.current = null
+    if (alarmAudioRef.current) {
+      alarmAudioRef.current.pause()
+      alarmAudioRef.current.currentTime = 0
+    }
     setAlarmKind(null)
   }
 
   const handleStopAlarm = () => {
-    stopAlarmRef.current?.()
-    stopAlarmRef.current = null
+    if (alarmAudioRef.current) {
+      alarmAudioRef.current.pause()
+      alarmAudioRef.current.currentTime = 0
+    }
     setAlarmKind(null)
   }
 
   useEffect(() => {
     return () => {
-      stopAlarmRef.current?.()
-      stopAlarmRef.current = null
+      if (alarmAudioRef.current) {
+        alarmAudioRef.current.pause()
+        alarmAudioRef.current.currentTime = 0
+      }
     }
   }, [])
 
@@ -346,15 +333,15 @@ export default function MovementModule() {
                   setRemainingSeconds(MOVEMENT_ACTIVE_BREAK_MINUTES * 60)
                 }}
               >
-                10 minutos
+                15 minutos
               </TimerTab>
             </TimerNav>
 
             <TimerClock $isComplete={timerCompleted}>{formattedTime}</TimerClock>
             <Hint>
               {timerPhase === 'focus'
-                  ? 'Primero completa la hora. Luego se desbloquean los 10 minutos de movimiento.'
-                  : 'Ahora sí: completa los 10 minutos de movimiento para ganar el punto.'}
+                  ? 'Primero completa la hora. Luego se desbloquean los 15 minutos de movimiento.'
+                  : 'Ahora sí: completa los 15 minutos de movimiento para ganar el punto.'}
             </Hint>
             <RoundsBadge>
               Rondas completas: {completedRounds} · +{sittingBreakPoints} pts
@@ -363,8 +350,8 @@ export default function MovementModule() {
               <AlarmBanner>
                 <span>
                   {alarmKind === 'focus'
-                    ? 'La hora terminó. Inicia los 10 minutos.'
-                    : 'Los 10 minutos terminaron. Puedes guardar o empezar otra ronda.'}
+                    ? 'La hora terminó. Inicia los 15 minutos.'
+                    : 'Los 15 minutos terminaron. Puedes guardar o empezar otra ronda.'}
                 </span>
                 <AlarmButton
                   type="button"

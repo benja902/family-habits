@@ -1123,6 +1123,9 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
       ...formData,
       water_glasses: existingRecord?.water_glasses || 0,
       sitting_breaks: Number(formData.sitting_breaks) || 0,
+      sitting_session_phase: 'idle',
+      sitting_session_running: false,
+      sitting_session_ends_at: null,
       points_earned: totalPoints,
     });
 
@@ -1132,6 +1135,82 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
   } catch (error) {
     console.error('Error al calcular y guardar puntos de movimiento:', error);
     throw error;
+  }
+}
+
+export async function saveMovementTimerSession(userId, date, sessionData) {
+  try {
+    const existingRecord = await getMovementRecord(userId, date)
+
+    const savedRecord = await upsertMovementRecord(userId, date, {
+      ...(existingRecord || {}),
+      user_id: userId,
+      date,
+      did_exercise: existingRecord?.did_exercise || false,
+      exercise_minutes: existingRecord?.exercise_minutes || 0,
+      exercise_type: existingRecord?.exercise_type || null,
+      exercise_notes: existingRecord?.exercise_notes || null,
+      water_glasses: existingRecord?.water_glasses || 0,
+      walk_after_lunch: existingRecord?.walk_after_lunch || false,
+      walk_minutes: existingRecord?.walk_minutes || 0,
+      sitting_breaks: sessionData.sitting_breaks ?? existingRecord?.sitting_breaks ?? 0,
+      sitting_session_phase: sessionData.sitting_session_phase ?? existingRecord?.sitting_session_phase ?? 'idle',
+      sitting_session_running: sessionData.sitting_session_running ?? existingRecord?.sitting_session_running ?? false,
+      sitting_session_ends_at: sessionData.sitting_session_ends_at ?? existingRecord?.sitting_session_ends_at ?? null,
+    })
+
+    return savedRecord
+  } catch (error) {
+    console.error('Error guardando sesión de postura en curso:', error)
+    throw error
+  }
+}
+
+export async function syncMovementTimerSession(userId, date) {
+  try {
+    const record = await getMovementRecord(userId, date)
+
+    if (!record) {
+      return null
+    }
+
+    const phase = record.sitting_session_phase || 'idle'
+    const isRunning = !!record.sitting_session_running
+    const endsAt = record.sitting_session_ends_at
+
+    if (!isRunning || !endsAt || phase === 'idle') {
+      return record
+    }
+
+    const now = new Date()
+    const endsAtDate = new Date(endsAt)
+
+    if (Number.isNaN(endsAtDate.getTime()) || endsAtDate > now) {
+      return record
+    }
+
+    if (phase === 'focus') {
+      return await saveMovementTimerSession(userId, date, {
+        sitting_breaks: record.sitting_breaks || 0,
+        sitting_session_phase: 'break_ready',
+        sitting_session_running: false,
+        sitting_session_ends_at: null,
+      })
+    }
+
+    if (phase === 'break') {
+      return await saveMovementTimerSession(userId, date, {
+        sitting_breaks: (record.sitting_breaks || 0) + 1,
+        sitting_session_phase: 'idle',
+        sitting_session_running: false,
+        sitting_session_ends_at: null,
+      })
+    }
+
+    return record
+  } catch (error) {
+    console.error('Error sincronizando sesión de postura:', error)
+    throw error
   }
 }
 

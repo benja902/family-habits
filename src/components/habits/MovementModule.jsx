@@ -21,12 +21,21 @@ const EXERCISE_TYPES = ['Caminata', 'Trote', 'Pesas', 'Yoga', 'Bici', 'Otro']
 const ALARM_AUDIO_PATH = '/sounds/alarma.mp3'
 
 export default function MovementModule() {
-  const { movementRecord, isLoading, hasRecord, saveMovement, isSaving } = useMovementModule()
+  const {
+    movementRecord,
+    isLoading,
+    hasRecord,
+    saveMovement,
+    isSaving,
+    saveTimerSession,
+    syncTimerSession,
+  } = useMovementModule()
   const [timerPhase, setTimerPhase] = useState('focus')
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(MOVEMENT_FOCUS_MINUTES * 60)
   const [alarmKind, setAlarmKind] = useState(null)
   const alarmAudioRef = useRef(null)
+  const lastSyncedSessionRef = useRef(null)
 
   const { register, handleSubmit, watch, control, reset, setValue } = useForm({
       defaultValues: {
@@ -50,8 +59,6 @@ export default function MovementModule() {
   // Cargar valores iniciales desde movementRecord
   useEffect(() => {
     if (movementRecord) {
-      const completedSittingCycle = (movementRecord.sitting_breaks || 0) > 0
-
       reset({
         did_exercise: movementRecord.did_exercise || false,
         exercise_type: movementRecord.exercise_type || '',
@@ -62,9 +69,27 @@ export default function MovementModule() {
         sitting_breaks: movementRecord.sitting_breaks || 0,
       })
 
+      const sessionPhase = movementRecord.sitting_session_phase || 'idle'
+      const sessionRunning = !!movementRecord.sitting_session_running
+      const sessionEndsAt = movementRecord.sitting_session_ends_at
+      const endsAtDate = sessionEndsAt ? new Date(sessionEndsAt) : null
+      const hasValidEnd = endsAtDate && !Number.isNaN(endsAtDate.getTime())
+
       setIsTimerRunning(false)
-      setTimerPhase('focus')
-      setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+
+      if (sessionRunning && hasValidEnd && endsAtDate > new Date()) {
+        const secondsLeft = Math.max(Math.ceil((endsAtDate.getTime() - Date.now()) / 1000), 1)
+        setTimerPhase(sessionPhase === 'break' ? 'break' : 'focus')
+        setIsTimerRunning(true)
+        setRemainingSeconds(secondsLeft)
+      } else if (sessionPhase === 'break_ready') {
+        setTimerPhase('break')
+        setRemainingSeconds(MOVEMENT_ACTIVE_BREAK_MINUTES * 60)
+      } else {
+        setTimerPhase('focus')
+        setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+      }
+
       if (alarmAudioRef.current) {
         alarmAudioRef.current.pause()
         alarmAudioRef.current.currentTime = 0
@@ -72,6 +97,32 @@ export default function MovementModule() {
       setAlarmKind(null)
     }
   }, [movementRecord, reset])
+
+  useEffect(() => {
+    if (!movementRecord?.id) return
+
+    const sessionPhase = movementRecord.sitting_session_phase || 'idle'
+    const sessionRunning = !!movementRecord.sitting_session_running
+    const sessionEndsAt = movementRecord.sitting_session_ends_at
+    const syncKey = `${movementRecord.id}:${sessionPhase}:${sessionRunning}:${sessionEndsAt || 'null'}:${movementRecord.sitting_breaks || 0}`
+
+    if (lastSyncedSessionRef.current === syncKey) return
+    lastSyncedSessionRef.current = syncKey
+
+    if (!sessionRunning || !sessionEndsAt) return
+
+    const endsAtDate = new Date(sessionEndsAt)
+    if (Number.isNaN(endsAtDate.getTime()) || endsAtDate > new Date()) return
+
+    syncTimerSession().catch(() => {})
+  }, [
+    movementRecord?.id,
+    movementRecord?.sitting_session_phase,
+    movementRecord?.sitting_session_running,
+    movementRecord?.sitting_session_ends_at,
+    movementRecord?.sitting_breaks,
+    syncTimerSession,
+  ])
 
   useEffect(() => {
     if (!isTimerRunning) return undefined
@@ -94,6 +145,12 @@ export default function MovementModule() {
             }
             setAlarmKind('focus')
             setTimerPhase('break')
+            saveTimerSession({
+              sitting_breaks: Number(sittingBreaks) || 0,
+              sitting_session_phase: 'break_ready',
+              sitting_session_running: false,
+              sitting_session_ends_at: null,
+            }).catch(() => {})
             return MOVEMENT_ACTIVE_BREAK_MINUTES * 60
           }
 
@@ -107,8 +164,15 @@ export default function MovementModule() {
             alarmAudioRef.current.play().catch(() => {})
           }
           setAlarmKind('break')
-          setValue('sitting_breaks', (Number(sittingBreaks) || 0) + 1, { shouldDirty: true })
+          const nextRounds = (Number(sittingBreaks) || 0) + 1
+          setValue('sitting_breaks', nextRounds, { shouldDirty: true })
           setTimerPhase('focus')
+          saveTimerSession({
+            sitting_breaks: nextRounds,
+            sitting_session_phase: 'idle',
+            sitting_session_running: false,
+            sitting_session_ends_at: null,
+          }).catch(() => {})
           return MOVEMENT_FOCUS_MINUTES * 60
         }
 
@@ -149,6 +213,18 @@ export default function MovementModule() {
 
   const handleStartTimer = () => {
     if (timerPhase === 'break' && !canStartBreak) return
+    const durationSeconds =
+      timerPhase === 'focus'
+        ? MOVEMENT_FOCUS_MINUTES * 60
+        : MOVEMENT_ACTIVE_BREAK_MINUTES * 60
+    const endsAt = new Date(Date.now() + durationSeconds * 1000).toISOString()
+
+    saveTimerSession({
+      sitting_breaks: Number(sittingBreaks) || 0,
+      sitting_session_phase: timerPhase === 'focus' ? 'focus' : 'break',
+      sitting_session_running: true,
+      sitting_session_ends_at: endsAt,
+    }).catch(() => {})
     setIsTimerRunning(true)
   }
 
@@ -162,6 +238,12 @@ export default function MovementModule() {
       alarmAudioRef.current.currentTime = 0
     }
     setAlarmKind(null)
+    saveTimerSession({
+      sitting_breaks: 0,
+      sitting_session_phase: 'idle',
+      sitting_session_running: false,
+      sitting_session_ends_at: null,
+    }).catch(() => {})
   }
 
   const handleStopAlarm = () => {

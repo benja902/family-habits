@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getMovementRecord, calculateAndSaveMovementPoints } from '../services/supabase'
+import {
+  getMovementRecord,
+  calculateAndSaveMovementPoints,
+  saveMovementTimerSession,
+  syncMovementTimerSession,
+} from '../services/supabase'
 import { useAuthStore } from '../stores/useAuthStore'
 import { getTodayString } from '../utils/dates.utils'
 import { toast } from 'sonner'
@@ -49,11 +54,31 @@ export default function useMovementModule() {
     },
   })
 
+  const timerSessionMutation = useMutation({
+    mutationFn: (sessionData) => saveMovementTimerSession(currentUser?.id, today, sessionData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['movementRecord'] })
+      queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
+    },
+  })
+
+  const syncTimerMutation = useMutation({
+    mutationFn: () => syncMovementTimerSession(currentUser?.id, today),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['movementRecord'] })
+      queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
+    },
+  })
+
   return {
     movementRecord,
     isLoading,
     hasRecord,
     saveMovement: mutation.mutate,
     isSaving: mutation.isPending,
+    saveTimerSession: timerSessionMutation.mutateAsync,
+    isSavingTimerSession: timerSessionMutation.isPending,
+    syncTimerSession: syncTimerMutation.mutateAsync,
+    isSyncingTimerSession: syncTimerMutation.isPending,
   }
 }

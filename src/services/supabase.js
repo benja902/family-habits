@@ -25,6 +25,7 @@ import {
   MIN_WALK_AFTER_LUNCH_MINUTES,
   MOVEMENT_EXERCISE_FULL_POINTS,
   MOVEMENT_HYDRATION_FULL_POINTS,
+  MOVEMENT_SITTING_BREAK_POINTS,
   MOVEMENT_WALK_POINTS,
   PHONE_BATHROOM_PENALTY,
   PHONE_BED_PENALTY,
@@ -641,7 +642,7 @@ export async function getCompletedHabitsToday(userId, date) {
       // Movement
       supabase
         .from('movement_records')
-        .select('did_exercise, walk_after_lunch, water_glasses')
+        .select('did_exercise, walk_after_lunch, water_glasses, sitting_breaks')
         .eq('user_id', userId)
         .eq('date', date)
         .maybeSingle(),
@@ -686,7 +687,14 @@ export async function getCompletedHabitsToday(userId, date) {
 
     return {
       sleep: !!sleepData.data,
-      movement: !!(movementData.data && (movementData.data.did_exercise || movementData.data.walk_after_lunch)),
+      movement: !!(
+        movementData.data &&
+        (
+          movementData.data.did_exercise ||
+          movementData.data.walk_after_lunch ||
+          movementData.data.sitting_breaks > 0
+        )
+      ),
       food: !!(
         foodData.data &&
         foodData.data.length > 0 &&
@@ -1096,11 +1104,25 @@ export async function calculateAndSaveMovementPoints(userId, date, formData) {
       );
     }
 
+    // 4. Bloque de postura: 1 hora + 10 minutos
+    if ((Number(formData.sitting_breaks) || 0) > 0) {
+      totalPoints += MOVEMENT_SITTING_BREAK_POINTS;
+      await addPointTransaction(
+        userId,
+        date,
+        MOVEMENT_SITTING_BREAK_POINTS,
+        'Completó 1 hora sin pausa seguida de 10 minutos de movimiento',
+        'movement',
+        'sitting_break_cycle'
+      );
+    }
+
     // Guardar el registro con los puntos calculados
     await upsertMovementRecord(userId, date, {
       ...(existingRecord || {}),
       ...formData,
       water_glasses: existingRecord?.water_glasses || 0,
+      sitting_breaks: Number(formData.sitting_breaks) || 0,
       points_earned: totalPoints,
     });
 

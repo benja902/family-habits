@@ -24,7 +24,8 @@ export default function useMovementModule() {
   // Solo cuenta como registrado si realmente marcó ejercicio o caminata.
   const hasRecord = !!(
     movementRecord?.did_exercise ||
-    movementRecord?.walk_after_lunch
+    movementRecord?.walk_after_lunch ||
+    movementRecord?.sitting_breaks > 0
   )
 
   // Mutation para guardar el registro

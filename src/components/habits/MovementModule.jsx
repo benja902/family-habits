@@ -1,12 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
 import useMovementModule from '../../hooks/useMovementModule'
 import {
+  MOVEMENT_ACTIVE_BREAK_MINUTES,
   MIN_EXERCISE_MINUTES,
+  MOVEMENT_FOCUS_MINUTES,
   MIN_WALK_AFTER_LUNCH_MINUTES,
   MOVEMENT_EXERCISE_FULL_POINTS,
+  MOVEMENT_SITTING_BREAK_POINTS,
   MOVEMENT_WALK_POINTS,
 } from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
@@ -16,10 +19,51 @@ import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 
 const EXERCISE_TYPES = ['Caminata', 'Trote', 'Pesas', 'Yoga', 'Bici', 'Otro']
 
+function createAlarmBeep(audioContext, kind = 'focus') {
+  const oscillator = audioContext.createOscillator()
+  const gainNode = audioContext.createGain()
+
+  oscillator.type = 'square'
+  oscillator.frequency.value = kind === 'focus' ? 980 : 740
+  gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime)
+  gainNode.gain.exponentialRampToValueAtTime(0.22, audioContext.currentTime + 0.02)
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.45)
+
+  oscillator.connect(gainNode)
+  gainNode.connect(audioContext.destination)
+
+  oscillator.start()
+  oscillator.stop(audioContext.currentTime + 0.45)
+}
+
+function startLoopingAlarm(kind = 'focus') {
+  if (typeof window === 'undefined') return
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext
+  if (!AudioContextClass) return null
+
+  const audioContext = new AudioContextClass()
+
+  createAlarmBeep(audioContext, kind)
+  const intervalId = window.setInterval(() => {
+    createAlarmBeep(audioContext, kind)
+  }, 900)
+
+  return () => {
+    window.clearInterval(intervalId)
+    audioContext.close().catch(() => {})
+  }
+}
+
 export default function MovementModule() {
   const { movementRecord, isLoading, hasRecord, saveMovement, isSaving } = useMovementModule()
+  const [timerPhase, setTimerPhase] = useState('focus')
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [remainingSeconds, setRemainingSeconds] = useState(MOVEMENT_FOCUS_MINUTES * 60)
+  const [alarmKind, setAlarmKind] = useState(null)
+  const stopAlarmRef = useRef(null)
 
-  const { register, handleSubmit, watch, control, reset } = useForm({
+  const { register, handleSubmit, watch, control, reset, setValue } = useForm({
       defaultValues: {
         did_exercise: false,
         exercise_type: '',
@@ -27,12 +71,22 @@ export default function MovementModule() {
         exercise_notes: '',
         walk_after_lunch: false,
         walk_minutes: 0,
+        sitting_breaks: 0,
       },
   })
+
+  // Watch para resumen en tiempo real
+  const didExercise = watch('did_exercise')
+  const exerciseMinutes = watch('exercise_minutes')
+  const walkAfterLunch = watch('walk_after_lunch')
+  const walkMinutes = watch('walk_minutes')
+  const sittingBreaks = watch('sitting_breaks')
 
   // Cargar valores iniciales desde movementRecord
   useEffect(() => {
     if (movementRecord) {
+      const completedSittingCycle = (movementRecord.sitting_breaks || 0) > 0
+
       reset({
         did_exercise: movementRecord.did_exercise || false,
         exercise_type: movementRecord.exercise_type || '',
@@ -40,15 +94,49 @@ export default function MovementModule() {
         exercise_notes: movementRecord.exercise_notes || '',
         walk_after_lunch: movementRecord.walk_after_lunch || false,
         walk_minutes: movementRecord.walk_minutes || 0,
+        sitting_breaks: movementRecord.sitting_breaks || 0,
       })
+
+      setIsTimerRunning(false)
+      setTimerPhase('focus')
+      setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+      stopAlarmRef.current?.()
+      stopAlarmRef.current = null
+      setAlarmKind(null)
     }
   }, [movementRecord, reset])
 
-  // Watch para resumen en tiempo real
-  const didExercise = watch('did_exercise')
-  const exerciseMinutes = watch('exercise_minutes')
-  const walkAfterLunch = watch('walk_after_lunch')
-  const walkMinutes = watch('walk_minutes')
+  useEffect(() => {
+    if (!isTimerRunning) return undefined
+
+    const intervalId = window.setInterval(() => {
+      setRemainingSeconds((current) => {
+        if (current <= 1) {
+          window.clearInterval(intervalId)
+          setIsTimerRunning(false)
+
+          if (timerPhase === 'focus') {
+            stopAlarmRef.current?.()
+            stopAlarmRef.current = startLoopingAlarm('focus')
+            setAlarmKind('focus')
+            setTimerPhase('break')
+            return MOVEMENT_ACTIVE_BREAK_MINUTES * 60
+          }
+
+          stopAlarmRef.current?.()
+          stopAlarmRef.current = startLoopingAlarm('break')
+          setAlarmKind('break')
+          setValue('sitting_breaks', (Number(sittingBreaks) || 0) + 1, { shouldDirty: true })
+          setTimerPhase('focus')
+          return MOVEMENT_FOCUS_MINUTES * 60
+        }
+
+        return current - 1
+      })
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [isTimerRunning, timerPhase, setValue, sittingBreaks])
 
   // Calcular puntos en tiempo real
   const calculateExercisePoints = () => {
@@ -63,7 +151,48 @@ export default function MovementModule() {
 
   const exercisePoints = calculateExercisePoints()
   const walkPoints = calculateWalkPoints()
-  const totalPoints = exercisePoints + walkPoints
+  const completedRounds = Number(sittingBreaks) || 0
+  const sittingBreakPoints = completedRounds * MOVEMENT_SITTING_BREAK_POINTS
+  const totalPoints = exercisePoints + walkPoints + sittingBreakPoints
+
+  const timerCompleted = completedRounds > 0
+  const canStartBreak = timerPhase === 'break'
+  const activeDurationMinutes =
+    timerPhase === 'focus' ? MOVEMENT_FOCUS_MINUTES : MOVEMENT_ACTIVE_BREAK_MINUTES
+  const timerProgress = timerCompleted
+    ? 100
+    : Math.round(((activeDurationMinutes * 60 - remainingSeconds) / (activeDurationMinutes * 60)) * 100)
+  const formattedTime = `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(
+    remainingSeconds % 60
+  ).padStart(2, '0')}`
+
+  const handleStartTimer = () => {
+    if (timerPhase === 'break' && !canStartBreak) return
+    setIsTimerRunning(true)
+  }
+
+  const handleResetTimer = () => {
+    setIsTimerRunning(false)
+    setTimerPhase('focus')
+    setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+    setValue('sitting_breaks', 0, { shouldDirty: true })
+    stopAlarmRef.current?.()
+    stopAlarmRef.current = null
+    setAlarmKind(null)
+  }
+
+  const handleStopAlarm = () => {
+    stopAlarmRef.current?.()
+    stopAlarmRef.current = null
+    setAlarmKind(null)
+  }
+
+  useEffect(() => {
+    return () => {
+      stopAlarmRef.current?.()
+      stopAlarmRef.current = null
+    }
+  }, [])
 
   const onSubmit = (data) => {
     const cleanData = {
@@ -72,6 +201,7 @@ export default function MovementModule() {
       exercise_notes: data.exercise_notes || null,
       exercise_minutes: Number(data.exercise_minutes) || 0,
       walk_minutes: Number(data.walk_minutes) || 0,
+      sitting_breaks: Number(data.sitting_breaks) || 0,
     }
     saveMovement(cleanData)
   }
@@ -189,7 +319,93 @@ export default function MovementModule() {
           </AnimatePresence>
         </Section>
 
-        {/* SECCIÓN 2: Movimiento */}
+        {/* SECCIÓN 2: Bloque de postura */}
+        <Section>
+          <SectionTitle>🪑 No estar sentado más de 1 hora seguida</SectionTitle>
+
+          <TimerCard $isComplete={timerCompleted}>
+            <TimerNav>
+              <TimerTab
+                type="button"
+                $isActive={timerPhase === 'focus'}
+                disabled={isTimerRunning}
+                onClick={() => {
+                  setTimerPhase('focus')
+                  setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+                }}
+              >
+                1 hora
+              </TimerTab>
+              <TimerTab
+                type="button"
+                $isActive={timerPhase === 'break'}
+                disabled={!canStartBreak && !timerCompleted}
+                onClick={() => {
+                  if (!canStartBreak && !timerCompleted) return
+                  setTimerPhase('break')
+                  setRemainingSeconds(MOVEMENT_ACTIVE_BREAK_MINUTES * 60)
+                }}
+              >
+                10 minutos
+              </TimerTab>
+            </TimerNav>
+
+            <TimerClock $isComplete={timerCompleted}>{formattedTime}</TimerClock>
+            <Hint>
+              {timerPhase === 'focus'
+                  ? 'Primero completa la hora. Luego se desbloquean los 10 minutos de movimiento.'
+                  : 'Ahora sí: completa los 10 minutos de movimiento para ganar el punto.'}
+            </Hint>
+            <RoundsBadge>
+              Rondas completas: {completedRounds} · +{sittingBreakPoints} pts
+            </RoundsBadge>
+            {alarmKind && (
+              <AlarmBanner>
+                <span>
+                  {alarmKind === 'focus'
+                    ? 'La hora terminó. Inicia los 10 minutos.'
+                    : 'Los 10 minutos terminaron. Puedes guardar o empezar otra ronda.'}
+                </span>
+                <AlarmButton
+                  type="button"
+                  onClick={handleStopAlarm}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  Apagar sonido
+                </AlarmButton>
+              </AlarmBanner>
+            )}
+
+            <ProgressBarContainer>
+              <ProgressBar
+                $progress={Math.min(Math.max(timerProgress, 0), 100)}
+                $isComplete={timerCompleted}
+              />
+            </ProgressBarContainer>
+
+            <TimerActions>
+              <TimerButton
+                type="button"
+                onClick={handleStartTimer}
+                disabled={isTimerRunning || (timerPhase === 'break' && !canStartBreak)}
+                whileTap={{ scale: 0.96 }}
+              >
+                {timerPhase === 'focus' ? 'Iniciar 1 hora' : 'Iniciar 10 min'}
+              </TimerButton>
+              <TimerButton
+                type="button"
+                $secondary
+                onClick={handleResetTimer}
+                disabled={isTimerRunning || (!timerCompleted && timerPhase === 'focus' && remainingSeconds === MOVEMENT_FOCUS_MINUTES * 60)}
+                whileTap={{ scale: 0.96 }}
+              >
+                Reiniciar
+              </TimerButton>
+            </TimerActions>
+          </TimerCard>
+        </Section>
+
+        {/* SECCIÓN 3: Movimiento */}
         <Section>
           <SectionTitle>🚶 Movimiento</SectionTitle>
 
@@ -243,6 +459,7 @@ export default function MovementModule() {
         <PointsSummaryCard
           pointsSummary={[
             { label: 'Ejercicio', points: exercisePoints, color: '#22C55E' },
+            { label: 'Postura', points: sittingBreakPoints, color: '#22C55E' },
             { label: 'Caminata', points: walkPoints, color: '#22C55E' },
           ]}
           totalPoints={totalPoints}
@@ -374,6 +591,95 @@ const ExerciseDetails = styled(motion.div)`
 
 const WalkDetails = styled(motion.div)`
   overflow: hidden;
+`
+
+const TimerCard = styled.div`
+  background: ${({ $isComplete, theme }) =>
+    $isComplete ? 'rgba(34, 197, 94, 0.12)' : theme.colors.surface};
+  border: 2px solid ${({ $isComplete, theme }) => ($isComplete ? '#22C55E' : theme.colors.border)};
+  border-radius: 16px;
+  padding: 16px;
+`
+
+const TimerNav = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+`
+
+const TimerTab = styled.button`
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  background: ${({ $isActive, theme }) => ($isActive ? '#22C55E' : theme.colors.background)};
+  color: ${({ $isActive, theme }) => ($isActive ? '#FFFFFF' : theme.colors.textSecondary)};
+  opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+`
+
+const TimerClock = styled.div`
+  font-size: 36px;
+  font-weight: 900;
+  color: ${({ $isComplete }) => ($isComplete ? '#22C55E' : '#111827')};
+  text-align: center;
+  margin-bottom: 12px;
+`
+
+const TimerActions = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+`
+
+const RoundsBadge = styled.div`
+  margin-top: 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #22C55E;
+`
+
+const AlarmBanner = styled.div`
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #C2410C;
+`
+
+const AlarmButton = styled(motion.button)`
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  background: #F97316;
+  color: #FFFFFF;
+  cursor: pointer;
+  white-space: nowrap;
+`
+
+const TimerButton = styled(motion.button)`
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 800;
+  background: ${({ $secondary, theme }) => ($secondary ? theme.colors.background : '#22C55E')};
+  color: ${({ $secondary, theme }) => ($secondary ? theme.colors.textPrimary : '#FFFFFF')};
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ disabled }) => (disabled ? 0.55 : 1)};
 `
 
 const FormGroup = styled.div`

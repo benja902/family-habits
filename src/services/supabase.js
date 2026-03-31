@@ -1826,20 +1826,11 @@ export async function getUserRedemptions(userId) {
  */
 export async function redeemReward(userId, rewardId) {
   try {
-    // Por ahora todos los canjes requieren aprobación del admin.
-    // Si en el futuro vuelve la entrega automática para ciertos tipos
-    // de premio, este es el punto donde debe reintroducirse esa lógica.
-    const initialStatus = 'pendiente';
-
     const { data, error } = await supabase
-      .from('reward_redemptions')
-      .insert({
-        user_id: userId,
-        reward_id: rewardId,
-        status: initialStatus
-      })
-      .select()
-      .single();
+      .rpc('redeem_reward_safely', {
+        p_user_id: userId,
+        p_reward_id: rewardId,
+      });
 
     if (error) throw error;
     return data;

@@ -36,6 +36,11 @@ export default function MovementModule() {
   const [alarmKind, setAlarmKind] = useState(null)
   const alarmAudioRef = useRef(null)
   const lastSyncedSessionRef = useRef(null)
+  const localSessionRef = useRef({
+    active: false,
+    phase: 'idle',
+    endsAt: null,
+  })
 
   const { register, handleSubmit, watch, control, reset, setValue } = useForm({
       defaultValues: {
@@ -59,6 +64,24 @@ export default function MovementModule() {
   // Cargar valores iniciales desde movementRecord
   useEffect(() => {
     if (movementRecord) {
+      const sessionPhase = movementRecord.sitting_session_phase || 'idle'
+      const sessionRunning = !!movementRecord.sitting_session_running
+      const sessionEndsAt = movementRecord.sitting_session_ends_at || null
+
+      // Mientras exista una sesión local activa, ignoramos refetches viejos
+      // que todavía no reflejan el estado recién iniciado en la DB.
+      if (
+        localSessionRef.current.active &&
+        !(
+          sessionRunning &&
+          sessionPhase === localSessionRef.current.phase &&
+          sessionEndsAt === localSessionRef.current.endsAt
+        ) &&
+        sessionPhase !== 'break_ready'
+      ) {
+        return
+      }
+
       reset({
         did_exercise: movementRecord.did_exercise || false,
         exercise_type: movementRecord.exercise_type || '',
@@ -69,9 +92,6 @@ export default function MovementModule() {
         sitting_breaks: movementRecord.sitting_breaks || 0,
       })
 
-      const sessionPhase = movementRecord.sitting_session_phase || 'idle'
-      const sessionRunning = !!movementRecord.sitting_session_running
-      const sessionEndsAt = movementRecord.sitting_session_ends_at
       const endsAtDate = sessionEndsAt ? new Date(sessionEndsAt) : null
       const hasValidEnd = endsAtDate && !Number.isNaN(endsAtDate.getTime())
 
@@ -82,12 +102,27 @@ export default function MovementModule() {
         setTimerPhase(sessionPhase === 'break' ? 'break' : 'focus')
         setIsTimerRunning(true)
         setRemainingSeconds(secondsLeft)
+        localSessionRef.current = {
+          active: true,
+          phase: sessionPhase,
+          endsAt: sessionEndsAt,
+        }
       } else if (sessionPhase === 'break_ready') {
         setTimerPhase('break')
         setRemainingSeconds(MOVEMENT_ACTIVE_BREAK_MINUTES * 60)
+        localSessionRef.current = {
+          active: false,
+          phase: 'break_ready',
+          endsAt: null,
+        }
       } else {
         setTimerPhase('focus')
         setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
+        localSessionRef.current = {
+          active: false,
+          phase: sessionPhase,
+          endsAt: null,
+        }
       }
 
     }
@@ -140,6 +175,11 @@ export default function MovementModule() {
             }
             setAlarmKind('focus')
             setTimerPhase('break')
+            localSessionRef.current = {
+              active: false,
+              phase: 'break_ready',
+              endsAt: null,
+            }
             saveTimerSession({
               sitting_breaks: Number(sittingBreaks) || 0,
               sitting_session_phase: 'break_ready',
@@ -162,6 +202,11 @@ export default function MovementModule() {
           const nextRounds = (Number(sittingBreaks) || 0) + 1
           setValue('sitting_breaks', nextRounds, { shouldDirty: true })
           setTimerPhase('focus')
+          localSessionRef.current = {
+            active: false,
+            phase: 'idle',
+            endsAt: null,
+          }
           saveTimerSession({
             sitting_breaks: nextRounds,
             sitting_session_phase: 'idle',
@@ -213,10 +258,17 @@ export default function MovementModule() {
         ? MOVEMENT_FOCUS_MINUTES * 60
         : MOVEMENT_ACTIVE_BREAK_MINUTES * 60
     const endsAt = new Date(Date.now() + durationSeconds * 1000).toISOString()
+    const sessionPhase = timerPhase === 'focus' ? 'focus' : 'break'
+
+    localSessionRef.current = {
+      active: true,
+      phase: sessionPhase,
+      endsAt,
+    }
 
     saveTimerSession({
       sitting_breaks: Number(sittingBreaks) || 0,
-      sitting_session_phase: timerPhase === 'focus' ? 'focus' : 'break',
+      sitting_session_phase: sessionPhase,
       sitting_session_running: true,
       sitting_session_ends_at: endsAt,
     }).catch(() => {})
@@ -233,6 +285,11 @@ export default function MovementModule() {
       alarmAudioRef.current.currentTime = 0
     }
     setAlarmKind(null)
+    localSessionRef.current = {
+      active: false,
+      phase: 'idle',
+      endsAt: null,
+    }
     saveTimerSession({
       sitting_breaks: 0,
       sitting_session_phase: 'idle',
@@ -454,7 +511,7 @@ export default function MovementModule() {
                 disabled={isTimerRunning || (timerPhase === 'break' && !canStartBreak)}
                 whileTap={{ scale: 0.96 }}
               >
-                {timerPhase === 'focus' ? 'Iniciar 1 hora' : 'Iniciar 10 min'}
+                {timerPhase === 'focus' ? 'Iniciar 1 hora' : 'Iniciar 15 min'}
               </TimerButton>
               <TimerButton
                 type="button"

@@ -22,6 +22,7 @@ export default function Rewards() {
   const handleRedeem = (reward) => {
     redeemReward({
       rewardId: reward.id,
+      rewardCost: reward.points_required,
     })
   }
 

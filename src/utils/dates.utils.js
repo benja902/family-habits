@@ -141,3 +141,63 @@ export const getWeekEnd = (dateString) => {
   const startOfWeek = getWeekStart(dateString);
   return dayjs(startOfWeek).add(6, 'day').format('YYYY-MM-DD');
 };
+
+/**
+ * Formatea una fecha ISO a hora local en formato 12h español.
+ * @param {string | null | undefined} isoString
+ * @returns {string}
+ */
+export const formatDateTimeES = (isoString) => {
+  if (!isoString) return '';
+  return dayjs(isoString).format('D [de] MMMM, h:mm a');
+};
+
+/**
+ * Retorna el tiempo restante hasta una fecha objetivo.
+ * @param {string | null | undefined} isoString
+ * @returns {{ totalMs: number, hours: number, minutes: number, seconds: number, isExpired: boolean }}
+ */
+export const getCountdownParts = (isoString) => {
+  if (!isoString) {
+    return {
+      totalMs: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      isExpired: true,
+    };
+  }
+
+  const totalMs = Math.max(0, dayjs(isoString).diff(dayjs()));
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    totalMs,
+    hours,
+    minutes,
+    seconds,
+    isExpired: totalMs <= 0,
+  };
+};
+
+/**
+ * Formatea un countdown a un texto corto legible.
+ * @param {string | null | undefined} isoString
+ * @returns {string}
+ */
+export const formatCountdownShort = (isoString) => {
+  const { hours, minutes, seconds, isExpired } = getCountdownParts(isoString);
+
+  if (isExpired) return '00:00';
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`;
+  }
+
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};

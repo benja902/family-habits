@@ -1,8 +1,8 @@
 import { useEffect } from 'react'; // <-- NUEVO
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getPendingRedemptions,
-  updateRedemptionStatus,
+  getAdminRewardRedemptions,
+  resolveRewardRedemption,
   assignPunishment,
   cancelPunishment,
   getFamilyMembers,
@@ -22,7 +22,7 @@ export default function useAdmin() {
   // Lista de premios esperando aprobación
   const pendingRedemptionsQuery = useQuery({
     queryKey: ['pendingRedemptions'],
-    queryFn: getPendingRedemptions,
+    queryFn: getAdminRewardRedemptions,
     // Refrescamos cada 2 minutos por si alguien pide un premio mientras el admin está conectado
     staleTime: 1000 * 60 * 2, 
   });
@@ -48,7 +48,7 @@ export default function useAdmin() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'reward_redemptions' },
-        (payload) => {
+        () => {
           // Cuando alguien inserta un pedido, le decimos a TanStack que actualice la lista
           queryClient.invalidateQueries({ queryKey: ['pendingRedemptions'] });
         }
@@ -63,7 +63,7 @@ export default function useAdmin() {
 
   // Aprobar o rechazar un premio
   const resolveRedemptionMutation = useMutation({
-    mutationFn: ({ id, newStatus }) => updateRedemptionStatus(id, newStatus),
+    mutationFn: ({ id, action }) => resolveRewardRedemption(id, action),
     onSuccess: (data, variables) => {
       // Actualizamos la lista de pendientes del admin
       queryClient.invalidateQueries({ queryKey: ['pendingRedemptions'], refetchType: 'all' });
@@ -71,15 +71,23 @@ export default function useAdmin() {
       queryClient.invalidateQueries({ queryKey: ['redemptions'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' });
       
-      if (variables.newStatus === 'aprobado') {
-        toast.success('Premio aprobado y listo para entregar.');
-      } else {
+      if (variables.action === 'approve') {
+        if (data?.status === 'activo') {
+          toast.success('Premio activado. El cronómetro ya está corriendo.');
+        } else {
+          toast.success('Premio aprobado y entregado.');
+        }
+      } else if (variables.action === 'reject') {
         toast.info('Premio rechazado. Los puntos fueron devueltos.');
+      } else if (variables.action === 'finish') {
+        toast.success('Premio finalizado correctamente.');
+      } else if (variables.action === 'cancel') {
+        toast.info('Premio cancelado por el admin.');
       }
     },
     onError: (error) => {
       console.error('Error al resolver premio:', error);
-      toast.error('Ocurrió un error. Intenta de nuevo.');
+      toast.error(error?.message || 'Ocurrió un error. Intenta de nuevo.');
     }
   });
 

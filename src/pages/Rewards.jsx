@@ -1,15 +1,16 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import { BsClockHistory, BsCheckCircleFill, BsGiftFill } from 'react-icons/bs'
+import { BsCheckCircleFill, BsClockHistory, BsGiftFill, BsSlashCircleFill, BsStopFill } from 'react-icons/bs'
 import { PageContainer } from '../components/layout/PageContainer'
 import { AppHeader } from '../components/layout/AppHeader'
 import { RewardCard } from '../components/ui/RewardCard'
 import useRewards from '../hooks/useRewards'
 import usePoints from '../hooks/usePoints'
-import { formatDateES } from '../utils/dates.utils'
+import { formatCountdownShort, formatDateES, formatDateTimeES, getCountdownParts } from '../utils/dates.utils'
 
 export default function Rewards() {
   const [activeTab, setActiveTab] = useState('catalog') // 'catalog' o 'history'
+  const [, setNow] = useState(0)
   
   const { 
     rewards, isLoadingRewards, 
@@ -19,6 +20,14 @@ export default function Rewards() {
   
   const { balance, isLoading: isLoadingPoints, formattedMoney } = usePoints()
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [])
+
   const handleRedeem = (reward) => {
     redeemReward({
       rewardId: reward.id,
@@ -27,12 +36,21 @@ export default function Rewards() {
   }
 
   // Función para darle estilo y texto a cada estado del canje
-  const getStatusConfig = (status) => {
-    switch(status) {
+  const getStatusConfig = (redemption) => {
+    const countdown = getCountdownParts(redemption.timer_ends_at)
+
+    switch(redemption.status) {
       case 'pendiente': return { label: 'En revisión', color: '#F59E0B', icon: <BsClockHistory /> }
       case 'aprobado': return { label: 'Aprobado', color: '#3B82F6', icon: <BsCheckCircleFill /> }
+      case 'activo':
+        return countdown.isExpired
+          ? { label: 'Tiempo agotado', color: '#EF4444', icon: <BsClockHistory /> }
+          : { label: `Activo · ${formatCountdownShort(redemption.timer_ends_at)}`, color: '#3B82F6', icon: <BsClockHistory /> }
+      case 'finalizado': return { label: 'Finalizado', color: '#22C55E', icon: <BsCheckCircleFill /> }
+      case 'cancelado': return { label: 'Cancelado', color: '#EF4444', icon: <BsStopFill /> }
+      case 'rechazado': return { label: 'Rechazado', color: '#EF4444', icon: <BsSlashCircleFill /> }
       case 'entregado': return { label: 'Entregado', color: '#22C55E', icon: <BsGiftFill /> }
-      default: return { label: status, color: '#64748B', icon: null }
+      default: return { label: redemption.status, color: '#64748B', icon: null }
     }
   }
 
@@ -90,15 +108,22 @@ export default function Rewards() {
             <EmptyText>Aún no has canjeado ningún premio.</EmptyText>
           ) : (
             redemptions.map((redemption) => {
-              const statusConfig = getStatusConfig(redemption.status)
+              const statusConfig = getStatusConfig(redemption)
               // Extraemos el nombre del premio usando la relación de Supabase
               const rewardName = redemption.rewards?.name || 'Premio eliminado'
+              const isTimedReward = Boolean(redemption.rewards?.is_timed || redemption.duration_minutes_snapshot)
 
               return (
                 <HistoryItem key={redemption.id}>
                   <HistoryInfo>
                     <HistoryTitle>{rewardName}</HistoryTitle>
                     <HistoryDate>{formatDateES(redemption.created_at.split('T')[0])}</HistoryDate>
+                    {isTimedReward && redemption.timer_started_at ? (
+                      <HistoryMeta>Inició: {formatDateTimeES(redemption.timer_started_at)}</HistoryMeta>
+                    ) : null}
+                    {isTimedReward && redemption.timer_ends_at ? (
+                      <HistoryMeta>Termina: {formatDateTimeES(redemption.timer_ends_at)}</HistoryMeta>
+                    ) : null}
                   </HistoryInfo>
                   
                   <HistoryRight>
@@ -108,6 +133,9 @@ export default function Rewards() {
                       {statusConfig.icon}
                       {statusConfig.label}
                     </StatusBadge>
+                    {isTimedReward && redemption.duration_minutes_snapshot ? (
+                      <DurationText>{redemption.duration_minutes_snapshot} min</DurationText>
+                    ) : null}
                   </HistoryRight>
                 </HistoryItem>
               )
@@ -177,6 +205,10 @@ const HistoryTitle = styled.span`
 const HistoryDate = styled.span`
   font-size: 13px; color: ${({ theme }) => theme.colors.textSecondary};
 `
+const HistoryMeta = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`
 const HistoryRight = styled.div`
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
 `
@@ -187,4 +219,9 @@ const StatusBadge = styled.div`
   display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800;
   color: ${({ $color }) => $color}; background: ${({ $color }) => `${$color}15`};
   padding: 4px 8px; border-radius: 8px;
+`
+const DurationText = styled.span`
+  font-size: 12px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import {
   BsCashCoin,
   BsController,
+  BsClockHistory,
   BsCupHotFill,
   BsEmojiHeartEyesFill,
   BsFilm,
@@ -15,28 +16,30 @@ import {
 } from 'react-icons/bs'
 
 // Asignamos un ícono automático dependiendo del tipo de premio
-const REWARD_ICONS = {
-  dinero: BsCashCoin,
-  tv_extra: BsTvFill,
-  elegir_pelicula: BsFilm,
-  elegir_comida: BsCupHotFill,
-  especial: BsStarFill
-}
+function renderRewardIcon(reward) {
+  if ((reward?.name || '').toLowerCase().includes('videojuego')) return <BsController size={24} />
+  if ((reward?.name || '').toLowerCase().includes('siesta') || (reward?.name || '').toLowerCase().includes('dormir')) return <BsMoonStarsFill size={24} />
+  if ((reward?.name || '').toLowerCase().includes('animal')) return <BsEmojiHeartEyesFill size={24} />
+  if ((reward?.name || '').toLowerCase().includes('compra')) return <BsShop size={24} />
+  if ((reward?.name || '').toLowerCase().includes('yogurt') || (reward?.name || '').toLowerCase().includes('adoquin')) return <BsGiftFill size={24} />
 
-function resolveRewardIcon(reward) {
-  const normalizedName = (reward?.name || '').toLowerCase()
-
-  if (normalizedName.includes('videojuego')) return BsController
-  if (normalizedName.includes('siesta') || normalizedName.includes('dormir')) return BsMoonStarsFill
-  if (normalizedName.includes('animal')) return BsEmojiHeartEyesFill
-  if (normalizedName.includes('compra')) return BsShop
-  if (normalizedName.includes('yogurt') || normalizedName.includes('adoquin')) return BsGiftFill
-
-  return REWARD_ICONS[reward?.type] || BsStarFill
+  switch (reward?.type) {
+    case 'dinero':
+      return <BsCashCoin size={24} />
+    case 'tv_extra':
+      return <BsTvFill size={24} />
+    case 'elegir_pelicula':
+      return <BsFilm size={24} />
+    case 'elegir_comida':
+      return <BsCupHotFill size={24} />
+    case 'especial':
+      return <BsStarFill size={24} />
+    default:
+      return <BsStarFill size={24} />
+  }
 }
 
 export function RewardCard({ reward, onRedeem, userPoints = 0, isRedeeming }) {
-  const Icon = resolveRewardIcon(reward)
   const canAfford = userPoints >= reward.points_required
   const buttonLabel = !canAfford
     ? 'Faltan puntos'
@@ -50,12 +53,18 @@ export function RewardCard({ reward, onRedeem, userPoints = 0, isRedeeming }) {
       whileTap={canAfford && !isRedeeming ? { scale: 0.96 } : {}}
     >
       <IconWrapper $canAfford={canAfford}>
-        <Icon size={24} />
+        {renderRewardIcon(reward)}
       </IconWrapper>
       
       <Info>
         <Title $canAfford={canAfford}>{reward.name}</Title>
         {reward.description && <Description>{reward.description}</Description>}
+        {reward.is_timed && reward.duration_minutes ? (
+          <TimerHint>
+            <BsClockHistory />
+            Cronómetro: {reward.duration_minutes} min
+          </TimerHint>
+        ) : null}
         <ApprovalHint>Requiere aprobación del admin.</ApprovalHint>
       </Info>
 
@@ -121,6 +130,15 @@ const ApprovalHint = styled.p`
   font-size: 12px;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.warning};
+`
+const TimerHint = styled.p`
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.primary};
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `
 const ActionArea = styled.div`
   display: flex;

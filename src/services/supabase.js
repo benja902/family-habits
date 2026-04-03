@@ -1683,7 +1683,7 @@ export const getUserPointsBalance = async (userId) => {
     .from('reward_redemptions')
     .select('rewards(points_required)')
     .eq('user_id', userId)
-    .in('status', ['pendiente', 'aprobado', 'entregado'])
+    .in('status', ['pendiente', 'aprobado', 'activo', 'finalizado', 'cancelado', 'entregado'])
 
   const totalSpent = spentError ? 0 : spentData.reduce((sum, record) => sum + (record.rewards?.points_required || 0), 0)
 
@@ -1807,9 +1807,13 @@ export async function getRewards() {
  */
 export async function getUserRedemptions(userId) {
   try {
+    await supabase.rpc('finalize_expired_reward_redemptions', {
+      p_user_id: userId,
+    });
+
     const { data, error } = await supabase
       .from('reward_redemptions')
-      .select('*, rewards(*)') // Traemos también los datos del premio (nombre, tipo)
+      .select('*, rewards(*)') // Traemos también los datos del premio (nombre, tipo, timer)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -1836,6 +1840,35 @@ export async function redeemReward(userId, rewardId) {
     return data;
   } catch (error) {
     console.error('Error al registrar el canje del premio:', error);
+    throw error;
+  }
+}
+
+export async function resolveRewardRedemption(redemptionId, action) {
+  try {
+    const { data, error } = await supabase
+      .rpc('resolve_reward_redemption', {
+        p_redemption_id: redemptionId,
+        p_action: action,
+      });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al resolver el canje del premio:', error);
+    throw error;
+  }
+}
+
+export async function finalizeExpiredRewardRedemptions(userId = null) {
+  try {
+    const params = userId ? { p_user_id: userId } : {};
+    const { data, error } = await supabase.rpc('finalize_expired_reward_redemptions', params);
+
+    if (error) throw error;
+    return data || 0;
+  } catch (error) {
+    console.error('Error al sincronizar premios vencidos:', error);
     throw error;
   }
 }
@@ -1891,16 +1924,18 @@ export async function markPunishmentCompleted(punishmentId) {
 /**
  * Retorna todas las solicitudes de premios que están pendientes de aprobación
  */
-export async function getPendingRedemptions() {
+export async function getAdminRewardRedemptions() {
   try {
+    await supabase.rpc('finalize_expired_reward_redemptions');
+
     const { data, error } = await supabase
       .from('reward_redemptions')
       .select(`
         *,
         users!reward_redemptions_user_id_fkey (name, avatar_url),
-        rewards (name, type, points_required)
+        rewards (name, type, points_required, is_timed, duration_minutes)
       `)
-      .eq('status', 'pendiente')
+      .in('status', ['pendiente', 'activo'])
       .order('created_at', { ascending: true }); // Los más antiguos primero
 
     if (error) throw error;
@@ -1912,27 +1947,9 @@ export async function getPendingRedemptions() {
 }
 
 /**
- * Cambia el estado de una solicitud (ej. de 'pendiente' a 'aprobado' o 'rechazado')
+ * Resuelve una solicitud de premio mediante una RPC para mantener reglas consistentes.
  */
-export async function updateRedemptionStatus(redemptionId, newStatus) {
-  try {
-    const { data, error } = await supabase
-      .from('reward_redemptions')
-      .update({ 
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', redemptionId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`Error al cambiar estado a ${newStatus}:`, error);
-    throw error;
-  }
-}
+export const updateRedemptionStatus = resolveRewardRedemption
 
 // -------------------- 2. GESTIÓN DE CASTIGOS (ADMIN) --------------------
 

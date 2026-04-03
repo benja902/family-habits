@@ -1,12 +1,13 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
-import { BsCheckLg, BsXLg, BsPersonFill } from 'react-icons/bs'
+import { BsCheckLg, BsClockHistory, BsFlagFill, BsPersonFill, BsStopFill, BsXLg } from 'react-icons/bs'
 import { AppHeader } from '../../components/layout/AppHeader'
 import useAdmin from '../../hooks/useAdmin'
-import { formatDateES } from '../../utils/dates.utils'
+import { formatCountdownShort, formatDateES, formatDateTimeES, getCountdownParts } from '../../utils/dates.utils'
 
 export default function AdminRewards() {
+  const [, setNow] = useState(0)
   const { 
     pendingRedemptions, 
     isLoadingRedemptions, 
@@ -14,53 +15,148 @@ export default function AdminRewards() {
     isResolvingRedemption 
   } = useAdmin()
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const queuedRedemptions = pendingRedemptions.filter((redemption) => redemption.status === 'pendiente')
+  const activeRedemptions = pendingRedemptions.filter((redemption) => redemption.status === 'activo')
+
+  const hasRequests = queuedRedemptions.length > 0 || activeRedemptions.length > 0
+
   return (
     <Container>
       <AppHeader title="Aprobar Premios" />
       <ContentSection>
         {isLoadingRedemptions ? (
           <EmptyText>Buscando solicitudes...</EmptyText>
-        ) : pendingRedemptions.length === 0 ? (
+        ) : !hasRequests ? (
           <EmptyText>No hay premios pendientes de aprobación. ¡Todo al día!</EmptyText>
         ) : (
-          pendingRedemptions.map((redemption) => (
-            <RequestCard
-              key={redemption.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <RequestInfo>
-                <UserRow>
-                  <Avatar>
-                    {redemption.users?.avatar_url ? (
-                      <img src={redemption.users.avatar_url} alt="avatar" />
-                    ) : (
-                      <BsPersonFill />
-                    )}
-                  </Avatar>
-                  <UserName>{redemption.users?.name}</UserName>
-                  <DateText>{formatDateES(redemption.created_at.split('T')[0])}</DateText>
-                </UserRow>
-                <RewardName>{redemption.rewards?.name}</RewardName>
-                <RewardCost>-{redemption.rewards?.points_required || redemption.points_cost} pts</RewardCost>
-              </RequestInfo>
-              
-              <ActionButtons>
-                <RejectButton
-                  onClick={() => resolveRedemption({ id: redemption.id, newStatus: 'rechazado' })}
-                  disabled={isResolvingRedemption}
-                >
-                  <BsXLg /> Rechazar
-                </RejectButton>
-                <ApproveButton
-                  onClick={() => resolveRedemption({ id: redemption.id, newStatus: 'aprobado' })}
-                  disabled={isResolvingRedemption}
-                >
-                  <BsCheckLg /> Aprobar
-                </ApproveButton>
-              </ActionButtons>
-            </RequestCard>
-          ))
+          <>
+            {queuedRedemptions.length > 0 && (
+              <Section>
+                <SectionTitle>Solicitudes pendientes</SectionTitle>
+                {queuedRedemptions.map((redemption) => {
+                  const duration = redemption.duration_minutes_snapshot || redemption.rewards?.duration_minutes
+
+                  return (
+                    <RequestCard
+                      key={redemption.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <RequestInfo>
+                        <UserRow>
+                          <Avatar>
+                            {redemption.users?.avatar_url ? (
+                              <img src={redemption.users.avatar_url} alt="avatar" />
+                            ) : (
+                              <BsPersonFill />
+                            )}
+                          </Avatar>
+                          <UserName>{redemption.users?.name}</UserName>
+                          <DateText>{formatDateES(redemption.created_at.split('T')[0])}</DateText>
+                        </UserRow>
+                        <RewardName>{redemption.rewards?.name}</RewardName>
+                        <MetaRow>
+                          <RewardCost>-{redemption.rewards?.points_required || redemption.points_cost} pts</RewardCost>
+                          {redemption.rewards?.is_timed && duration ? (
+                            <TimerChip>
+                              <BsClockHistory />
+                              {duration} min
+                            </TimerChip>
+                          ) : (
+                            <DeliveryChip>Entrega directa</DeliveryChip>
+                          )}
+                        </MetaRow>
+                      </RequestInfo>
+
+                      <ActionButtons>
+                        <RejectButton
+                          onClick={() => resolveRedemption({ id: redemption.id, action: 'reject' })}
+                          disabled={isResolvingRedemption}
+                        >
+                          <BsXLg /> Rechazar
+                        </RejectButton>
+                        <ApproveButton
+                          onClick={() => resolveRedemption({ id: redemption.id, action: 'approve' })}
+                          disabled={isResolvingRedemption}
+                        >
+                          <BsCheckLg /> {redemption.rewards?.is_timed ? 'Activar' : 'Entregar'}
+                        </ApproveButton>
+                      </ActionButtons>
+                    </RequestCard>
+                  )
+                })}
+              </Section>
+            )}
+
+            {activeRedemptions.length > 0 && (
+              <Section>
+                <SectionTitle>Premios activos</SectionTitle>
+                {activeRedemptions.map((redemption) => {
+                  const countdown = getCountdownParts(redemption.timer_ends_at)
+                  const isExpired = countdown.isExpired
+
+                  return (
+                    <ActiveCard
+                      key={redemption.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <RequestInfo>
+                        <UserRow>
+                          <Avatar>
+                            {redemption.users?.avatar_url ? (
+                              <img src={redemption.users.avatar_url} alt="avatar" />
+                            ) : (
+                              <BsPersonFill />
+                            )}
+                          </Avatar>
+                          <UserName>{redemption.users?.name}</UserName>
+                          <DateText>{formatDateES(redemption.created_at.split('T')[0])}</DateText>
+                        </UserRow>
+                        <RewardName>{redemption.rewards?.name}</RewardName>
+                        <MetaRow>
+                          <RewardCost>-{redemption.rewards?.points_required || redemption.points_cost} pts</RewardCost>
+                          <TimerChip $expired={isExpired}>
+                            <BsClockHistory />
+                            {isExpired ? 'Listo para cerrar' : formatCountdownShort(redemption.timer_ends_at)}
+                          </TimerChip>
+                        </MetaRow>
+                        <TimerDetails>
+                          Inició: {formatDateTimeES(redemption.timer_started_at) || 'Sin registrar'}
+                        </TimerDetails>
+                        <TimerDetails>
+                          Termina: {formatDateTimeES(redemption.timer_ends_at) || 'Sin registrar'}
+                        </TimerDetails>
+                      </RequestInfo>
+
+                      <ActionButtons>
+                        <RejectButton
+                          onClick={() => resolveRedemption({ id: redemption.id, action: 'cancel' })}
+                          disabled={isResolvingRedemption}
+                        >
+                          <BsStopFill /> Cancelar
+                        </RejectButton>
+                        <ApproveButton
+                          onClick={() => resolveRedemption({ id: redemption.id, action: 'finish' })}
+                          disabled={isResolvingRedemption}
+                        >
+                          <BsFlagFill /> Finalizar
+                        </ApproveButton>
+                      </ActionButtons>
+                    </ActiveCard>
+                  )
+                })}
+              </Section>
+            )}
+          </>
         )}
       </ContentSection>
     </Container>
@@ -77,6 +173,20 @@ const ContentSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+`
+const Section = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`
+const SectionTitle = styled.h3`
+  margin: 0;
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `
 const EmptyText = styled.p`
   text-align: center;
@@ -96,6 +206,9 @@ const RequestCard = styled(motion.div)`
   display: flex;
   flex-direction: column;
   gap: 16px;
+`
+const ActiveCard = styled(RequestCard)`
+  border-color: ${({ theme }) => `${theme.colors.success}55`};
 `
 const RequestInfo = styled.div`
   display: flex;
@@ -139,6 +252,31 @@ const RewardCost = styled.span`
   font-size: 15px;
   font-weight: 800;
   color: ${({ theme }) => theme.colors.warning};
+`
+const MetaRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`
+const TimerChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: ${({ $expired, theme }) => ($expired ? theme.colors.danger : theme.colors.primary)};
+  background: ${({ $expired, theme }) => ($expired ? `${theme.colors.danger}14` : `${theme.colors.primary}15`)};
+`
+const DeliveryChip = styled(TimerChip)`
+  color: ${({ theme }) => theme.colors.success};
+  background: ${({ theme }) => `${theme.colors.success}15`};
+`
+const TimerDetails = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `
 const ActionButtons = styled.div`
   display: flex;

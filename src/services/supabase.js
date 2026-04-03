@@ -1946,6 +1946,26 @@ export async function getAdminRewardRedemptions() {
   }
 }
 
+export async function getAdminRewardRedemptionById(redemptionId) {
+  try {
+    const { data, error } = await supabase
+      .from('reward_redemptions')
+      .select(`
+        *,
+        users!reward_redemptions_user_id_fkey (name, avatar_url),
+        rewards (name, type, points_required, is_timed, duration_minutes)
+      `)
+      .eq('id', redemptionId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener detalle del canje para admin:', error);
+    throw error;
+  }
+}
+
 /**
  * Resuelve una solicitud de premio mediante una RPC para mantener reglas consistentes.
  */

@@ -2,14 +2,33 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsCheck2Square, BsHouseDoorFill, BsClockHistory } from 'react-icons/bs'
+import { BsCheck2Square, BsClockHistory, BsHouseFill } from 'react-icons/bs'
 import useHouseholdModule from '../../hooks/useHouseholdModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
 import { HOUSEHOLD_TASK_POINTS } from '../../constants/habits.constants'
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils'
+import { TimeBasedBanner } from '../ui/TimeBasedBanner'
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen'
+
 const MODULE_COLOR = '#14B8A6' // Amarillo oscuro / Marrón (theme.HABIT_COLORS.household)
 
 export default function HouseholdModule() {
+  // ========== REGLAS DE TIEMPO ==========
+  const timeRules = getModuleTimeRules('household')
+  
+  // Si está completamente fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Responsabilidades del hogar"
+        availableHours={timeRules.availableHours}
+        icon={<BsHouseFill />}
+        accentColor={MODULE_COLOR}
+      />
+    )
+  }
+  
   const { householdData, isLoading, hasRecord, saveHousehold, isSaving } = useHouseholdModule()
   const { assignments, completions } = householdData
 
@@ -61,6 +80,11 @@ export default function HouseholdModule() {
 
   return (
     <Container>
+      {/* Banner de tiempo */}
+      {timeRules.bannerType === 'suggested' && (
+        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+      )}
+      
       <AnimatePresence>
         {hasRecord && (
           <Banner

@@ -22,10 +22,27 @@ import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../u
 import usePhoneUseModule from '../../hooks/usePhoneUseModule';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils';
+import { TimeBasedBanner } from '../ui/TimeBasedBanner';
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen';
 
 const MODULE_COLOR = theme.HABIT_COLORS.sleep;
 
 export default function PhoneUseModule() {
+  const timeRules = getModuleTimeRules('phone');
+  
+  // Si está fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Uso del Celular"
+        availableHours={timeRules.availableHours}
+        icon={<BsPhoneFill />}
+        accentColor={MODULE_COLOR}
+      />
+    );
+  }
+  
   const [showManualDeviceTime, setShowManualDeviceTime] = useState(false);
   const { sleepRecord, isLoading, hasRecord, savePhoneUse, isSaving } = usePhoneUseModule();
 
@@ -216,6 +233,14 @@ export default function PhoneUseModule() {
           </Banner>
         )}
       </AnimatePresence>
+
+      {/* Sistema de 3 niveles: ideal (verde), tarde (naranja), fuera de horario (naranja) */}
+      {timeRules.bannerType === 'suggested' && (
+        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+      )}
+      {timeRules.bannerType === 'warning' && (
+        <TimeBasedBanner type="warning" message={timeRules.message} />
+      )}
 
       <FormContent onSubmit={handleSubmit(onSubmit)}>
         <SectionTitle>📱 Rutina del celular</SectionTitle>
@@ -554,6 +579,12 @@ const TimeInput = styled.input`
     outline: none;
     border-color: ${MODULE_COLOR};
   }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: ${({ theme }) => theme.colors.background};
+  }
 `;
 
 const Label = styled.label`
@@ -605,12 +636,31 @@ const ActionButton = styled.button`
   font-weight: ${({ theme }) => theme.typography.weights.bold};
   cursor: pointer;
   transition: all 0.2s ease;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const ErrorText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm};
   color: ${({ theme }) => theme.colors.danger};
   margin: 0;
+`;
+
+const FieldHint = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.warning};
+  margin: ${({ theme }) => theme.spacing.xs} 0 0;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const SummaryChips = styled.div`

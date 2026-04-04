@@ -12,10 +12,28 @@ import {
 } from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils'
+import { TimeBasedBanner } from '../ui/TimeBasedBanner'
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen'
 
 const MODULE_COLOR = '#F97316'
 
 export default function FoodModule() {
+  // ========== REGLAS DE TIEMPO ==========
+  const timeRules = getModuleTimeRules('food')
+  
+  // Si está completamente fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Alimentación"
+        availableHours={timeRules.availableHours}
+        icon={<BsEggFried />}
+        accentColor={MODULE_COLOR}
+      />
+    )
+  }
+  
   const {
     mealRecords,
     hydrationRecord,
@@ -116,8 +134,19 @@ export default function FoodModule() {
 
   if (isLoading || isLoadingHydration) return <LoadingText>Cargando información...</LoadingText>
 
+  // Verificar si los campos de comida están habilitados
+  const isFoodEnabled = timeRules.isFoodActive
+
   return (
       <Container>
+      {/* Banner de tiempo */}
+      {timeRules.bannerType === 'suggested' && (
+        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+      )}
+      {timeRules.bannerType === 'warning' && (
+        <TimeBasedBanner type="warning" message={timeRules.message} />
+      )}
+      
       <HydrationCard>
         <SectionTitle>💧 Hidratación</SectionTitle>
         <Hint style={{ marginTop: 0 }}>Aquí registras tus vasos de agua del día.</Hint>
@@ -175,39 +204,48 @@ export default function FoodModule() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <SectionTitle>🍽️ Almuerzo</SectionTitle>
+              <SectionTitle $disabled={!isFoodEnabled}>
+                🍽️ Almuerzo
+                {!isFoodEnabled && <DisabledHint> (disponible desde 13:00)</DisabledHint>}
+              </SectionTitle>
 
-              <Card>
-                <Label>¿Qué almorzaste? (opcional)</Label>
+              <Card $disabled={!isFoodEnabled}>
+                <Label $disabled={!isFoodEnabled}>¿Qué almorzaste? (opcional)</Label>
                 <Textarea
                   rows="3"
-                  placeholder="Ej: arroz con pollo, lentejas, ensalada..."
+                  placeholder={isFoodEnabled ? "Ej: arroz con pollo, lentejas, ensalada..." : "Disponible desde las 13:00"}
                   {...register('food_description')}
+                  disabled={!isFoodEnabled}
                 />
               </Card>
 
               <ToggleCard
-                $isActive={formValues.no_tv_lunch}
-                $color={formValues.no_tv_lunch ? '#22C55E' : '#EF4444'}
+                $isActive={isFoodEnabled && formValues.no_tv_lunch}
+                $color={!isFoodEnabled ? '#94A3B8' : (formValues.no_tv_lunch ? '#22C55E' : '#EF4444')}
+                $disabled={!isFoodEnabled}
               >
-                <ToggleLabel>
+                <ToggleLabel $disabled={!isFoodEnabled}>
                   Almorcé sin TV
                   <br /><Hint style={{ margin: 0 }}>
-                    Si hubo TV durante el almuerzo, apaga este switch.
+                    {isFoodEnabled 
+                      ? 'Si hubo TV durante el almuerzo, apaga este switch.'
+                      : 'Disponible desde las 13:00'}
                   </Hint>
-                  {formValues.no_tv_lunch ? (
+                  {isFoodEnabled && (formValues.no_tv_lunch ? (
                     <Badge $color="#22C55E">+{FOOD_NO_TV_LUNCH_POINTS} pts</Badge>
                   ) : (
                     <Badge $color="#EF4444">{FOOD_TV_LUNCH_PENALTY} pts</Badge>
-                  )}
+                  ))}
                 </ToggleLabel>
                 <ToggleSwitch
                   type="button"
-                  $isActive={formValues.no_tv_lunch}
-                  $color={formValues.no_tv_lunch ? '#22C55E' : '#EF4444'}
-                  onClick={() => setValue('no_tv_lunch', !formValues.no_tv_lunch)}
+                  $isActive={isFoodEnabled && formValues.no_tv_lunch}
+                  $color={!isFoodEnabled ? '#94A3B8' : (formValues.no_tv_lunch ? '#22C55E' : '#EF4444')}
+                  $disabled={!isFoodEnabled}
+                  onClick={() => isFoodEnabled && setValue('no_tv_lunch', !formValues.no_tv_lunch)}
+                  disabled={!isFoodEnabled}
                 >
-                  <ToggleThumb $isActive={formValues.no_tv_lunch} />
+                  <ToggleThumb $isActive={isFoodEnabled && formValues.no_tv_lunch} />
                 </ToggleSwitch>
               </ToggleCard>
 
@@ -221,11 +259,11 @@ export default function FoodModule() {
                   points: hydrationPoints,
                   color: '#3B82F6',
                 },
-                ...(hasSavedRecord || formValues.food_description || !formValues.no_tv_lunch
+                ...(isFoodEnabled && (hasSavedRecord || formValues.food_description || !formValues.no_tv_lunch)
                   ? [{ label: 'Almuerzo sin TV', points: points.ptsTv, color: points.ptsTv >= 0 ? '#22C55E' : '#EF4444' }]
                   : []),
               ]}
-              totalPoints={hydrationPoints + points.total}
+              totalPoints={hydrationPoints + (isFoodEnabled ? points.total : 0)}
               accentColor={MODULE_COLOR}
             />
           </Form>
@@ -235,9 +273,10 @@ export default function FoodModule() {
       <ModuleSaveButton
         onSave={handleSubmit(onSaveMeal)}
         isSaving={isSavingFoodModule}
-        label="Guardar almuerzo"
+        label={isFoodEnabled ? "Guardar almuerzo" : "Disponible desde 13:00"}
         color={MODULE_COLOR}
         icon={<BsEggFried />}
+        disabled={!isFoodEnabled}
       />
     </Container>
   )
@@ -273,24 +312,36 @@ const Card = styled.div`
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
+  opacity: ${({ $disabled }) => $disabled ? 0.5 : 1};
+  transition: opacity 0.2s ease;
 `
 const SectionTitle = styled.h2`
   font-size: 18px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ $disabled, theme }) => $disabled ? theme.colors.textSecondary : theme.colors.textPrimary};
   margin: 24px 0 16px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+`
+const DisabledHint = styled.span`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `
 const Label = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ $disabled, theme }) => $disabled ? theme.colors.textSecondary : theme.colors.textPrimary};
   margin-bottom: 8px;
 `
 const Hint = styled.p` font-size: 12px; color: ${({ theme }) => theme.colors.textSecondary}; margin-top: 4px; `
 const ToggleCard = styled.div`
-  background: ${({ $isActive, $color, theme }) => $isActive ? `${$color}15` : theme.colors.surface};
-  border: 2px solid ${({ $isActive, $color, theme }) => $isActive ? $color : theme.colors.border};
+  background: ${({ $isActive, $color, $disabled, theme }) => 
+    $disabled ? theme.colors.background : ($isActive ? `${$color}15` : theme.colors.surface)};
+  border: 2px solid ${({ $isActive, $color, $disabled, theme }) => 
+    $disabled ? theme.colors.border : ($isActive ? $color : theme.colors.border)};
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -298,11 +349,12 @@ const ToggleCard = styled.div`
   justify-content: space-between;
   margin-bottom: 16px;
   transition: all 0.25s ease;
+  opacity: ${({ $disabled }) => $disabled ? 0.5 : 1};
 `
 const ToggleLabel = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ $disabled, theme }) => $disabled ? theme.colors.textSecondary : theme.colors.textPrimary};
   display: flex;
   align-items: flex-start;
   flex-direction: column;
@@ -322,9 +374,10 @@ const ToggleSwitch = styled(motion.button)`
   background: ${({ $isActive, $color, theme }) => ($isActive ? $color : theme.colors.border)};
   border-radius: 14px;
   border: none;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => $disabled ? 'not-allowed' : 'pointer'};
   position: relative;
   flex-shrink: 0;
+  opacity: ${({ $disabled }) => $disabled ? 0.5 : 1};
 `
 const ToggleThumb = styled.div`
   width: 20px;
@@ -345,8 +398,13 @@ const Textarea = styled.textarea`
   border-radius: 8px;
   resize: none;
   font-family: inherit;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ disabled, theme }) => disabled ? theme.colors.background : theme.colors.surface};
+  color: ${({ disabled, theme }) => disabled ? theme.colors.textSecondary : theme.colors.textPrimary};
+  cursor: ${({ disabled }) => disabled ? 'not-allowed' : 'text'};
+  
+  &:disabled {
+    opacity: 0.7;
+  }
 `
 const GlassesContainer = styled.div`
   display: flex;

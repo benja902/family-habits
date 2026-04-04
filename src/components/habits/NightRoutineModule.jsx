@@ -15,10 +15,27 @@ import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../u
 import useNightRoutineModule from '../../hooks/useNightRoutineModule';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils';
+import { TimeBasedBanner } from '../ui/TimeBasedBanner';
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen';
 
 const MODULE_COLOR = theme.HABIT_COLORS.sleep;
 
 export default function NightRoutineModule() {
+  const timeRules = getModuleTimeRules('night');
+  
+  // Si está fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Rutina de Noche"
+        availableHours={timeRules.availableHours}
+        icon={<BsMoonStarsFill />}
+        accentColor={MODULE_COLOR}
+      />
+    );
+  }
+  
   const [showManualSleepTime, setShowManualSleepTime] = useState(false);
   const { sleepRecord, isLoading, hasRecord, saveNightRoutine, isSaving } = useNightRoutineModule();
 
@@ -181,6 +198,14 @@ export default function NightRoutineModule() {
           </Banner>
         )}
       </AnimatePresence>
+
+      {/* Sistema de 3 niveles: ideal (verde), tarde (naranja), fuera de horario (naranja) */}
+      {timeRules.bannerType === 'suggested' && (
+        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+      )}
+      {timeRules.bannerType === 'warning' && (
+        <TimeBasedBanner type="warning" message={timeRules.message} />
+      )}
 
       <FormContent onSubmit={handleSubmit(onSubmit)}>
         <SectionTitle>🌙 Rutina de noche</SectionTitle>
@@ -384,6 +409,11 @@ const ActionButton = styled.button`
   font-weight: ${({ theme }) => theme.typography.weights.bold};
   cursor: pointer;
   transition: all 0.2s ease;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const TimeInputRow = styled.div`
@@ -405,6 +435,12 @@ const TimeInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${MODULE_COLOR};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: ${({ theme }) => theme.colors.background};
   }
 `;
 
@@ -448,6 +484,20 @@ const ErrorText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm};
   color: ${({ theme }) => theme.colors.danger};
   margin: 0;
+`;
+
+const FieldHint = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.warning};
+  margin: ${({ theme }) => theme.spacing.xs} 0 0;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  
+  svg {
+    flex-shrink: 0;
+  }
 `;
 
 const ToggleCard = styled.div`

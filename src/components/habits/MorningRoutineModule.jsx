@@ -12,6 +12,9 @@ import {
 import { theme } from '../../styles/theme';
 import { WAKE_TARGET } from '../../constants/habits.constants';
 import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../utils/dates.utils';
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils';
+import { TimeBasedBanner } from '../ui/TimeBasedBanner';
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen';
 import useMorningRoutineModule from '../../hooks/useMorningRoutineModule';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
@@ -19,6 +22,21 @@ import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 const MODULE_COLOR = theme.HABIT_COLORS.sleep;
 
 export default function MorningRoutineModule() {
+  // ========== REGLAS DE TIEMPO ==========
+  const timeRules = getModuleTimeRules('morning');
+  
+  // Si está fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Rutina de Mañana"
+        availableHours={timeRules.availableHours}
+        icon={<BsSunFill />}
+        accentColor={MODULE_COLOR}
+      />
+    );
+  }
+  
   const [showManualWakeTime, setShowManualWakeTime] = useState(false);
   const { sleepRecord, cleaningRecord, isLoading, hasRecord, saveMorningRoutine, isSaving } =
     useMorningRoutineModule();
@@ -193,6 +211,16 @@ export default function MorningRoutineModule() {
             <BsCheckCircleFill />
             Ya registraste tu rutina de mañana de hoy
           </Banner>
+        )}
+      </AnimatePresence>
+
+      {/* Banner contextual de horario */}
+      <AnimatePresence>
+        {timeRules.badge && (
+          <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+        )}
+        {timeRules.warning && !timeRules.badge && (
+          <TimeBasedBanner type="warning" message={timeRules.message} />
         )}
       </AnimatePresence>
 
@@ -435,6 +463,11 @@ const Switch = styled.label`
   input:checked + .slider:before {
     transform: translateX(24px);
   }
+  
+  input:disabled + .slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const Badge = styled.span`
@@ -484,6 +517,11 @@ const ActionButton = styled.button`
   font-weight: ${({ theme }) => theme.typography.weights.bold};
   cursor: pointer;
   transition: all 0.2s ease;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const TimeInputRow = styled.div`
@@ -505,6 +543,12 @@ const TimeInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${MODULE_COLOR};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: ${({ theme }) => theme.colors.background};
   }
 `;
 
@@ -548,4 +592,18 @@ const ErrorText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm};
   color: ${({ theme }) => theme.colors.danger};
   margin: 0;
+`;
+
+const FieldHint = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.warning};
+  margin: ${({ theme }) => theme.spacing.xs} 0 0;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  
+  svg {
+    flex-shrink: 0;
+  }
 `;

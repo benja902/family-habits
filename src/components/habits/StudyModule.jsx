@@ -12,11 +12,29 @@ import {
   STUDY_CLEAN_SPACE_POINTS,
   STUDY_FULL_POINTS,
 } from '../../constants/habits.constants'
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils'
+import { TimeBasedBanner } from '../ui/TimeBasedBanner'
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen'
 
 const MODULE_COLOR = '#3B82F6' // theme.HABIT_COLORS.study
 const ACTIVITY_TYPES = ['Lectura', 'Video', 'Práctica', 'Escritura', 'Otro']
 
 export default function StudyModule() {
+  // ========== REGLAS DE TIEMPO ==========
+  const timeRules = getModuleTimeRules('study')
+  
+  // Si está completamente fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Estudio y crecimiento"
+        availableHours={timeRules.availableHours}
+        icon={<BsBookFill />}
+        accentColor={MODULE_COLOR}
+      />
+    )
+  }
+  
   const { studyRecord, isLoading, hasRecord, saveStudy, isSaving } = useStudyModule()
 
   const { register, handleSubmit, watch, control, reset, setValue } = useForm({
@@ -79,6 +97,11 @@ export default function StudyModule() {
 
   return (
     <Container>
+      {/* Banner de tiempo */}
+      {timeRules.bannerType === 'suggested' && (
+        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+      )}
+      
       <AnimatePresence>
         {hasRecord && (
           <Banner

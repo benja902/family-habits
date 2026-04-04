@@ -27,6 +27,8 @@ import {
   WAKE_TARGET,
 } from '../../constants/habits.constants';
 import { getCurrentTimeString, isBeforeCurrentTime, isFutureTime } from '../../utils/dates.utils';
+import { getSleepModuleTimeRules, isFieldEnabled, getFieldHint } from '../../utils/time-based-rules.utils';
+import { TimeBasedBanner } from '../ui/TimeBasedBanner';
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
 
@@ -140,6 +142,11 @@ const Switch = styled.label`
   input:checked + .slider:before {
     transform: translateX(24px);
   }
+  
+  input:disabled + .slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const Badge = styled.span`
@@ -178,6 +185,12 @@ const TimeInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${MODULE_COLOR};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: ${({ theme }) => theme.colors.background};
   }
 `;
 
@@ -257,6 +270,11 @@ const ActionButton = styled.button`
   font-weight: ${({ theme }) => theme.typography.weights.bold};
   cursor: pointer;
   transition: all 0.2s ease;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const ErrorText = styled.p`
@@ -335,12 +353,30 @@ const MorningHabitCard = styled.div`
   gap: ${({ theme }) => theme.spacing.md};
 `;
 
+const FieldHint = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  color: ${({ theme }) => theme.colors.warning};
+  margin: ${({ theme }) => theme.spacing.xs} 0 0;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  
+  svg {
+    flex-shrink: 0;
+  }
+`;
+
 // ==================== COMPONENTE ====================
 
 export default function SleepModule() {
   const [showManualDeviceTime, setShowManualDeviceTime] = useState(false);
   const [showManualWakeTime, setShowManualWakeTime] = useState(false);
   const { sleepRecord, cleaningRecord, isLoading, hasRecord, saveSleep, isSaving } = useSleepModule();
+  
+  // ========== REGLAS DE TIEMPO ==========
+  const timeRules = getSleepModuleTimeRules();
+  
   const {
     control,
     handleSubmit,
@@ -615,6 +651,16 @@ export default function SleepModule() {
         )}
       </AnimatePresence>
 
+      {/* Banner contextual de horario */}
+      <AnimatePresence>
+        {timeRules.badge && (
+          <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+        )}
+        {timeRules.warning && !timeRules.badge && (
+          <TimeBasedBanner type="warning" message={timeRules.message} />
+        )}
+      </AnimatePresence>
+
       <FormContent onSubmit={handleSubmit(onSubmit)}>
         <TransitionBanner>
           <TransitionTitle>Rutina del día</TransitionTitle>
@@ -633,20 +679,29 @@ export default function SleepModule() {
           name="bed_made"
           control={control}
           render={({ field }) => (
-            <MorningHabitCard $isActive={field.value}>
-              <ToggleLabel>¿Tendiste la cama antes de empezar el día?</ToggleLabel>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {field.value && <Badge $color={theme.colors.success}>+15 pts</Badge>}
-                <Switch>
-                  <input
-                    type="checkbox"
-                    checked={field.value}
-                    onChange={field.onChange}
-                  />
-                  <span className="slider"></span>
-                </Switch>
-              </div>
-            </MorningHabitCard>
+            <>
+              <MorningHabitCard $isActive={field.value}>
+                <ToggleLabel>¿Tendiste la cama antes de empezar el día?</ToggleLabel>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {field.value && <Badge $color={theme.colors.success}>+15 pts</Badge>}
+                  <Switch>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      disabled={!isFieldEnabled('sleep', 'made_bed')}
+                    />
+                    <span className="slider"></span>
+                  </Switch>
+                </div>
+              </MorningHabitCard>
+              {!isFieldEnabled('sleep', 'made_bed') && (
+                <FieldHint>
+                  <BsClockFill />
+                  {getFieldHint('sleep', 'made_bed')}
+                </FieldHint>
+              )}
+            </>
           )}
         />
 
@@ -682,6 +737,7 @@ export default function SleepModule() {
               $active={isWakeCurrentMode && !showManualWakeTime}
               $activeColor={theme.colors.success}
               onClick={() => setCurrentTimeForField('wake_time', 'wake_time_source')}
+              disabled={!isFieldEnabled('sleep', 'wake_time')}
             >
               <BsArrowClockwise />
               Registrar hora de ahora
@@ -691,11 +747,18 @@ export default function SleepModule() {
               $active={showManualWakeTime}
               $activeColor={theme.colors.warning}
               onClick={() => toggleManualTimeInput('wake_time')}
+              disabled={!isFieldEnabled('sleep', 'wake_time')}
             >
               <BsPencilSquare />
               {showManualWakeTime ? 'Cancelar entrada manual' : 'Escribir hora manual'}
             </ActionButton>
           </ActionRow>
+          {!isFieldEnabled('sleep', 'wake_time') && (
+            <FieldHint>
+              <BsClockFill />
+              {getFieldHint('sleep', 'wake_time')}
+            </FieldHint>
+          )}
           <Controller
             name="wake_time"
             control={control}
@@ -791,6 +854,7 @@ export default function SleepModule() {
                         $active={isDeviceCurrentMode && !showManualDeviceTime}
                         $activeColor={theme.colors.success}
                         onClick={() => setCurrentTimeForField('device_delivered_at', 'device_delivered_at_source')}
+                        disabled={!isFieldEnabled('sleep', 'device_off_time')}
                       >
                         <BsArrowClockwise />
                         Registrar hora de ahora
@@ -800,11 +864,18 @@ export default function SleepModule() {
                         $active={showManualDeviceTime}
                         $activeColor={theme.colors.warning}
                         onClick={() => toggleManualTimeInput('device_delivered_at')}
+                        disabled={!isFieldEnabled('sleep', 'device_off_time')}
                       >
                         <BsPencilSquare />
                         {showManualDeviceTime ? 'Cancelar entrada manual' : 'Escribir hora manual'}
                       </ActionButton>
                     </ActionRow>
+                    {!isFieldEnabled('sleep', 'device_off_time') && (
+                      <FieldHint>
+                        <BsClockFill />
+                        {getFieldHint('sleep', 'device_off_time')}
+                      </FieldHint>
+                    )}
                     <Controller
                       name="device_delivered_at"
                       control={control}
@@ -941,8 +1012,20 @@ export default function SleepModule() {
           <Controller
             name="sleep_time"
             control={control}
-            render={({ field }) => <TimeInput type="time" {...field} />}
+            render={({ field }) => (
+              <TimeInput 
+                type="time" 
+                {...field}
+                disabled={!isFieldEnabled('sleep', 'bedtime')}
+              />
+            )}
           />
+          {!isFieldEnabled('sleep', 'bedtime') && (
+            <FieldHint>
+              <BsClockFill />
+              {getFieldHint('sleep', 'bedtime')}
+            </FieldHint>
+          )}
         </FieldWrapper>
 
         {/* Campo 5: ¿Oraste antes de dormir? */}

@@ -2,17 +2,35 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BsCheckCircleFill } from 'react-icons/bs'
+import { BsCheckCircleFill, BsStars } from 'react-icons/bs'
 import useCleaningModule from '../../hooks/useCleaningModule'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard'
 import { ModuleSaveButton } from '../ui/ModuleSaveButton'
 import {
   CLEANING_ROOM_POINTS,
 } from '../../constants/habits.constants'
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils'
+import { TimeBasedBanner } from '../ui/TimeBasedBanner'
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen'
 
 const MODULE_COLOR = '#EAB308' // theme.HABIT_COLORS.cleaning
 
 export default function CleaningModule() {
+  // ========== REGLAS DE TIEMPO ==========
+  const timeRules = getModuleTimeRules('cleaning')
+  
+  // Si está completamente fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Orden y limpieza personal"
+        availableHours={timeRules.availableHours}
+        icon={<BsStars />}
+        accentColor={MODULE_COLOR}
+      />
+    )
+  }
+  
   const { cleaningRecord, isLoading, hasRecord, saveCleaning, isSaving } = useCleaningModule()
 
   const { register, handleSubmit, watch, reset, setValue } = useForm({
@@ -52,6 +70,11 @@ export default function CleaningModule() {
 
   return (
     <Container>
+      {/* Banner de tiempo */}
+      {timeRules.bannerType === 'suggested' && (
+        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+      )}
+      
       <AnimatePresence>
         {hasRecord && (
           <Banner

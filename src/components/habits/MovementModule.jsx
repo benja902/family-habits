@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import styled from 'styled-components'
 import { motion, AnimatePresence } from 'framer-motion'
+import { BsLightningChargeFill } from 'react-icons/bs'
 import useMovementModule from '../../hooks/useMovementModule'
 import {
   MOVEMENT_ACTIVE_BREAK_MINUTES,
@@ -14,13 +15,30 @@ import {
 } from '../../constants/habits.constants'
 import { PointsSummaryCard } from '../ui/PointsSummaryCard';
 import { ModuleSaveButton } from '../ui/ModuleSaveButton';
+import { getModuleTimeRules } from '../../utils/time-based-rules.utils'
+import { TimeBasedBanner } from '../ui/TimeBasedBanner'
+import { ModuleBlockedScreen } from '../ui/ModuleBlockedScreen'
 
-
-
+const MODULE_COLOR = '#22C55E'
 const EXERCISE_TYPES = ['Caminata', 'Trote', 'Pesas', 'Yoga', 'Bici', 'Otro']
 const ALARM_AUDIO_PATH = '/sounds/alarma.mp3'
 
 export default function MovementModule() {
+  // ========== REGLAS DE TIEMPO ==========
+  const timeRules = getModuleTimeRules('movement')
+  
+  // Si está completamente fuera de horario, mostrar pantalla de bloqueo
+  if (timeRules.isOutOfHours) {
+    return (
+      <ModuleBlockedScreen
+        moduleName="Movimiento y salud física"
+        availableHours={timeRules.availableHours}
+        icon={<BsLightningChargeFill />}
+        accentColor={MODULE_COLOR}
+      />
+    )
+  }
+  
   const {
     movementRecord,
     isLoading,
@@ -363,6 +381,11 @@ export default function MovementModule() {
 
   return (
     <Container>
+      {/* Banner de tiempo */}
+      {timeRules.bannerType === 'suggested' && (
+        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
+      )}
+      
       {hasRecord && (
         <Banner
           initial={{ opacity: 0, y: -20 }}

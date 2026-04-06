@@ -26,6 +26,10 @@ const ALARM_AUDIO_PATH = '/sounds/alarma.mp3'
 export default function MovementModule() {
   // ========== REGLAS DE TIEMPO ==========
   const timeRules = getModuleTimeRules('movement')
+  const movementFields = timeRules.fields || {}
+  const isPomodoroEnabled = movementFields.pomodoro?.enabled ?? true
+  const isExerciseEnabled = movementFields.did_exercise?.enabled ?? true
+  const isWalkEnabled = movementFields.walk_after_lunch?.enabled ?? true
   
   // Si está completamente fuera de horario, mostrar pantalla de bloqueo
   if (timeRules.isOutOfHours) {
@@ -292,6 +296,7 @@ export default function MovementModule() {
   ).padStart(2, '0')}`
 
   const handleStartTimer = () => {
+    if (!isPomodoroEnabled) return
     if (timerPhase === 'break' && !canStartBreak) return
     const durationSeconds =
       timerPhase === 'focus'
@@ -318,6 +323,7 @@ export default function MovementModule() {
   }
 
   const handleResetTimer = () => {
+    if (!isPomodoroEnabled) return
     setIsTimerRunning(false)
     setTimerPhase('focus')
     setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
@@ -382,9 +388,7 @@ export default function MovementModule() {
   return (
     <Container>
       {/* Banner de tiempo */}
-      {timeRules.bannerType === 'suggested' && (
-        <TimeBasedBanner type="suggested" badge={timeRules.badge} />
-      )}
+      <TimeBasedBanner type={timeRules.bannerType || 'warning'} message={timeRules.message} badge={timeRules.badge} />
       
       {hasRecord && (
         <Banner
@@ -410,6 +414,7 @@ export default function MovementModule() {
                 <ToggleSwitch
                   type="button"
                   $isActive={field.value}
+                  disabled={!isExerciseEnabled}
                   onClick={() => field.onChange(!field.value)}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -418,6 +423,10 @@ export default function MovementModule() {
               </ToggleCard>
             )}
           />
+
+          {!isExerciseEnabled && (
+            <Hint>Ejercicio disponible desde las 13:00.</Hint>
+          )}
 
           <AnimatePresence>
             {didExercise && (
@@ -440,6 +449,7 @@ export default function MovementModule() {
                             key={type}
                             type="button"
                             $isActive={field.value === type}
+                            disabled={!isExerciseEnabled}
                             onClick={() => field.onChange(type)}
                             whileTap={{ scale: 0.95 }}
                           >
@@ -458,6 +468,7 @@ export default function MovementModule() {
                     type="number"
                     min="0"
                     max="300"
+                    disabled={!isExerciseEnabled}
                     {...register('exercise_minutes')}
                   />
                   <Hint>Meta: {MIN_EXERCISE_MINUTES} minutos para puntaje completo</Hint>
@@ -480,6 +491,7 @@ export default function MovementModule() {
                   <Textarea
                     rows="2"
                     placeholder="Ej: subí 5 repeticiones, corrí sin parar..."
+                    disabled={!isExerciseEnabled}
                     {...register('exercise_notes')}
                   />
                 </FormGroup>
@@ -497,8 +509,9 @@ export default function MovementModule() {
               <TimerTab
                 type="button"
                 $isActive={timerPhase === 'focus'}
-                disabled={isTimerRunning}
+                disabled={isTimerRunning || !isPomodoroEnabled}
                 onClick={() => {
+                  if (!isPomodoroEnabled) return
                   setTimerPhase('focus')
                   setRemainingSeconds(MOVEMENT_FOCUS_MINUTES * 60)
                 }}
@@ -508,8 +521,9 @@ export default function MovementModule() {
               <TimerTab
                 type="button"
                 $isActive={timerPhase === 'break'}
-                disabled={!canStartBreak && !timerCompleted}
+                disabled={!isPomodoroEnabled || (!canStartBreak && !timerCompleted)}
                 onClick={() => {
+                  if (!isPomodoroEnabled) return
                   if (!canStartBreak && !timerCompleted) return
                   setTimerPhase('break')
                   setRemainingSeconds(MOVEMENT_ACTIVE_BREAK_MINUTES * 60)
@@ -556,7 +570,7 @@ export default function MovementModule() {
               <TimerButton
                 type="button"
                 onClick={handleStartTimer}
-                disabled={isTimerRunning || (timerPhase === 'break' && !canStartBreak)}
+                disabled={!isPomodoroEnabled || isTimerRunning || (timerPhase === 'break' && !canStartBreak)}
                 whileTap={{ scale: 0.96 }}
               >
                 {timerPhase === 'focus' ? 'Iniciar 1 hora' : 'Iniciar 15 min'}
@@ -565,7 +579,7 @@ export default function MovementModule() {
                 type="button"
                 $secondary
                 onClick={handleResetTimer}
-                disabled={isTimerRunning || (!timerCompleted && timerPhase === 'focus' && remainingSeconds === MOVEMENT_FOCUS_MINUTES * 60)}
+                disabled={!isPomodoroEnabled || isTimerRunning || (!timerCompleted && timerPhase === 'focus' && remainingSeconds === MOVEMENT_FOCUS_MINUTES * 60)}
                 whileTap={{ scale: 0.96 }}
               >
                 Reiniciar
@@ -590,6 +604,7 @@ export default function MovementModule() {
                 <ToggleSwitch
                   type="button"
                   $isActive={field.value}
+                  disabled={!isWalkEnabled}
                   onClick={() => field.onChange(!field.value)}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -598,6 +613,10 @@ export default function MovementModule() {
               </ToggleCard>
             )}
           />
+
+          {!isWalkEnabled && (
+            <Hint>Caminata y minutos disponibles desde las 13:00.</Hint>
+          )}
 
           <AnimatePresence>
             {walkAfterLunch && (
@@ -613,6 +632,7 @@ export default function MovementModule() {
                     type="number"
                     min={MIN_WALK_AFTER_LUNCH_MINUTES}
                     max="120"
+                    disabled={!isWalkEnabled}
                     {...register('walk_minutes')}
                   />
                   <Hint>
@@ -738,9 +758,10 @@ const ToggleSwitch = styled(motion.button)`
   background: ${({ $isActive, theme }) => ($isActive ? '#22C55E' : theme.colors.border)};
   border-radius: 16px;
   border: none;
-  cursor: pointer;
+  cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   position: relative;
   transition: background 0.25s ease;
+  opacity: ${({ disabled }) => (disabled ? 0.55 : 1)};
 `
 const ToggleThumb = styled.div`
   width: 24px;

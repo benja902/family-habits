@@ -258,30 +258,83 @@ export function getModuleTimeRules(moduleKey) {
 
 /**
  * Reglas de tiempo para MovementModule
- * - Bloqueado: 00:00-12:59 y 23:00-23:59
- * - Activo: 13:00-22:59
- * - Banner ideal: 17:00-19:00
+ * - Módulo activo: 06:00-22:59
+ * - Pomodoro/postura activo desde: 06:00
+ * - Ejercicio y caminata activos desde: 13:00
  */
 export function getMovementModuleTimeRules(currentHour = null) {
   const hour = currentHour ?? getCurrentHourDecimal()
   
-  // Activo de 13:00 a 22:59
-  const isActiveTime = hour >= 13 && hour < 23
+  // Activo de 06:00 a 22:59
+  const isActiveTime = hour >= 6 && hour < 23
   const isOutOfHours = !isActiveTime
   
-  // Momento ideal: 17:00 - 19:00
+  // Momento ideal para ejercicio: 17:00 - 19:00
   const isIdealTime = hour >= 17 && hour < 19
+
+  // Pomodoro disponible desde las 06:00
+  const isPomodoroActive = hour >= 6 && hour < 23
+
+  // Ejercicio y caminata recién desde las 13:00
+  const isActivityActive = hour >= 13 && hour < 23
+
+  let bannerType = null
+  let badge = null
+  let warning = false
+  let message = null
+
+  if (hour >= 6 && hour < 13) {
+    warning = true
+    message = '⏱️ Ahora solo está activo el pomodoro. Ejercicio y caminata se desbloquean desde las 13:00.'
+    bannerType = 'warning'
+  } else if (isIdealTime) {
+    badge = '🏃 ¡Momento ideal para ejercitarte!'
+    bannerType = 'suggested'
+  }
   
   return {
     canAccessModule: isActiveTime,
     isOutOfHours,
     isSuggestedTime: isIdealTime,
-    availableHours: '13:00 a 22:59',
-    bannerType: isIdealTime ? 'suggested' : null,
-    badge: isIdealTime ? '🏃 ¡Momento ideal para ejercitarte!' : null,
-    warning: false,
-    message: null,
-    fields: {}
+    availableHours: '06:00 a 22:59',
+    bannerType,
+    badge,
+    warning,
+    message,
+    fields: {
+      pomodoro: {
+        enabled: isPomodoroActive,
+        hint: 'Disponible de 06:00 a 22:59',
+      },
+      sitting_breaks: {
+        enabled: isPomodoroActive,
+        hint: 'Disponible de 06:00 a 22:59',
+      },
+      did_exercise: {
+        enabled: isActivityActive,
+        hint: 'Disponible de 13:00 a 22:59',
+      },
+      exercise_type: {
+        enabled: isActivityActive,
+        hint: 'Disponible de 13:00 a 22:59',
+      },
+      exercise_minutes: {
+        enabled: isActivityActive,
+        hint: 'Disponible de 13:00 a 22:59',
+      },
+      exercise_notes: {
+        enabled: isActivityActive,
+        hint: 'Disponible de 13:00 a 22:59',
+      },
+      walk_after_lunch: {
+        enabled: isActivityActive,
+        hint: 'Disponible de 13:00 a 22:59',
+      },
+      walk_minutes: {
+        enabled: isActivityActive,
+        hint: 'Disponible de 13:00 a 22:59',
+      },
+    }
   }
 }
 

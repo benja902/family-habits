@@ -81,12 +81,58 @@ export default function useRealtimeListeners() {
       )
       .subscribe()
 
+    // ==================== LISTENER 4: HOUSEHOLD ====================
+    // Escucha cambios en tareas del hogar para refrescar el horario general
+    // y el registro individual sin necesidad de recargar la página.
+    const householdCompletionsChannel = supabase
+      .channel('global-household-completions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'household_task_completions',
+        },
+        (payload) => {
+          console.log('[Realtime] 🏠 Household actualizado', payload.eventType)
+          queryClient.invalidateQueries({ queryKey: ['householdGeneralSchedule'] })
+
+          const affectedUserId = payload.new?.user_id || payload.old?.user_id
+          if (affectedUserId === currentUser.id) {
+            queryClient.invalidateQueries({ queryKey: ['householdRecord', currentUser.id, today] })
+            queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
+            queryClient.invalidateQueries({ queryKey: ['dailyRecord', currentUser.id, today] })
+          }
+        }
+      )
+      .subscribe()
+
+    const householdAssignmentsChannel = supabase
+      .channel('global-household-assignments')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'household_task_assignments',
+        },
+        () => {
+          console.log('[Realtime] 📋 Asignaciones household actualizadas')
+          queryClient.invalidateQueries({ queryKey: ['householdGeneralSchedule'] })
+          queryClient.invalidateQueries({ queryKey: ['householdRecord'] })
+          queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
+        }
+      )
+      .subscribe()
+
     // Limpieza al desmontar
     return () => {
       console.log('[Realtime] 🔌 Desconectando listeners globales')
       supabase.removeChannel(punishmentsChannel)
       supabase.removeChannel(redemptionsChannel)
       supabase.removeChannel(transactionsChannel)
+      supabase.removeChannel(householdCompletionsChannel)
+      supabase.removeChannel(householdAssignmentsChannel)
     }
   }, [currentUser?.id, queryClient, today])
 

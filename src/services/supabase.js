@@ -1618,6 +1618,71 @@ export const getHouseholdData = async (userId, date) => {
   return { assignments: assignments || [], completions: completions || [] }
 }
 
+export const getHouseholdGeneralSchedule = async (date) => {
+  const dateObj = new Date(date + 'T12:00:00')
+  const dayOfWeek = dateObj.getDay()
+
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, name, avatar_url')
+    .eq('is_active', true)
+    .order('name', { ascending: true })
+
+  if (usersError) throw usersError
+
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from('household_task_assignments')
+    .select(`
+      user_id,
+      task_id,
+      household_tasks!household_task_assignments_task_id_fkey (
+        name,
+        description,
+        estimated_minutes
+      )
+    `)
+    .eq('day_of_week', dayOfWeek)
+    .eq('is_active', true)
+
+  if (assignmentsError) throw assignmentsError
+
+  const { data: completions, error: completionsError } = await supabase
+    .from('household_task_completions')
+    .select('user_id, task_id, completed')
+    .eq('date', date)
+
+  if (completionsError) throw completionsError
+
+  const assignmentsByUser = (assignments || []).reduce((acc, assignment) => {
+    if (!acc[assignment.user_id]) {
+      acc[assignment.user_id] = []
+    }
+
+    acc[assignment.user_id].push(assignment)
+    return acc
+  }, {})
+
+  const completionMap = (completions || []).reduce((acc, completion) => {
+    acc[`${completion.user_id}:${completion.task_id}`] = completion
+    return acc
+  }, {})
+
+  return (users || []).map((user) => ({
+    ...user,
+    assignments: (assignmentsByUser[user.id] || []).map((assignment) => {
+      const completion = completionMap[`${user.id}:${assignment.task_id}`]
+
+      return {
+        ...assignment,
+        completionStatus: completion
+          ? (completion.completed ? 'completed' : 'pending')
+          : 'unregistered',
+        completion: completion || null
+      }
+    })
+  }))
+}
+
 export const calculateAndSaveHouseholdPoints = async (userId, date, taskCompletionsData) => {
   // taskCompletionsData es un objeto: { [task_id]: boolean }
   await deletePointTransactionsByCategory(userId, date, 'household')

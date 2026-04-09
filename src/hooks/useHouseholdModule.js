@@ -1,6 +1,10 @@
 import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getHouseholdData, calculateAndSaveHouseholdPoints } from '../services/supabase'
+import {
+  getHouseholdData,
+  getHouseholdGeneralSchedule,
+  calculateAndSaveHouseholdPoints
+} from '../services/supabase'
 import { useAuthStore } from '../stores/useAuthStore'
 import { getTodayString } from '../utils/dates.utils'
 import { toast } from 'sonner'
@@ -18,6 +22,12 @@ export default function useHouseholdModule() {
     enabled: !!currentUser?.id,
   })
 
+  const generalScheduleQuery = useQuery({
+    queryKey: ['householdGeneralSchedule', date],
+    queryFn: () => getHouseholdGeneralSchedule(date),
+    enabled: !!currentUser?.id,
+  })
+
   const mutation = useMutation({
     mutationFn: (formData) => 
       calculateAndSaveHouseholdPoints(currentUser.id, date, formData),
@@ -25,6 +35,7 @@ export default function useHouseholdModule() {
       queryClient.invalidateQueries({ queryKey: ['dailyRecord'] })
       queryClient.invalidateQueries({ queryKey: ['completedHabits'] })
       queryClient.invalidateQueries({ queryKey: ['householdRecord'] })
+      queryClient.invalidateQueries({ queryKey: ['householdGeneralSchedule'] })
       queryClient.invalidateQueries({ queryKey: ['ranking'], refetchType: 'all' })
       queryClient.invalidateQueries({ queryKey: ['userPointsBalance'], refetchType: 'all' })
 
@@ -43,7 +54,8 @@ export default function useHouseholdModule() {
 
   return {
     householdData: query.data || { assignments: [], completions: [] },
-    isLoading: query.isLoading,
+    generalSchedule: generalScheduleQuery.data || [],
+    isLoading: query.isLoading || generalScheduleQuery.isLoading,
     hasRecord: hasSavedAny,
     saveHousehold: mutation.mutate,
     isSaving: mutation.isPending
